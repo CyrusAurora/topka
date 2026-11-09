@@ -11,6 +11,7 @@ import { LoginRejected, loginWithPassword } from "@topka/backend/accounts/login"
 import { RegisterRejected, registerWithInvite, registrationMode } from "@topka/backend/accounts/register";
 import { destroySession, resolveSession, SESSION_COOKIE } from "@topka/backend/accounts/session";
 import { verifyPassword } from "@topka/backend/accounts/password";
+import { isValidTimeZone } from "@topka/backend/projects/issue-rules";
 import { sql } from "@topka/backend/db";
 import { sendProblem } from "../http/respond.ts";
 import { LIMITS } from "../http/rate-limit.ts";
@@ -68,8 +69,8 @@ function clearSessionCookies(reply: FastifyReply) {
   reply.header("Set-Cookie", [cookie(SESSION_COOKIE, "", 0, secure()), cookie(ADMIN_SESSION_COOKIE, "", 0, secure())]);
 }
 
-function userBody(user: { id: string; email: string; displayName: string | null; locale: string; role: string }) {
-  return { id: user.id, email: user.email, displayName: user.displayName, locale: user.locale, role: user.role };
+function userBody(user: { id: string; email: string; displayName: string | null; locale: string; timezone: string; role: string }) {
+  return { id: user.id, email: user.email, displayName: user.displayName, locale: user.locale, timezone: user.timezone, role: user.role };
 }
 
 const REGISTER_PROBLEMS = {
@@ -158,6 +159,25 @@ export function registerAccounts(app: FastifyInstance) {
     const user = await resolveSession(parseCookies(req.headers.cookie)[SESSION_COOKIE]);
     if (!user) return sendProblem(req, reply, { status: 401, code: "unauthorized", detail: "请先登录。" });
     return { user: userBody(user) };
+  });
+
+  // The reader's own settings: their IANA timezone for the daily issue's local 08:00 fix. Changing it
+  // never rewrites an already-fixed issue row; the next fix follows the new zone.
+  app.patch("/api/auth/me", async (req, reply) => {
+    reply.header("Cache-Control", "no-store");
+    const user = await resolveSession(parseCookies(req.headers.cookie)[SESSION_COOKIE]);
+    if (!user) return sendProblem(req, reply, { status: 401, code: "unauthorized", detail: "请先登录。" });
+    const b = bodyOf(req);
+    const hasTimezone = "timezone" in b;
+    if (!hasTimezone) return sendProblem(req, reply, { status: 400, code: "invalid_request", detail: "请提供 timezone。" });
+    const timezone = typeof b.timezone === "string" ? b.timezone : "";
+    if (!isValidTimeZone(timezone)) {
+      return sendProblem(req, reply, { status: 400, code: "invalid_timezone", detail: "时区名字不对，请用系统时区的名字（比如 Asia/Shanghai）。", title: "Invalid timezone" });
+    }
+    const [fresh] = await sql<{ id: string; email: string; displayName: string | null; locale: string; timezone: string; role: string }[]>`
+      UPDATE users SET timezone = ${timezone} WHERE id = ${user.id}
+      RETURNING id, email, display_name AS "displayName", locale, timezone, role`;
+    return { user: userBody(fresh!) };
   });
 
   // Both session kinds end here: the user's JSON clients and the admin's HTML form (a form post gets

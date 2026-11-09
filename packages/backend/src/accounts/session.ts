@@ -17,6 +17,7 @@ export interface SessionUser {
   email: string;
   displayName: string | null;
   locale: string;
+  timezone: string;
   role: string;
 }
 
@@ -37,7 +38,7 @@ export async function createSession(userId: string, options: SessionCreateOption
 export async function resolveSession(token: string | undefined | null, db: Db = sql): Promise<SessionUser | null> {
   if (!token) return null;
   const [row] = await db<SessionUser[]>`
-    SELECT u.id, u.email, u.display_name AS "displayName", u.locale, u.role
+    SELECT u.id, u.email, u.display_name AS "displayName", u.locale, u.timezone, u.role
     FROM sessions s JOIN users u ON u.id = s.user_id
     WHERE s.id = ${sha256(token)} AND s.expires_at > now() AND u.status = 'active'`;
   return row ?? null;

@@ -183,6 +183,30 @@ test("the register endpoint sets the session cookie and me answers with the user
   const me = await app.inject({ method: "GET", url: "/api/auth/me", headers: { cookie: `${SESSION_COOKIE}=${cookieValue(cookie, SESSION_COOKIE)}` } });
   assert.equal(me.statusCode, 200, me.body);
   assert.equal((me.json() as { user: { email: string } }).user.email, address);
+  assert.equal((me.json() as { user: { timezone: string } }).user.timezone, "Asia/Shanghai");
+});
+
+test("PATCH /api/auth/me sets a valid IANA timezone and rejects junk without rewriting issue rows", async () => {
+  const address = email();
+  const { token, user } = await registerWithInvite({ code: await invite(), email: address, password: PASSWORD });
+  const cookie = `${SESSION_COOKIE}=${token}`;
+  const ok = await app.inject({
+    method: "PATCH", url: "/api/auth/me", headers: { cookie, "content-type": "application/json" },
+    payload: JSON.stringify({ timezone: "America/New_York" }),
+  });
+  assert.equal(ok.statusCode, 200, ok.body);
+  assert.equal((ok.json() as { user: { timezone: string } }).user.timezone, "America/New_York");
+  const [row] = await sql<{ timezone: string }[]>`SELECT timezone FROM users WHERE id = ${user.id}`;
+  assert.equal(row!.timezone, "America/New_York");
+  const bad = await app.inject({
+    method: "PATCH", url: "/api/auth/me", headers: { cookie, "content-type": "application/json" },
+    payload: JSON.stringify({ timezone: "UTC+8" }),
+  });
+  assert.equal(bad.statusCode, 400, bad.body);
+  assert.equal(bad.json().code, "invalid_timezone");
+  // Junk must not stick: the previous valid value stays.
+  const [still] = await sql<{ timezone: string }[]>`SELECT timezone FROM users WHERE id = ${user.id}`;
+  assert.equal(still!.timezone, "America/New_York");
 });
 
 test("register failures come back per reason, in Chinese, and leak nothing extra", async () => {

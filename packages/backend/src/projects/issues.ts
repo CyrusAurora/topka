@@ -1,4 +1,4 @@
-// The daily issue model: every day at 08:00 UTC+8 (00:00 UTC) the server fixes each user's issue of
+// The daily issue model: every day at 08:00 local in the user's timezone the server fixes that user's issue of
 // up to ISSUE_SIZE items (top candidates in the window since the previous issue's cutoff, excluding
 // anything shown in an earlier issue — an article or its whole event never comes back). When the issue
 // is fixed it stops changing for that day; a later, better article waits for the next issue. A day
@@ -10,7 +10,13 @@ import { sql, one, type Db } from "../db.ts";
 import { SELECTION } from "@topka/industry/selection";
 import { RECENT_IMPORT_HOURS } from "./today.ts";
 import { listUserProjects } from "./user-today.ts";
-import { capPerSource, isHero, issueCutoff, currentIssueDate, nextIssueAt } from "./issue-rules.ts";
+import { capPerSource, isHero, isValidTimeZone, issueCutoffInTz, currentIssueDateInTz, nextIssueAtInTz, DEFAULT_TIMEZONE } from "./issue-rules.ts";
+
+/** The user's IANA zone from the users row, falling back to the default (Shanghai). */
+export async function userTimezone(userId: string, db: Db = sql): Promise<string> {
+  const [row] = await db<{ timezone: string | null }[]>`SELECT timezone FROM users WHERE id = ${userId}`;
+  return row?.timezone && isValidTimeZone(row.timezone) ? row.timezone : DEFAULT_TIMEZONE;
+}
 
 export const ISSUE_SCHEMA_VERSION = 3;
 export const ISSUE_SIZE = 3;
@@ -142,14 +148,15 @@ type Sql = typeof sql;
 export async function ensureIssue(userId: string, opts: { now?: Date; db?: Db } = {}): Promise<{ date: string; created: boolean } | null> {
   const db = opts.db ?? sql;
   const now = opts.now ?? new Date();
-  const date = currentIssueDate(now);
+  const tz = await userTimezone(userId, db);
+  const date = currentIssueDateInTz(now, tz);
   if (await issueExists(userId, date, db)) return { date, created: false };
   const [active] = await db<{ ok: boolean }[]>`SELECT EXISTS (SELECT 1 FROM tracking_projects WHERE owner_id = ${userId} AND status = 'active') AS ok`;
   if (!active?.ok) return null;
   const [prev] = await db<{ cutoff: Date | null }[]>`SELECT max(cutoff) AS cutoff FROM user_issues WHERE user_id = ${userId}`;
   const prevCutoff = prev?.cutoff ?? null;
   const first = prevCutoff === null;
-  const cutoff = first ? now : issueCutoff(date);
+  const cutoff = first ? now : issueCutoffInTz(date, tz);
   const since = first ? new Date(now.getTime() - 24 * 3_600_000) : new Date(Math.max(prevCutoff.getTime(), cutoff.getTime() - 7 * 86_400_000));
 
   const write = async (tx: Db): Promise<"exists" | "empty" | "written"> => {
@@ -263,9 +270,10 @@ export async function issueCount(userId: string, db: Db = sql): Promise<number> 
 
 /** The day 今日 shows: today's issue, or the latest earlier one until today's is fixed; null when none. */
 export async function shownIssueDate(userId: string, now: Date = new Date(), db: Db = sql): Promise<string | null> {
+  const today = currentIssueDateInTz(now, await userTimezone(userId, db));
   const [row] = await db<{ date: string }[]>`
     SELECT to_char(issue_date, 'YYYY-MM-DD') AS date FROM user_issues
-    WHERE user_id = ${userId} AND issue_date <= ${currentIssueDate(now)}::date ORDER BY issue_date DESC LIMIT 1`;
+    WHERE user_id = ${userId} AND issue_date <= ${today}::date ORDER BY issue_date DESC LIMIT 1`;
   return row?.date ?? null;
 }
 
@@ -273,7 +281,8 @@ export async function shownIssueDate(userId: string, now: Date = new Date(), db:
 export async function listPastIssues(userId: string, opts: { now?: Date; db?: Db; limit?: number } = {}): Promise<ArchiveEntry[]> {
   const db = opts.db ?? sql;
   const now = opts.now ?? new Date();
-  return listArchive(userId, db, { exclude: (await shownIssueDate(userId, now, db)) ?? currentIssueDate(now), limit: opts.limit });
+  const today = currentIssueDateInTz(now, await userTimezone(userId, db));
+  return listArchive(userId, db, { exclude: (await shownIssueDate(userId, now, db)) ?? today, limit: opts.limit });
 }
 
 /** A real calendar day as YYYY-MM-DD (2026-02-30 is not). */
@@ -288,7 +297,8 @@ export async function buildUserIssue(userId: string, opts: { now?: Date; db?: Db
   const db = opts.db ?? sql;
   const now = opts.now ?? new Date();
   if (opts.ensure !== false) await ensureIssue(userId, { now, db });
-  const today = currentIssueDate(now);
+  const tz = await userTimezone(userId, db);
+  const today = currentIssueDateInTz(now, tz);
   const shown = await shownIssueDate(userId, now, db);
   const issue = shown ? await readIssue(userId, shown, db) : null;
   const opened = issue?.items.length
@@ -303,7 +313,7 @@ export async function buildUserIssue(userId: string, opts: { now?: Date; db?: Db
     user: { id: userId },
     projects: (await listUserProjects(userId, db)).map(({ id, slug, target }) => ({ id, slug, target })),
     generatedAt: now.toISOString(),
-    nextAt: nextIssueAt(now).toISOString(),
+    nextAt: nextIssueAtInTz(now, tz).toISOString(),
     issueCount: await issueCount(userId, db),
     issue,
     opened,

@@ -48,6 +48,6 @@ export async function loginWithPassword(input: LoginInput, db: Db = sql): Promis
   const token = await createSession(user.id, { userAgent: input.userAgent, ip: input.ip }, db);
   const [fresh] = await db<SessionUser[]>`
     UPDATE users SET last_login_at = now() WHERE id = ${user.id}
-    RETURNING id, email, display_name AS "displayName", locale, role`;
+    RETURNING id, email, display_name AS "displayName", locale, timezone, role`;
   return { token, user: fresh! };
 }
