@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import type { Route } from "./+types/login";
 import { pageMeta } from "../lib/seo";
+import { chromeStrings } from "../lib/i18n";
 import { Wordmark } from "../components/Logo";
 import { buttonClass } from "../components/ui/Controls";
 
@@ -20,6 +21,7 @@ function safeNext(target: string | null): string {
 }
 
 export default function LoginPage() {
+  const strings = chromeStrings("zh-CN");
   const [params] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -58,7 +60,7 @@ export default function LoginPage() {
         <form onSubmit={submit} className="card mt-6 p-6">
           <div>
             <label htmlFor="email" className="block text-[13px] font-medium text-ink-2">
-              邮箱
+              {strings.emailLabel}
             </label>
             <input
               id="email"
@@ -74,7 +76,7 @@ export default function LoginPage() {
           </div>
           <div className="mt-4">
             <label htmlFor="password" className="block text-[13px] font-medium text-ink-2">
-              密码
+              {strings.passwordLabel}
             </label>
             <input
               id="password"
@@ -93,7 +95,7 @@ export default function LoginPage() {
             </p>
           )}
           <button type="submit" disabled={!canSend} className={`${buttonClass("primary", "lg")} mt-5 w-full`}>
-            {state.kind === "sending" ? "正在登录…" : "登录"}
+            {state.kind === "sending" ? strings.loggingIn : strings.loginButton}
           </button>
           <p className="mt-4 text-center text-[12.5px] text-ink-3">
             还没有账号？

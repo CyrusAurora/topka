@@ -1,45 +1,60 @@
-// Site navigation, one place for the desktop sidebar and the mobile tab bar. The product is the
-// personal magazine: 今日 (the home page) | 对话 | 设置, with 往期 beside 今日. The old public
-// timeline pages redirect (routes/legacy.tsx).
+// Localized (reader chrome) nav labels. Call sites pass the signed-in user's locale.
 import type { ReactNode } from "react";
 import { IconDoc, IconHeart, IconHistory, IconMessage, IconSun, IconUsers } from "../icons";
 import type { NavTarget } from "./nav-match";
+import { navStrings, type UiLocale } from "../../lib/i18n";
 
 export { SETTINGS_PATHS, tabIsActive } from "./nav-match";
 
 export interface NavItem extends NavTarget {
   to: string;
+  /** Legacy zh-CN label; prefer localizedNav(). */
   label: string;
   icon: (p: { size?: number }) => ReactNode;
-  /** Match the path exactly (the home page). */
   end?: boolean;
-  /** Shows the unread dot while the changelog has news. */
   changelog?: boolean;
 }
 
-export const SIDEBAR: Array<{ title: string; items: NavItem[] }> = [
-  {
-    title: "阅读",
-    items: [
-      { to: "/", label: "今日", icon: IconSun },
-      { to: "/archive", label: "往期", icon: IconHistory },
-      { to: "/chat", label: "对话", icon: IconMessage },
-      { to: "/settings", label: "设置", icon: IconUsers },
-    ],
-  },
-  {
-    title: "更多",
-    items: [
-      { to: "/about", label: "关于", icon: IconHeart },
-      { to: "/feedback", label: "反馈", icon: IconDoc },
-    ],
-  },
-];
+export interface LocalizedNavItem extends NavItem {
+  localizedLabel: string;
+}
 
-/** The phone tab bar: the same three doors as the mini program. */
-export const TABBAR: NavItem[] = [
-  { to: "/", label: "今日", icon: IconSun },
-  { to: "/chat", label: "对话", icon: IconMessage },
-  { to: "/settings", label: "设置", icon: IconUsers },
-];
+function item(to: string, key: "today" | "archive" | "chat" | "settings" | "about" | "feedback", icon: NavItem["icon"], locale: UiLocale, extra: Partial<NavItem> = {}): LocalizedNavItem {
+  const s = navStrings(locale);
+  return { to, label: s[key], localizedLabel: s[key], icon, ...extra };
+}
 
+/** Desktop sidebar sections in the given locale (defaults zh-CN, matching SITE.locale). */
+export function localizedSidebar(locale: UiLocale = "zh-CN"): Array<{ title: string; items: LocalizedNavItem[] }> {
+  const s = navStrings(locale);
+  return [
+    {
+      title: s.reading,
+      items: [
+        item("/", "today", IconSun, locale),
+        item("/archive", "archive", IconHistory, locale),
+        item("/chat", "chat", IconMessage, locale),
+        item("/settings", "settings", IconUsers, locale),
+      ],
+    },
+    {
+      title: s.more,
+      items: [
+        item("/about", "about", IconHeart, locale),
+        item("/feedback", "feedback", IconDoc, locale),
+      ],
+    },
+  ];
+}
+
+/** Mobile tab bar items in the given locale. */
+export function localizedTabbar(locale: UiLocale = "zh-CN"): LocalizedNavItem[] {
+  return [
+    item("/", "today", IconSun, locale),
+    item("/chat", "chat", IconMessage, locale),
+    item("/settings", "settings", IconUsers, locale),
+  ];
+}
+
+export const SIDEBAR: Array<{ title: string; items: NavItem[] }> = localizedSidebar("zh-CN");
+export const TABBAR: NavItem[] = localizedTabbar("zh-CN");

@@ -1,17 +1,18 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { IconMonitor, IconMoon, IconSun } from "../icons";
 import { resolvedTheme, setThemePreference, useThemePreference, type ThemePreference } from "../../lib/local-state";
+import { chromeStrings, normalizeUiLocale, type UiLocale } from "../../lib/i18n";
 
 type Choice = "dark" | "system" | "light";
 
-const OPTIONS: Array<{ key: Choice; label: string; icon: ReactNode }> = [
-  { key: "dark", label: "深色", icon: <IconMoon size={14} /> },
-  { key: "system", label: "跟随系统", icon: <IconMonitor size={14} /> },
-  { key: "light", label: "浅色", icon: <IconSun size={14} /> },
-];
-
 /** Three-way appearance switch (dark / follow the system / light) with a sliding thumb. */
-export function ThemeSwitch({ className = "" }: { className?: string }) {
+export function ThemeSwitch({ className = "", locale = "zh-CN" }: { className?: string; locale?: UiLocale }) {
+  const strings = chromeStrings(normalizeUiLocale(locale));
+  const OPTIONS: Array<{ key: Choice; label: string; icon: ReactNode }> = [
+    { key: "dark", label: strings.dark, icon: <IconMoon size={14} /> },
+    { key: "system", label: strings.system, icon: <IconMonitor size={14} /> },
+    { key: "light", label: strings.light, icon: <IconSun size={14} /> },
+  ];
   const pref = useThemePreference();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -30,7 +31,7 @@ export function ThemeSwitch({ className = "" }: { className?: string }) {
   };
 
   return (
-    <div role="radiogroup" aria-label="外观" className={`relative grid h-[34px] grid-cols-3 rounded-full border border-line bg-bg-sunk p-[3px] ${className}`}>
+    <div role="radiogroup" aria-label={strings.appearance} className={`relative grid h-[34px] grid-cols-3 rounded-full border border-line bg-bg-sunk p-[3px] ${className}`}>
       <span
         aria-hidden="true"
         className="absolute inset-y-[3px] left-[3px] w-[calc((100%-6px)/3)] rounded-full border border-line bg-surface shadow-[var(--shadow-card)] transition-transform duration-200 ease-[var(--ease-out-quart)]"

@@ -209,6 +209,41 @@ test("PATCH /api/auth/me sets a valid IANA timezone and rejects junk without rew
   assert.equal(still!.timezone, "America/New_York");
 });
 
+test("PATCH /api/auth/me sets locale zh-CN|en and rejects junk (globalization v1)", async () => {
+  const address = email();
+  const { token, user } = await registerWithInvite({ code: await invite(), email: address, password: PASSWORD });
+  const cookie = `${SESSION_COOKIE}=${token}`;
+  const ok = await app.inject({
+    method: "PATCH", url: "/api/auth/me", headers: { cookie, "content-type": "application/json" },
+    payload: JSON.stringify({ locale: "en" }),
+  });
+  assert.equal(ok.statusCode, 200, ok.body);
+  assert.equal((ok.json() as { user: { locale: string } }).user.locale, "en");
+  const [row] = await sql<{ locale: string }[]>`SELECT locale FROM users WHERE id = ${user.id}`;
+  assert.equal(row!.locale, "en");
+  for (const badLoc of ["junk", "en-US", "fr"]) {
+    const bad = await app.inject({
+      method: "PATCH", url: "/api/auth/me", headers: { cookie, "content-type": "application/json" },
+      payload: JSON.stringify({ locale: badLoc }),
+    });
+    assert.equal(bad.statusCode, 400, bad.body);
+    assert.equal(bad.json().code, "invalid_locale", badLoc);
+  }
+  const [still] = await sql<{ locale: string }[]>`SELECT locale FROM users WHERE id = ${user.id}`;
+  assert.equal(still!.locale, "en", "junk must not stick");
+  const zh = await app.inject({
+    method: "PATCH", url: "/api/auth/me", headers: { cookie, "content-type": "application/json" },
+    payload: JSON.stringify({ locale: "zh-CN", timezone: "Asia/Tokyo" }),
+  });
+  assert.equal(zh.statusCode, 200, zh.body);
+  assert.deepEqual([(zh.json() as { user: { locale: string; timezone: string } }).user.locale, (zh.json() as { user: { timezone: string } }).user.timezone], ["zh-CN", "Asia/Tokyo"]);
+  const empty = await app.inject({
+    method: "PATCH", url: "/api/auth/me", headers: { cookie, "content-type": "application/json" },
+    payload: JSON.stringify({}),
+  });
+  assert.equal(empty.statusCode, 400, empty.body);
+});
+
 test("register failures come back per reason, in Chinese, and leak nothing extra", async () => {
   const address = email();
   await registerWithInvite({ code: await invite(), email: address, password: PASSWORD });

@@ -12,6 +12,7 @@ import { RegisterRejected, registerWithInvite, registrationMode } from "@topka/b
 import { destroySession, resolveSession, SESSION_COOKIE } from "@topka/backend/accounts/session";
 import { verifyPassword } from "@topka/backend/accounts/password";
 import { isValidTimeZone } from "@topka/backend/projects/issue-rules";
+import { isValidLocale } from "@topka/backend/accounts/locale";
 import { sql } from "@topka/backend/db";
 import { sendProblem } from "../http/respond.ts";
 import { LIMITS } from "../http/rate-limit.ts";
@@ -161,21 +162,36 @@ export function registerAccounts(app: FastifyInstance) {
     return { user: userBody(user) };
   });
 
-  // The reader's own settings: their IANA timezone for the daily issue's local 08:00 fix. Changing it
-  // never rewrites an already-fixed issue row; the next fix follows the new zone.
+  // The reader's own settings: locale and/or IANA timezone for the daily issue's local 08:00 fix.
+  // Changing either never rewrites an already-fixed issue row; the next fix follows the new zone.
   app.patch("/api/auth/me", async (req, reply) => {
     reply.header("Cache-Control", "no-store");
     const user = await resolveSession(parseCookies(req.headers.cookie)[SESSION_COOKIE]);
     if (!user) return sendProblem(req, reply, { status: 401, code: "unauthorized", detail: "请先登录。" });
     const b = bodyOf(req);
     const hasTimezone = "timezone" in b;
-    if (!hasTimezone) return sendProblem(req, reply, { status: 400, code: "invalid_request", detail: "请提供 timezone。" });
-    const timezone = typeof b.timezone === "string" ? b.timezone : "";
-    if (!isValidTimeZone(timezone)) {
-      return sendProblem(req, reply, { status: 400, code: "invalid_timezone", detail: "时区名字不对，请用系统时区的名字（比如 Asia/Shanghai）。", title: "Invalid timezone" });
+    const hasLocale = "locale" in b;
+    if (!hasTimezone && !hasLocale) {
+      return sendProblem(req, reply, { status: 400, code: "invalid_request", detail: "请提供 locale 或 timezone。" });
+    }
+    let timezone = user.timezone;
+    let locale = user.locale;
+    if (hasLocale) {
+      const raw = typeof b.locale === "string" ? b.locale : "";
+      if (!isValidLocale(raw)) {
+        return sendProblem(req, reply, { status: 400, code: "invalid_locale", detail: "语言不对，只支持 zh-CN 或 en。", title: "Invalid locale" });
+      }
+      locale = raw;
+    }
+    if (hasTimezone) {
+      const raw = typeof b.timezone === "string" ? b.timezone : "";
+      if (!isValidTimeZone(raw)) {
+        return sendProblem(req, reply, { status: 400, code: "invalid_timezone", detail: "时区名字不对，请用系统时区的名字（比如 Asia/Shanghai）。", title: "Invalid timezone" });
+      }
+      timezone = raw;
     }
     const [fresh] = await sql<{ id: string; email: string; displayName: string | null; locale: string; timezone: string; role: string }[]>`
-      UPDATE users SET timezone = ${timezone} WHERE id = ${user.id}
+      UPDATE users SET locale = ${locale}, timezone = ${timezone} WHERE id = ${user.id}
       RETURNING id, email, display_name AS "displayName", locale, timezone, role`;
     return { user: userBody(fresh!) };
   });

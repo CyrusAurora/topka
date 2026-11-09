@@ -18,6 +18,8 @@ export const SITE = {
   tagline: "盯住你在意的事，每条都有出处",
   /** 界面语言（HTML lang、og:locale）。 */
   locale: "zh-CN",
+  /** Site content pool language (prompts write card copy in this unless a user's locale asks otherwise). */
+  contentLanguage: "zh",
   /** 默认域名，只在没设置 SITE_URL 时使用。 */
   defaultUrl: "http://localhost:3000",
   /**

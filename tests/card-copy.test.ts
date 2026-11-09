@@ -79,3 +79,14 @@ test("one call per project; an over-budget card is asked again with the reason; 
   const again = await writeCardCopy(items.slice(0, 2));
   assert.deepEqual([again.stored, again.calls, round], [0, 0, before], "stored cards are not written twice");
 });
+
+test("locale: mobile-card system includes outputLanguage token (zh default, en when user locale=en)", async () => {
+  // The stub captures only user messages; capture system via a second stub round is covered in
+  // issue-copy + locale.test. Here assert prompt text directly (ADR 0004 D).
+  const { promptText } = await import("@topka/backend/editorial/prompts");
+  const en = promptText("mobile-card", { project: "p", outputLanguage: "en" });
+  assert.ok(en.includes("outputLanguage is `en`") && en.includes("BYOK") && en.includes("VLA"), "en branch + terms");
+  assert.ok(!en.includes("{{outputLanguage}}"));
+  const zh = promptText("mobile-card", { project: "p", outputLanguage: "zh" });
+  assert.ok(zh.includes("outputLanguage is `en`"), "branch is conditional; zh path unchanged");
+});
