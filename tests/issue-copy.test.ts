@@ -36,14 +36,14 @@ for (const [k, c] of Object.entries(CARD) as Array<["A" | "B" | "C", Card]>) {
 }
 
 let answer: (user: string) => unknown = () => ({ cards: [] });
-const received: Array<{ user: string; rewrite: boolean }> = [];
+const received: Array<{ user: string; rewrite: boolean; system: string }> = [];
 const llm = await stub((_hit, req) => {
   const body = JSON.parse(req.body) as { messages: Array<{ role: string; content: string }> };
   const system = body.messages[0]!.content;
   const user = body.messages[body.messages.length - 1]!.content;
   const say = (o: unknown) => ({ id: "stub", model: "stub-model", choices: [{ message: { content: JSON.stringify(o) } }], usage: { prompt_tokens: 5, completion_tokens: 5 } });
   if (system.includes("「今日」的编辑")) {
-    received.push({ user, rewrite: user.startsWith("【重写】") });
+    received.push({ user, rewrite: user.startsWith("【重写】"), system });
     return say(answer(user));
   }
   return say({ action: "reply", projectRef: null, reply: "这里没有别的任务。", proposal: null });
@@ -196,4 +196,33 @@ test("a summary under budget is named with its minimum and fixed on the rewrite"
   assert.deepEqual([r.stored, r.overBudget, r.calls, r.skipped], [3, 0, 2, []]);
   assert.ok(rewrites().at(-1)!.includes(`id=${arts.A}｜字段 summary｜现在「太短。」｜宽度 3，至少 60`), "the minimum is named");
   assert.equal(withId(await copyRows(user), arts.A).summary, SUMMARY_A);
+});
+
+test("locale=en: system prompt includes outputLanguage=en and industry-terms rule (ADR 0004 D)", async () => {
+  const { user, date, arts } = await issueOf(false);
+  await sql`UPDATE users SET locale = 'en' WHERE id = ${user}`;
+  const EN_CARD = {
+    title_a: "SuperMimic expands control",
+    title_b: "1 GPU in 3 hours",
+    core_a: "Differential world model expands whole-body control,",
+    core_b: "individuals can train bipedal walking.",
+    summary: "SuperMimic scales humanoid whole-body control with a differentiable world model, cutting training from 128 GPUs to a single GPU in 3 hours with 91% success, beating the baseline; code is open-source but preview-only, lagging on long-horizon home tasks.",
+    tag: "whole-body control",
+    source: "Hugging Face",
+  };
+  answer = () => ({ cards: [
+    { ...EN_CARD, id: arts.A },
+    { ...EN_CARD, id: arts.B },
+    { ...EN_CARD, id: arts.C },
+  ] });
+  const r = await writeIssueCopy(user, date);
+  assert.equal(r.stored, 3);
+  const sys = received.at(-1)!.system;
+  assert.ok(sys.includes("en"), "outputLanguage token en in system prompt");
+  assert.ok(sys.includes("BYOK") && sys.includes("VLA"), "industry terms rule present");
+  // zh-CN path includes zh token too (new issue from default user)
+  const zh = await issueOf(false);
+  answer = () => ({ cards: writes(zh.arts) });
+  await writeIssueCopy(zh.user, zh.date);
+  assert.ok(received.at(-1)!.system.includes("zh"), "zh token in system prompt for zh-CN user");
 });

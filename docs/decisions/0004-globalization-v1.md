@@ -1,6 +1,8 @@
 # 0004 — Globalization v1: per-user timezone, reading language, source regions
 
-Status: **accepted** (implementing PR 1: per-user timezone; locale/regions follow in later PRs).
+Status: **accepted** (implementing PR 1: per-user timezone; PR 2 (this change): locale wiring + prompt {{outputLanguage}} + reader chrome; regions follow in PR 3).
+
+Column strategy (step 2): no new `*_en` columns; per-user card tables (`issue_card_copy`, `project_card_copy`) store generated text; historical Chinese copy rows stay; new generations follow locale. Do not rewrite old rows.
 
 Date: 2026-11-09 (Asia/Taipei).
 

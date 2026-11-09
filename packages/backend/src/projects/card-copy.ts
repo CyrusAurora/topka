@@ -10,6 +10,7 @@ import { modelFor } from "../editorial/models.ts";
 import { promptText, promptVersion } from "../editorial/prompts.ts";
 import { chatJson, ModelOutputError } from "../providers/llm.ts";
 import { BudgetExceededError, completeReceipt } from "../providers/receipts.ts";
+import { outputLanguageFor } from "../accounts/locale.ts";
 
 export const CARD_PROMPT_VERSION = promptVersion("mobile-card");
 export const CARD_LIMITS = { title: 20, lead: 75, why: 40 } as const;
@@ -60,6 +61,7 @@ async function bodies(ids: string[], db: Db) {
 /**
  * Writes copy for the cards that have none yet under the current prompt. Returns how many were stored;
  * a spent budget stops quietly (the cards keep their regular text until the next try).
+ * outputLanguage is resolved from users.locale inside (ADR 0004 D); no *_en columns.
  */
 export async function writeCardCopy(items: Material[], opts: { db?: Db; subject?: string } = {}): Promise<{ stored: number; calls: number; skipped: string[] }> {
   const db = opts.db ?? sql;
@@ -76,11 +78,15 @@ export async function writeCardCopy(items: Material[], opts: { db?: Db; subject?
   let calls = 0;
   const skipped: string[] = [];
   for (const [projectId, list] of byProject) {
-    const [p] = await db<{ target: string; purpose: string; focus: string | null; exclusions: string | null }[]>`
-      SELECT target, purpose, focus, exclusions FROM tracking_projects WHERE id = ${projectId}`;
+    const [p] = await db<{ target: string; purpose: string; focus: string | null; exclusions: string | null; owner_id: string }[]>`
+      SELECT target, purpose, focus, exclusions, owner_id FROM tracking_projects WHERE id = ${projectId}`;
     if (!p) continue;
+    // Locale → outputLanguage (zh|en); only non-site language writes when copy missing (ADR 0004 D).
+    const [u] = await db<{ locale: string | null }[]>`SELECT locale FROM users WHERE id = ${p.owner_id}`;
+    const outputLanguage = outputLanguageFor(u?.locale);
     const system = promptText("mobile-card", {
       project: `对象：${p.target}\n目标：${p.purpose}\n关注重点：${p.focus || "无"}\n排除：${p.exclusions || "无"}`,
+      outputLanguage,
     });
     const body = await bodies(list.map((i) => i.id), db);
     let pending = list;

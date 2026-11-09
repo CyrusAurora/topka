@@ -25,6 +25,15 @@ export const ISSUE_MIN_SCORE = SELECTION.issueFloor;
 /** How far back a short day is filled from. */
 export const ISSUE_FILL_HOURS = 72;
 export const AI_NOTICE = "AI 生成摘要，以原文为准";
+export const AI_NOTICE_EN = "AI-generated summary; refer to the original";
+/** Notice in the issue feed for the reader's locale (en → English, else Chinese). */
+export function aiNoticeFor(locale: unknown): string {
+  return locale === "en" || locale === "en-US" ? AI_NOTICE_EN : AI_NOTICE;
+}
+export async function userLocale(userId: string, db: Db = sql): Promise<string> {
+  const [row] = await db<{ locale: string | null }[]>`SELECT locale FROM users WHERE id = ${userId}`;
+  return row?.locale && (row.locale === "en" || row.locale === "zh-CN") ? row.locale : "zh-CN";
+}
 
 export interface IssueItem {
   id: string;
@@ -318,7 +327,7 @@ export async function buildUserIssue(userId: string, opts: { now?: Date; db?: Db
     issue,
     opened,
     archive: await listArchive(userId, db, { exclude: issue?.date ?? today }),
-    notice: AI_NOTICE,
+    notice: aiNoticeFor(await userLocale(userId, db)),
   };
 }
 

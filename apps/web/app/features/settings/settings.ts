@@ -8,6 +8,8 @@ import { createElement, useCallback, useEffect, useState, type FC, type ReactEle
 export interface SettingsAccount {
   email: string;
   displayName: string | null;
+  locale?: string;
+  timezone?: string;
 }
 
 export interface SettingsKey {
@@ -59,6 +61,11 @@ export interface SettingsView {
 export const SETTINGS_COPY = {
   title: "设置",
   accountHeading: "账号",
+  localeLabel: "界面语言",
+  localeZh: "简体中文",
+  localeEn: "English",
+  localeSaved: "已保存。",
+  localeFailed: "保存没有成功。",
   logout: "退出登录",
   logoutDone: "已退出登录。",
   deleteHeading: "注销账号",
@@ -129,6 +136,7 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
   const [keyModel, setKeyModel] = useState("");
   const [feed, setFeed] = useState<{ enabled: boolean; url: string | null; state: "idle" | "sending" | "err"; copied: boolean }>({ enabled: false, url: null, state: "idle", copied: false });
   const [keyState, setKeyState] = useState<{ kind: "idle" | "sending" | "ok" | "err"; message?: string }>({ kind: "idle" });
+  const [localeState, setLocaleState] = useState<{ kind: "idle" | "sending" | "ok" | "err" }>({ kind: "idle" });
 
   const load = useCallback(async () => {
     try {
@@ -141,8 +149,8 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
         setView({ phase: "failed", account: null, keys: [], keyStatus: { configured: false }, projects: [] });
         return;
       }
-      const meBody = (await meRes.json()) as { user?: { email?: string; displayName?: string | null } };
-      const account: SettingsAccount = { email: meBody.user?.email ?? "", displayName: meBody.user?.displayName ?? null };
+      const meBody = (await meRes.json()) as { user?: { email?: string; displayName?: string | null; locale?: string; timezone?: string } };
+      const account: SettingsAccount = { email: meBody.user?.email ?? "", displayName: meBody.user?.displayName ?? null, locale: meBody.user?.locale ?? "zh-CN", timezone: meBody.user?.timezone ?? "Asia/Shanghai" };
 
       let keys: SettingsKey[] = [];
       let keyStatus: SettingsKeyStatus = { configured: false, model: null };
@@ -297,6 +305,26 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
     }
   };
 
+  const setLocale = async (locale: string) => {
+    if (localeState.kind === "sending") return;
+    setLocaleState({ kind: "sending" });
+    try {
+      const res = await doFetch("/api/auth/me", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ locale }),
+      });
+      if (res.ok) {
+        setLocaleState({ kind: "ok" });
+        await load();
+        return;
+      }
+      setLocaleState({ kind: "err" });
+    } catch {
+      setLocaleState({ kind: "err" });
+    }
+  };
+
   let body: ReactElement;
   if (v.phase === "loading") {
     body = createElement("p", { role: "status", className: "mag-note" }, "正在读设置……");
@@ -344,6 +372,31 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
           createElement("span", null, "邮箱"),
           createElement("span", { className: "v" }, v.account?.email ?? ""),
         ),
+        createElement("div", { className: "settings-row" },
+          createElement("span", null, SETTINGS_COPY.localeLabel),
+          createElement("span", {
+            className: "v",
+            "data-testid": "locale-current",
+          }, v.account?.locale === "en" ? SETTINGS_COPY.localeEn : SETTINGS_COPY.localeZh),
+        ),
+        createElement("div", { className: "settings-actions" },
+          createElement("button", {
+            type: "button",
+            "data-testid": "locale-zh",
+            onClick: () => void setLocale("zh-CN"),
+            disabled: localeState.kind === "sending",
+            className: v.account?.locale !== "en" ? "primary" : "",
+          }, SETTINGS_COPY.localeZh),
+          createElement("button", {
+            type: "button",
+            "data-testid": "locale-en",
+            onClick: () => void setLocale("en"),
+            disabled: localeState.kind === "sending",
+            className: v.account?.locale === "en" ? "primary" : "",
+          }, SETTINGS_COPY.localeEn),
+        ),
+        localeState.kind === "ok" ? createElement("p", { role: "status", className: "settings-msg ok" }, SETTINGS_COPY.localeSaved) : null,
+        localeState.kind === "err" ? createElement("p", { role: "alert", className: "settings-msg err" }, SETTINGS_COPY.localeFailed) : null,
         createElement("div", { className: "settings-row" },
           createElement("span", null, SETTINGS_COPY.instanceKey),
           createElement("span", { className: `v ${chatModelLine(v.keyStatus.model).tone === "warn" ? "warn" : ""}`, "data-testid": "chat-model-status" }, chatModelLine(v.keyStatus.model).text),

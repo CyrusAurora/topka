@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Link, useLoaderData } from "react-router";
 import type { Route } from "./+types/register";
 import { pageMeta } from "../lib/seo";
+import { chromeStrings } from "../lib/i18n";
 import { Wordmark } from "../components/Logo";
 import { buttonClass } from "../components/ui/Controls";
 import { apiGet } from "../lib/api.server";
@@ -26,6 +27,7 @@ const MIN_PASSWORD_LENGTH = 10;
 const OFFLINE = "没网，稍后再试。";
 
 export default function RegisterPage() {
+  const strings = chromeStrings("zh-CN");
   const { inviteRequired } = useLoaderData<typeof loader>();
   const [code, setCode] = useState("");
   const [website, setWebsite] = useState("");
@@ -99,7 +101,7 @@ export default function RegisterPage() {
             </p>
           )}
           <button type="submit" disabled={!canSend} className={`${buttonClass("primary", "lg")} mt-5 w-full`}>
-            {state.kind === "sending" ? "正在注册…" : "创建账号"}
+            {state.kind === "sending" ? strings.registering : strings.registerButton}
           </button>
           <p className="mt-4 text-center text-[12.5px] text-ink-3">
             已经有账号？

@@ -14,6 +14,7 @@ import { chatJson, ModelOutputError } from "../providers/llm.ts";
 import { BudgetExceededError, completeReceipt } from "../providers/receipts.ts";
 import { BUDGET, budgetProblems, type BudgetProblem, type CopyField, type CopyFields } from "./copy-budget.ts";
 import { issueItemsWithoutCopy } from "./issues.ts";
+import { outputLanguageFor } from "../accounts/locale.ts";
 
 export const ISSUE_COPY_PROMPT_VERSION = promptVersion("issue-card");
 export const MAX_REWRITES = 2;
@@ -127,6 +128,10 @@ export async function writeIssueCopy(userId: string, date: string, opts: { db?: 
   const [head] = await db<{ hero: boolean }[]>`SELECT hero FROM user_issues WHERE user_id = ${userId} AND issue_date = ${date}`;
   const hero = head?.hero ?? false;
   const heroFor = (i: Item) => hero && i.position === 1;
+  // Locale drives output language (ADR 0004 D): en user → en card copy, zh-CN → zh.
+  // No *_en columns; per-user tables store generated text; historical rows stay.
+  const [u] = await db<{ locale: string | null }[]>`SELECT locale FROM users WHERE id = ${userId}`;
+  const outputLanguage = outputLanguageFor(u?.locale);
 
   let stored = 0;
   let overBudget = 0;
@@ -160,6 +165,8 @@ export async function writeIssueCopy(userId: string, date: string, opts: { db?: 
     if (!p) return false;
     const system = promptText("issue-card", {
       project: `对象：${p.target}\n目标：${p.purpose}\n关注重点：${p.focus || "无"}\n排除：${p.exclusions || "无"}`,
+      // outputLanguage token: zh | en (see accounts/locale.ts)
+      outputLanguage,
     });
     const body = await bodies(list.map((i) => i.articleId), db);
     const current = new Map<string, { fields: CopyFields; receiptId: number | null }>();

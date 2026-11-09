@@ -19,9 +19,10 @@ test("chatModelLine follows the real availability", () => {
   assert.equal(chatModelLine(st({ byokAvailable: false })).text, SETTINGS_COPY.modelNone);
 });
 
-async function renderWith(status: unknown, keysBody: unknown = { keys: [], encryptionConfigured: true }) {
-  const stub = stubFetch((url) => {
-    if (url === "/api/auth/me") return { body: { user: { email: "a@example.com" } } };
+async function renderWith(status: unknown, keysBody: unknown = { keys: [], encryptionConfigured: true }, meLocale = "zh-CN") {
+  const stub = stubFetch((url, init) => {
+    if (url === "/api/auth/me" && init?.method === "PATCH") return { body: { user: { email: "a@example.com", locale: meLocale } } };
+    if (url === "/api/auth/me") return { body: { user: { email: "a@example.com", locale: meLocale } } };
     if (url === "/api/me/keys") return { body: keysBody };
     if (url === "/api/me/model-status") return status === 500 ? { status: 500, body: {} } : { body: status };
     if (url === "/api/projects") return { body: { projects: [] } };
@@ -30,11 +31,11 @@ async function renderWith(status: unknown, keysBody: unknown = { keys: [], encry
   const page = await mount();
   await page.render(createElement(SettingsPage, { fetchImpl: stub.fetch }));
   await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
-  return page;
+  return { page, stub };
 }
 
 test("settings shows no usable model even though keys can be stored", async () => {
-  const page = await renderWith(st({}));
+  const { page } = await renderWith(st({}));
   const line = page.container.querySelector("[data-testid=chat-model-status]");
   assert.equal(line?.textContent, SETTINGS_COPY.modelNoneByok);
   assert.ok(page.container.querySelector("#model-key"), "the 设置 anchor the chat links to");
@@ -42,7 +43,7 @@ test("settings shows no usable model even though keys can be stored", async () =
 });
 
 test("settings flags a stored key the chat cannot use (no base URL)", async () => {
-  const page = await renderWith(st({ chat: "instance", reason: null, userKey: { stored: true, usable: false, problem: "missing-base-url", last4: "wxyz" } }),
+  const { page } = await renderWith(st({ chat: "instance", reason: null, userKey: { stored: true, usable: false, problem: "missing-base-url", last4: "wxyz" } }),
     { keys: [{ provider: "openai", baseUrl: null, model: null, last4: "wxyz" }], encryptionConfigured: true });
   assert.ok(includes(page.container, SETTINGS_COPY.keyMissingBase));
   assert.equal(page.container.querySelector("[data-testid=chat-model-status]")?.textContent, SETTINGS_COPY.modelInstance);
@@ -50,8 +51,19 @@ test("settings flags a stored key the chat cannot use (no base URL)", async () =
 });
 
 test("an unreadable status says so instead of claiming availability", async () => {
-  const page = await renderWith(500);
+  const { page } = await renderWith(500);
   assert.equal(page.container.querySelector("[data-testid=chat-model-status]")?.textContent, SETTINGS_COPY.modelUnknown);
+  await page.teardown();
+});
+
+test("settings locale selector shows current value and PATCHes", async () => {
+  const { page, stub } = await renderWith(st({}), undefined, "zh-CN");
+  assert.equal(page.container.querySelector("[data-testid=locale-current]")?.textContent, SETTINGS_COPY.localeZh);
+  const { buttonByText, click } = await import("./harness.ts");
+  await click(buttonByText(page.container, SETTINGS_COPY.localeEn));
+  const patch = stub.calls.find((c) => c.url === "/api/auth/me" && c.init?.method === "PATCH");
+  assert.ok(patch, "locale PATCH sent");
+  assert.equal((patch!.init?.body as string), JSON.stringify({ locale: "en" }));
   await page.teardown();
 });
 
