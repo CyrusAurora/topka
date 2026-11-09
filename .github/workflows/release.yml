@@ -1,0 +1,220 @@
+# A release, from a pushed tag vX.Y.Z (docs/release.md): checks the tag matches package.json, builds
+# the CycloneDX and SPDX SBOMs and a source archive, builds the container image for linux/amd64 and
+# linux/arm64 and pushes it to ghcr.io, writes SHA256SUMS over every attachment (and the image
+# digest), signs and attests what it built, and publishes the GitHub release with the CHANGELOG
+# section as its notes.
+#
+# Signing and provenance are keyless, through GitHub's OIDC token (no secret, no key to keep):
+# - actions/attest writes a SLSA build provenance attestation for every release file and for the
+#   image digest, and a CycloneDX SBOM attestation for the image and the source archive; the image's
+#   attestations are also pushed to ghcr.io next to it (verify: gh attestation verify, docs/release.md).
+# - cosign signs the image digest with a Sigstore certificate naming this workflow and the tag
+#   (verify: cosign verify --certificate-identity ...).
+#
+# A pull request that touches this file or the Dockerfile runs the same steps without publishing:
+# the image goes to a throwaway registry on the runner, and cosign signs and verifies it there with a
+# key made for the run and no transparency log (nothing of a private repository reaches Sigstore's
+# public logs). The attestations cannot be rehearsed: GitHub issues them only for a public repository
+# (or Enterprise Cloud), so they run for real only on a tag pushed to the public repository.
+# The image and the release are published only from a public repository.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths: [".github/workflows/release.yml", "Dockerfile", ".dockerignore", "package-lock.json"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write # create the GitHub release
+      packages: write # push the image, its signature and its attestations to ghcr.io
+      id-token: write # the OIDC token Sigstore certifies (cosign and actions/attest); nothing else uses it
+      attestations: write # store the attestations on the repository
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Version, image name, publish or not
+        id: meta
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          publish=false
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            [ "$GITHUB_REF_NAME" = "v$version" ] || { echo "::error::tag $GITHUB_REF_NAME does not match package.json version $version"; exit 1; }
+            [ "$(gh api "repos/$GITHUB_REPOSITORY" --jq .private)" = false ] && publish=true
+          fi
+          # A dry run pushes to the throwaway registry started below, never to ghcr.io.
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          [ "$publish" = true ] || image="localhost:5000/topka"
+          {
+            echo "version=$version"
+            echo "image=$image"
+            echo "publish=$publish"
+          } >> "$GITHUB_OUTPUT"
+          echo "version $version, publish=$publish"
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: SBOMs and source archive
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/dist"
+          npm sbom --sbom-format=cyclonedx > "$RUNNER_TEMP/dist/topka-$VERSION.cyclonedx.json"
+          npm sbom --sbom-format=spdx > "$RUNNER_TEMP/dist/topka-$VERSION.spdx.json"
+          node -e 'const s=require(process.argv[1]); if (!s.components?.length) throw new Error("empty SBOM"); console.log(s.bomFormat, s.components.length, "components")' "$RUNNER_TEMP/dist/topka-$VERSION.cyclonedx.json"
+          git archive --format=tar.gz --prefix="topka-$VERSION/" -o "$RUNNER_TEMP/dist/topka-$VERSION.tar.gz" HEAD
+
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
+      - name: Throwaway registry (dry run)
+        if: steps.meta.outputs.publish != 'true'
+        run: docker run -d --name dry-run-registry -p 127.0.0.1:5000:5000 registry:3@sha256:38907510915c3f1604c7e83d6ab602ab3020d092f73bdaed8696773693ff768c
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          # host network, so a dry run's builder reaches localhost:5000 (plain HTTP, only that address)
+          driver-opts: network=host
+          buildkitd-config-inline: |
+            [registry."localhost:5000"]
+              http = true
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        if: steps.meta.outputs.publish == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Image (linux/amd64 + linux/arm64)
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true # to ghcr.io when publishing, else to the throwaway registry
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=MIT
+
+      - name: Checksums
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          PUBLISH: ${{ steps.meta.outputs.publish }}
+        run: |
+          cd "$RUNNER_TEMP/dist"
+          [ -n "$DIGEST" ] || { echo "::error::the build reported no image digest"; exit 1; }
+          if [ "$PUBLISH" = true ]; then echo "$IMAGE:$VERSION@$DIGEST" > "topka-$VERSION.image.txt"; fi
+          sha256sum -- * > SHA256SUMS
+          cat SHA256SUMS
+          sha256sum -c SHA256SUMS
+
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+      - name: Sign the image (keyless; a dry run uses a run-local key)
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          PUBLISH: ${{ steps.meta.outputs.publish }}
+          IDENTITY: ${{ github.server_url }}/${{ github.workflow_ref }}
+        run: |
+          ref="$IMAGE@$DIGEST"
+          if [ "$PUBLISH" = true ]; then
+            cosign sign --yes "$ref"
+            cosign verify "$ref" --certificate-identity "$IDENTITY" --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
+          else
+            cd "$RUNNER_TEMP"
+            COSIGN_PASSWORD= cosign generate-key-pair
+            cosign signing-config create --out offline-signing.json # no Fulcio, no Rekor: nothing leaves the runner
+            COSIGN_PASSWORD= cosign sign --yes --key cosign.key --signing-config offline-signing.json "$ref"
+            cosign verify --key cosign.pub --insecure-ignore-tlog=true "$ref" > /dev/null
+            # The check must be able to fail: a key that did not sign is refused.
+            mkdir other && (cd other && COSIGN_PASSWORD= cosign generate-key-pair > /dev/null)
+            if cosign verify --key other/cosign.pub --insecure-ignore-tlog=true "$ref" > /dev/null 2>&1; then echo "::error::a foreign key verified"; exit 1; fi
+            rm -rf cosign.key cosign.pub other
+          fi
+          echo "signed and verified $ref"
+
+      # Provenance and SBOM attestations: only for a published release (see the header).
+      - name: Provenance of the release files
+        id: attest-files
+        if: steps.meta.outputs.publish == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: ${{ runner.temp }}/dist/SHA256SUMS
+      - name: Provenance of the image
+        if: steps.meta.outputs.publish == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ steps.meta.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+          create-storage-record: false # linked-artifact records exist only for organization repositories
+      - name: SBOM of the image
+        if: steps.meta.outputs.publish == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ steps.meta.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          sbom-path: ${{ runner.temp }}/dist/topka-${{ steps.meta.outputs.version }}.cyclonedx.json
+          push-to-registry: true
+          create-storage-record: false # linked-artifact records exist only for organization repositories
+      - name: SBOM of the source archive
+        if: steps.meta.outputs.publish == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ${{ runner.temp }}/dist/topka-${{ steps.meta.outputs.version }}.tar.gz
+          sbom-path: ${{ runner.temp }}/dist/topka-${{ steps.meta.outputs.version }}.cyclonedx.json
+      - name: Verify the attestations as a user would
+        if: steps.meta.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          BUNDLE: ${{ steps.attest-files.outputs.bundle-path }}
+        run: |
+          cd "$RUNNER_TEMP/dist"
+          for f in topka-"$VERSION".*; do gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" > /dev/null; echo "verified $f"; done
+          gh attestation verify "oci://$IMAGE@$DIGEST" --repo "$GITHUB_REPOSITORY" > /dev/null
+          gh attestation verify "oci://$IMAGE@$DIGEST" --repo "$GITHUB_REPOSITORY" --predicate-type https://cyclonedx.org/bom > /dev/null
+          echo "verified $IMAGE@$DIGEST (provenance and SBOM)"
+          # The provenance bundle rides along on the release, for verifying offline (gh attestation verify --bundle).
+          cp "$BUNDLE" "topka-$VERSION.provenance.sigstore.json"
+
+      - name: Release notes from CHANGELOG.md
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          awk -v h="## [$VERSION]" 'index($0, h) == 1 {f=1; next} f && /^## /{exit} f' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          [ -s "$RUNNER_TEMP/notes.md" ] || { echo "::error::CHANGELOG.md has no '## [$VERSION]' section"; exit 1; }
+          wc -l "$RUNNER_TEMP/notes.md"
+
+      - name: Publish the GitHub release
+        if: steps.meta.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --title "Topka $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "$RUNNER_TEMP"/dist/*

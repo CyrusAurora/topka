@@ -1,0 +1,30 @@
+This project is derived from the open-source AIHOT framework, released under the MIT License
+(see LICENSE). We thank the upstream project and its copyright holder.
+
+- Upstream: AIHOT — https://github.com/KKKKhazix/AIHOT (MIT)
+- Upstream snapshot this fork is based on: 2026-09-28
+- Upstream copyright (code): Copyright (c) 2026 数字生命卡兹克
+- Changes by The Topka Authors are also licensed under the MIT License (LICENSE).
+
+The name "AIHOT" and the AIHOT logo are NOT licensed under the MIT License and are not used as
+this project's branding. There is no affiliation or endorsement between this project and the
+upstream author. Please use your own site name and logo for your deployment.
+
+## Third-party material bundled in this repository
+
+- `assets/og-fonts/`: Noto Sans SC, subset; SIL Open Font License 1.1 (see `assets/og-fonts/LICENSE`).
+- `assets/model-providers/`: model and provider marks, mostly from Lobe Icons (MIT). The marks remain
+  trademarks of their respective owners and are used only for identification
+  (see `assets/model-providers/NOTICE.md`).
+- `assets/leaderboard-sources/`: the published marks of each evaluation operator, used only for
+  identification (see `assets/leaderboard-sources/NOTICE.md`).
+- The demo sources in `industry/sources.json` point at public feeds published by their publishers.
+  That content belongs to them; by default the site shows only a summary and a link to the original.
+
+Model-provider and evaluation-operator names mentioned throughout this repository are trademarks
+or marks of their respective owners, used for identification only, and do not imply affiliation
+with or endorsement by them.
+
+## npm dependencies
+
+Project dependencies (see `package.json` and `package-lock.json`) ship under their own licenses.

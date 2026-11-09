@@ -1,0 +1,145 @@
+# Checks on GitHub-hosted runners: install, typecheck, web build, the web tests, the backend tests on a
+# fresh PostgreSQL with the 85% line-coverage gate, the built site's smoke check, browser E2E, the
+# publication gate, and the exported (public) tree brought up with docker compose as its README says.
+# Only GitHub-owned actions, pinned to a full commit SHA.
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: topka_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      DATABASE_URL: postgres://postgres:ci@127.0.0.1:5432/topka_ci
+      SITE_URL: http://127.0.0.1:3000
+      API_BASE_URL: http://127.0.0.1:3001
+      SESSION_SECRET: ci-session-secret-0123456789abcdef
+      IMG_PROXY_SIGN_SECRET: ci-img-secret-0123456789abcdef
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      # docs/release.md: every relative Markdown link resolves, and the SBOM builds (it fails while any
+      # workspace package lacks a version).
+      - name: Documentation links
+        run: npm run docs:links
+      - name: SBOM builds
+        run: npm sbom --sbom-format=cyclonedx > /dev/null
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build web
+        run: npm run build -w @topka/web
+      - name: Web tests
+        run: node --test apps/web/tests/*.test.ts
+
+      - name: Migrate and seed topics
+        run: |
+          node scripts/migrate.ts
+          node scripts/seed.ts --topics-only
+      - name: Smoke check of the built site
+        # The site itself runs with collection and model calls off (the tests below use local stubs).
+        env:
+          COLLECT_ENABLED: "false"
+          MODEL_CALLS_ENABLED: "false"
+        run: |
+          node apps/api/src/main.ts > "$RUNNER_TEMP/api.log" 2>&1 &
+          (cd apps/web && NODE_ENV=production exec node server.ts) > "$RUNNER_TEMP/web.log" 2>&1 &
+          for i in $(seq 1 60); do curl -fsS -o /dev/null http://127.0.0.1:3000/api/health 2>/dev/null && break; sleep 1; done
+          node scripts/smoke.ts --base http://127.0.0.1:3000
+      # After the smoke check, which reads an empty database: these write their own rows.
+      - name: Backend tests (85% line coverage of packages/backend/src)
+        run: npm run test:coverage
+      - name: Browser E2E (playwright-core, fake model, Chrome on the runner)
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm run e2e
+      - name: Install gitleaks
+        uses: ./.github/actions/install-gitleaks
+      # The publication gate: export + scan, the exported tree on its own, secret scan, private overlay.
+      - name: OSS gate
+        env:
+          OSS_DEST: ${{ runner.temp }}/topka-export
+        run: bash scripts/oss-check.sh
+      - name: Server logs
+        if: failure()
+        run: tail -n 60 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log" 2>/dev/null || true
+
+  # The public tree, not this repo: export it (fresh history, scanned), then follow its README quickstart.
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install gitleaks
+        uses: ./.github/actions/install-gitleaks
+      - name: Export the public tree
+        run: bash scripts/oss-export.sh "$RUNNER_TEMP/topka"
+      # Exactly the README quickstart a stranger runs: no .env edits, no extra compose files.
+      # init-env leaves COLLECT_ENABLED / MODEL_CALLS_ENABLED false, so CI makes no outside calls.
+      - name: Configure a throwaway site (README quickstart, Node in a container)
+        working-directory: ${{ runner.temp }}/topka
+        run: |
+          test ! -e docker-compose.override.yml   # the maintainer override must not ship
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim \
+            node scripts/init-env.ts
+          grep -Eq '^KEY_ENCRYPTION_SECRET=[0-9a-f]{64}$' .env
+      - name: Build and start with docker compose
+        working-directory: ${{ runner.temp }}/topka
+        run: docker compose up -d --build
+      # Sources after setup, counted by origin so a new import batch does not break an unrelated total:
+      # imported_from IS NULL = 18 demo sources of the seed script + 37 curated-pack sources of migration 0040;
+      # imported_from = 'batch-1' = 336 sources of migration 0041 (69 RSS + 257 directory + 11 Weibo, one duplicate feed skipped).
+      - name: Smoke check
+        working-directory: ${{ runner.temp }}/topka
+        run: |
+          for i in $(seq 1 90); do curl -fsS -o /dev/null http://127.0.0.1:3000/api/health 2>/dev/null && break; sleep 2; done
+          docker compose ps
+          # The database stays private: the default compose publishes no port for it.
+          ! docker compose ps db --format '{{.Ports}}' | grep -q -- '->'
+          # The documented smoke command (docs/self-hosting.md → Monitoring), verbatim.
+          docker compose exec -T web node scripts/smoke.ts --base http://localhost:3000
+          # BYOK works straight from init-env: a new reader stores a key and gets back only its last 4.
+          curl -fsS -c jar -H 'content-type: application/json' -d '{"email":"ci@example.com","password":"ci-password-1"}' http://127.0.0.1:3000/api/auth/register >/dev/null
+          curl -fsS -b jar -X PUT -H 'content-type: application/json' \
+            -d '{"baseUrl":"https://api.deepseek.com/v1","model":"deepseek-chat","apiKey":"sk-ci-not-a-real-key-1234"}' \
+            http://127.0.0.1:3000/api/me/keys/llm | grep -q '"1234"'
+          docker compose exec -T db psql -U topka -d topka -Atc "select count(*) from sources where imported_from is null" | grep -qx 55
+          docker compose exec -T db psql -U topka -d topka -Atc "select count(*) from sources where imported_from = 'batch-1'" | grep -qx 336
+      - name: Logs
+        if: failure()
+        working-directory: ${{ runner.temp }}/topka
+        run: docker compose logs --tail 80
+      - name: Stop
+        if: always()
+        working-directory: ${{ runner.temp }}/topka
+        run: docker compose down -v

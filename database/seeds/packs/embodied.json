@@ -1,0 +1,421 @@
+{
+  "id": "embodied",
+  "packId": "embodied-ai",
+  "label": "具身智能与机器人",
+  "note": "具身智能方向的示范信源（只含公开地址和过滤规则）。batch-1 里已有的 3 个按 id/名字合并。首批 15 个 + 3 个媒体信源（补周末空档）。",
+  "sources": [
+    {
+      "id": "github-genesis",
+      "name": "Genesis Releases",
+      "publisher": "Genesis",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/Genesis-Embodied-AI/Genesis/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "embodied",
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss:e14c5ff7991a6173cbfbac5135a322ff",
+      "name": "Google DeepMind Blog",
+      "publisher": "Google DeepMind",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 10
+        },
+        "feedUrl": "https://deepmind.google/blog/rss.xml",
+        "includeIfMatches": {
+          "title": "robot|embodied|humanoid|lerobot|\\bVLAs?\\b|vision-language-action|gemini robotics"
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 30,
+      "tags": [
+        "embodied"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss:c5128acd9dbcbd3848d8a80a11adbacc",
+      "name": "Hugging Face Blog",
+      "publisher": "Hugging Face",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 10
+        },
+        "feedUrl": "https://huggingface.co/blog/feed.xml",
+        "includeIfMatches": {
+          "title": "robot|embodied|humanoid|lerobot|\\bVLAs?\\b|vision-language-action|smolvla|reachy|physical ai|gr00t|\\bcosmos\\b|\\bisaac\\b"
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 30,
+      "tags": [
+        "embodied"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss:4f99ce5c031ad791127b53a036992a91",
+      "name": "IEEE Spectrum Robotics",
+      "publisher": "IEEE",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 15
+        },
+        "feedUrl": "https://spectrum.ieee.org/feeds/topic/robotics.rss"
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 30,
+      "tags": [
+        "embodied"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "github-isaac-gr00t",
+      "name": "Isaac GR00T Releases",
+      "publisher": "NVIDIA",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/NVIDIA/Isaac-GR00T/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "embodied",
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "github-isaac-lab",
+      "name": "Isaac Lab Releases",
+      "publisher": "NVIDIA",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/isaac-sim/IsaacLab/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "embodied",
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "github-lerobot",
+      "name": "LeRobot Releases",
+      "publisher": "Hugging Face",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/huggingface/lerobot/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "embodied",
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "github-mujoco",
+      "name": "MuJoCo Releases",
+      "publisher": "Google DeepMind",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/google-deepmind/mujoco/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "embodied",
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "nvidia-blog-robotics",
+      "name": "NVIDIA Blog – Robotics",
+      "publisher": "NVIDIA",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://blogs.nvidia.com/blog/category/robotics/feed/"
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "embodied"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "nvidia-tech-blog-robotics",
+      "name": "NVIDIA Technical Blog – Robotics",
+      "publisher": "NVIDIA",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 15
+        },
+        "feedUrl": "https://developer.nvidia.com/blog/category/robotics/feed/"
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "embodied"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "tri-blog",
+      "name": "Toyota Research Institute",
+      "publisher": "Toyota Research Institute",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.tri.global/rss.xml",
+        "includeIfMatches": {
+          "text": "robot|behavior|manipulation|embodied|humanoid|diffusion polic"
+        }
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "embodied"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "arxiv-cs-ro",
+      "name": "arXiv cs.RO（VLA/人形）",
+      "publisher": "arXiv",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://rss.arxiv.org/rss/cs.RO",
+        "dailyCap": 12,
+        "summaryIsBody": true,
+        "includeIfMatches": {
+          "text": "Announce Type:\\s*new\\b",
+          "title": "vision-language-action|\\bVLAs?\\b|humanoid|robot(ic)? foundation model"
+        }
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "embodied",
+        "paper"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "github-openpi",
+      "name": "openpi（Physical Intelligence）commits",
+      "publisher": "Physical Intelligence",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/Physical-Intelligence/openpi/commits/main.atom",
+        "dailyCap": 5,
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "embodied",
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "github-xr-teleoperate",
+      "name": "宇树 Unitree xr_teleoperate commits",
+      "publisher": "宇树科技",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/unitreerobotics/xr_teleoperate/commits/main.atom",
+        "dailyCap": 5,
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "embodied",
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "github-genie-sim",
+      "name": "智元 AgiBot Genie Sim commits",
+      "publisher": "智元机器人",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/AgibotTech/genie_sim/commits/main.atom",
+        "dailyCap": 5,
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "embodied",
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "therobotreport",
+      "name": "The Robot Report（具身）",
+      "publisher": "The Robot Report",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://www.therobotreport.com/feed/",
+        "includeIfMatches": {
+          "title": "humanoid|manipulat|dexter|foundation model|\\bVLAs?\\b|vision-language-action|vision-force-action|world (action )?model|embodied|physical ai|robot learning|gr00t|figure ai|unitree|\\bagility\\b|\\bdigit\\b|\\b1x\\b|optimus|boston dynamics|teleoperat|sim-?to-?real|sim2real|physical intelligence|skild|apptronik|general-purpose robot|\\bcosmos\\b|tactile|robot(ic)? hand"
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "embodied",
+        "media"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "techcrunch-robotics",
+      "name": "TechCrunch Robotics",
+      "publisher": "TechCrunch",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://techcrunch.com/category/robotics/feed/"
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "embodied",
+        "media"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss:b1cb6e48a245d864e9b4daa06167dfc9",
+      "name": "The Decoder（机器人）",
+      "publisher": "The Decoder",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://the-decoder.com/feed/",
+        "includeIfMatches": {
+          "title": "robot|humanoid|embodied|\\bVLAs?\\b|vision-language-action|physical ai|optimus|unitree|gr00t"
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "embodied",
+        "media"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    }
+  ]
+}

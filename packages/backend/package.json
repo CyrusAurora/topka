@@ -1,0 +1,29 @@
+{
+  "name": "@topka/backend",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@topka/contracts": "*",
+    "@topka/industry": "*",
+    "@mozilla/readability": "0.6.0",
+    "@node-rs/argon2": "2.2.2",
+    "@paralleldrive/cuid2": "3.3.0",
+    "cheerio": "1.2.0",
+    "fast-xml-parser": "5.11.2",
+    "highs": "1.15.4",
+    "hyparquet": "1.32.0",
+    "linkedom": "0.18.14",
+    "pg-boss": "12.38.0",
+    "postgres": "3.4.9",
+    "sanitize-html": "2.18.1",
+    "sharp": "0.35.5",
+    "turndown": "7.2.4",
+    "undici": "8.12.3",
+    "zod": "4.6.7"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@topka/worker",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=../../.env src/main.ts",
+    "start": "node src/main.ts"
+  },
+  "dependencies": {
+    "@topka/backend": "*",
+    "@topka/contracts": "*",
+    "@topka/industry": "*"
+  }
+}

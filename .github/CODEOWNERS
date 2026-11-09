@@ -1,0 +1,22 @@
+# Every path: the maintainer reviews it (there is one today, see MAINTAINERS.md). Keep this in step with MAINTAINERS.md — a maintainer
+# whose rights changed here without a change there (or the reverse) is a bug.
+
+* @CyrusAurora
+
+# The public API is a compatibility surface: a change here needs a careful review.
+/apps/api/src/routes/v1.ts @CyrusAurora
+/reference/public-v1.openapi.json @CyrusAurora
+
+# Security-relevant: key storage, sessions, and the places that fetch a URL the operator does not
+# control (SSRF guards, feed fetching, the image proxy).
+/packages/backend/src/accounts/ @CyrusAurora
+/packages/backend/src/providers/ @CyrusAurora
+/packages/backend/src/lib/url.ts @CyrusAurora
+/packages/backend/src/sources/ @CyrusAurora
+/packages/backend/src/media/ @CyrusAurora
+/apps/api/src/routes/ingest.ts @CyrusAurora
+
+# The pre-publication gate. A change that weakens it needs an explicit reason.
+/scripts/oss-check.sh @CyrusAurora
+/scripts/oss-scan.sh @CyrusAurora
+/scripts/oss-export.exclude @CyrusAurora

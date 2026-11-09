@@ -1,0 +1,56 @@
+{
+  "name": "topka",
+  "version": "0.1.0",
+  "license": "MIT",
+  "homepage": "https://github.com/CyrusAurora/topka#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CyrusAurora/topka.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CyrusAurora/topka/issues"
+  },
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "industry"
+  ],
+  "engines": {
+    "node": ">=24.11"
+  },
+  "scripts": {
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrate.ts",
+    "invite:create": "node --env-file-if-exists=.env scripts/create-invite.ts",
+    "sources:list": "node --env-file-if-exists=.env scripts/sources.ts list",
+    "sources:toggle": "node --env-file-if-exists=.env scripts/sources.ts toggle",
+    "sources:only": "node --env-file-if-exists=.env scripts/sources.ts only",
+    "sources:seed": "node --env-file-if-exists=.env scripts/sources-seed.ts",
+    "project:create": "node --env-file-if-exists=.env scripts/create-project.ts",
+    "demo:seed": "node --env-file-if-exists=.env scripts/demo.ts",
+    "project:brief": "node --env-file-if-exists=.env scripts/project-brief.ts",
+    "project:rescore": "node --env-file-if-exists=.env scripts/project-rescore.ts",
+    "today:export": "node --env-file-if-exists=.env scripts/export-today.ts",
+    "dev:api": "npm run dev -w @topka/api",
+    "dev:worker": "npm run dev -w @topka/worker",
+    "dev:web": "npm run dev -w @topka/web",
+    "typecheck": "tsc -p packages/contracts && tsc -p packages/backend && tsc -p apps/api && tsc -p apps/worker && tsc -p tests && tsc -p examples && npm run typecheck -w @topka/web",
+    "test": "node --import ./tests/hermetic-env.ts --test --test-concurrency=1 --test-timeout=120000 \"tests/*.test.ts\"",
+    "test:coverage": "node --import ./tests/hermetic-env.ts --test --test-concurrency=1 --test-timeout=120000 --experimental-test-coverage --test-coverage-include='packages/backend/src/**' --test-coverage-lines=85 \"tests/*.test.ts\"",
+    "models:free": "node --env-file-if-exists=.env scripts/free-models.ts",
+    "cards:copy": "node --env-file-if-exists=.env scripts/card-copy.ts",
+    "private:check": "if [ -d private ]; then npm --prefix private run typecheck; fi",
+    "docs:links": "node scripts/link-check.ts",
+    "e2e": "node --import ./tests/hermetic-env.ts --test --test-concurrency=1 --test-timeout=180000 e2e/*.test.ts"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.4.0",
+    "@types/node": "26.6.6",
+    "@types/sanitize-html": "2.16.2",
+    "@types/turndown": "5.0.6",
+    "opentype.js": "2.0.0",
+    "playwright-core": "^1.64.1",
+    "typescript": "7.0.2"
+  }
+}

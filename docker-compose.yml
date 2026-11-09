@@ -1,0 +1,108 @@
+# docker compose up -d --build     → http://localhost:3000   (the admin is at /admin)
+# docker compose --profile https up -d --build   → HTTPS for SITE_DOMAIN through Caddy
+name: topka
+
+x-app: &app
+  build: .
+  image: topka-app
+  env_file: .env
+  restart: unless-stopped
+  environment: &app-env
+    NODE_ENV: production
+    DATABASE_URL: postgres://topka:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (run node scripts/init-env.ts)}@db:5432/topka
+    TOPKA_DATA_DIR: /data
+    API_BASE_URL: http://api:3001
+    LOCAL_ROUTER_URL: http://web:3000
+    # true: the first run also loads the offline demo (scripts/demo.ts): a demo reader, one project and
+    # three days of invented stories. Off by default; the script does nothing unless this is true.
+    DEMO_SEED: ${DEMO_SEED:-false}
+  volumes:
+    - data:/data
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: topka
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (run node scripts/init-env.ts)}
+      POSTGRES_DB: topka
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U topka -d topka"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # Applies the database migrations and seeds the topics and demo sources, then (only with
+  # DEMO_SEED=true) the offline demo content, then exits.
+  setup:
+    <<: *app
+    restart: "no"
+    command: ["sh", "-c", "node scripts/migrate.ts && node scripts/seed.ts && node scripts/demo.ts --if-enabled"]
+
+  api:
+    <<: *app
+    command: ["node", "apps/api/src/main.ts"]
+    environment:
+      <<: *app-env
+      API_HOST: 0.0.0.0
+      API_PORT: "3001"
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
+  worker:
+    <<: *app
+    command: ["node", "apps/worker/src/main.ts"]
+    # On stop the worker lets a paid call in flight finish (STOP_TIMEOUT_MS, 195 s); Docker's default
+    # 10 s would kill it mid-call and leave "outcome unknown" receipts that are paid for again.
+    stop_grace_period: 210s
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
+  web:
+    <<: *app
+    command: ["node", "apps/web/server.ts"]
+    environment:
+      <<: *app-env
+      WEB_HOST: 0.0.0.0
+      WEB_PORT: "3000"
+    # Loopback only by default: the plain-HTTP site (and its /admin login) is not reachable from other
+    # machines until you choose so. PORT=3000 publishes it on every interface; with the https profile
+    # Caddy fronts it and the default stays right.
+    ports:
+      - "${PORT:-127.0.0.1:3000}:3000"
+    depends_on:
+      api:
+        condition: service_started
+
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["https"]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:-localhost}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy:/data
+    depends_on:
+      - web
+
+  # Pinned to a dated build by digest ("latest" changes daily); docs/release.md step 1 bumps it.
+  rsshub:
+    image: diygod/rsshub:2026-11-08@sha256:5d63ad35c5685f8bacc09f3c2d9bcf3d0615f85dd9671cab4fc1c2c1d2f925ca
+    restart: unless-stopped
+
+volumes:
+  db: {}
+  data: {}
+  caddy: {}

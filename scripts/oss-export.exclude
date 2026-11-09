@@ -1,0 +1,8 @@
+# Paths (git pathspecs, relative to the repo root) that are maintainer-only and never published.
+# scripts/oss-export.sh leaves them out of the exported tree.
+private
+.coderabbit.yaml
+ops
+scripts/oss-transform.sh
+# Maintainer-box convenience (publishes PostgreSQL on 127.0.0.1:5432); the public compose publishes no DB port.
+docker-compose.override.yml

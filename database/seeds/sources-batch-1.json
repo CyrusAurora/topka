@@ -1,0 +1,3324 @@
+{
+ "generatedFrom": "legacy collector config 2026-09-30",
+ "families": {
+  "rss": [
+   {
+    "name": "OpenAI News",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://openai.com/news/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "OpenAI Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://openai.com/blog/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Google DeepMind Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://deepmind.google/blog/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Hugging Face Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://huggingface.co/blog/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "GitHub Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://github.blog/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Simon Willison",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://simonwillison.net/atom/everything/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Hacker News Front Page",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://hnrss.org/frontpage"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "量子位官网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.qbitai.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Cloudflare Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://blog.cloudflare.com/rss/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "IT之家",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.ithome.com/rss/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "The Decoder",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://the-decoder.com/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "TechCrunch AI",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://techcrunch.com/category/artificial-intelligence/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "The Verge AI",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Ars Technica",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://feeds.arstechnica.com/arstechnica/technology-lab"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Databricks Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.databricks.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "404 Media",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.404media.co/rss/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Gary Marcus",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://garymarcus.substack.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Apple Newsroom",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.apple.com/newsroom/rss-feed.rss"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Latent Space",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.latent.space/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "a16z News",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.a16z.news/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "MIT News",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://news.mit.edu/rss/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "SemiAnalysis",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://newsletter.semianalysis.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Interconnects (Nathan Lambert)",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.interconnects.ai/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Together AI",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.together.ai/blog/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "NVIDIA Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://blogs.nvidia.com/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Google Developers Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://developers.googleblog.com/feeds/posts/default"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Newcomer",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.newcomer.co/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Apple ML Research",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://machinelearning.apple.com/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Pragmatic Engineer",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://newsletter.pragmaticengineer.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Dwarkesh Patel",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.dwarkesh.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Chips and Cheese",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://chipsandcheese.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Beren Millidge",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.beren.io/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "NVIDIA Developer",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://developer.nvidia.com/blog/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Google Research",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://research.google/blog/rss/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Augment Code",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.augmentcode.com/blog/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Berkeley RDI",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://rdi.berkeley.edu/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Canary Media",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.canarymedia.com/rss"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Hacker News 高分",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://hnrss.org/newest?points=150"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "The Verge：AI",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.theverge.com/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "vLLM 官方博客",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://vllm.ai/blog/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Sakana AI：Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://sakana.ai/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Google AI：DEV 作者专属",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://dev.to/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Sierra：Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://sierra.ai/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Cursor Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://cursor.com/atom.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Charlie O’Neill 研究写作",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://charlesponeill.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Google Blog：AI",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://blog.google/rss"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Ahead of AI",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://magazine.sebastianraschka.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Tomer Tunguz 博客",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://tomtunguz.com/index.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "MarkTechPost",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.marktechpost.com/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Ars Technica：AI",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://arstechnica.com/ai/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "MIT News AI",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://news.mit.edu/rss/topic/artificial-intelligence2"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "AI News (artificialintelligence-news)",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.artificialintelligence-news.com/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "9to5Mac",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://9to5mac.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Bisnow",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://bisnow.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "HousingWire",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://housingwire.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Import AI（Jack Clark）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://importai.substack.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Tesla IR",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://ir.tesla.com/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "LawNext",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://lawnext.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "MacRumors",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://macrumors.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Microsoft News",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://news.microsoft.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Platformer",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://platformer.news/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Redfin News",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://redfin.com/news/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "SCOTUSblog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://scotusblog.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Skift",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://skift.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "IEEE Spectrum Robotics",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://spectrum.ieee.org/rss"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "STAT News",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://statnews.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "Stratechery",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://stratechery.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "NEJM 本期目录",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.nejm.org/action/showFeed?type=etoc&feed=rss&jc=nejm"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   },
+   {
+    "name": "NVIDIA 新闻室",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://nvidianews.nvidia.com/releases.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "editorial"
+   }
+  ],
+  "directory": [
+   {
+    "name": "爱范儿",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.ifanr.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "酷 壳 – CoolShell",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://coolshell.cn/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "阮一峰的网络日志",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.ruanyifeng.com/blog/atom.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "V2EX",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://v2ex.com/index.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "机核",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.gcores.com/rss"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "奇客Solidot–传递最新科技情报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.solidot.org/index.rss"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "《联合早报》-中港台-即时",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/zaobao/realtime/china"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "小众软件",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://feed.appinn.com/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "《联合早报》-国际-即时",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/zaobao/realtime/world"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "美团技术团队",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://tech.meituan.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "热榜 - 煎蛋",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://localhost:1200/jandan/top"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "少数派",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://sspai.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "构建我的被动收入",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.bmpi.dev/index.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "南方周末-新闻",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://localhost:1200/infzm/2"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "抽屉新热榜-168小时最热榜",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://localhost:1200/chouti/top/168"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "异次元软件世界",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://feed.iplaysoft.com/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "极客公园",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://www.geekpark.net/rss"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "太隐",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://wangyurui.com/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "云风的 BLOG",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://blog.codingnow.com/atom.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "bboysoul的博客",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.bboy.app/atom.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "程序员的喵",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://catcoding.me/atom.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "小众软件",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://feeds.appinn.com/appinns/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "虎嗅",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://rss.huxiu.com/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "胡涂说",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://hutusi.com/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "阮一峰的网络日志",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://feeds.feedburner.com/ruanyifeng"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "小众软件",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.appinn.com/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "编程随想的博客",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://feeds2.feedburner.com/programthink"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "土木坛子",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://tumutanzi.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://draveness.me/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Randy's Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://lutaonan.com/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "让小产品的独立变现更简单 - ezindie.com",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.ezindie.com/feed/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "晚晴幽草轩",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.jeffjade.com/atom.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "知乎日报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://localhost:1200/zhihu/daily"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "oldj's blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://oldj.net/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "IT之家",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.ithome.com/rss/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "V2EX",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://www.v2ex.com/index.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "月光博客",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://www.williamlong.info/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "透明创业实验",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://blog.t9t.io/atom.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "小众软件",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://feeds.appinn.com/appinns"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "36氪",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.36kr.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "卡瓦邦噶！ » Feed",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.kawabangga.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Decohack",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.decohack.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "离别歌",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.leavesongs.com/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "理想生活实验室",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.toodaylab.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "风雪之隅",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://www.laruence.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "有赞技术团队",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://tech.youzan.com/rss/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "iDaily 每日环球视野",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/idaily/today"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "HelloGitHub 月刊",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://hellogithub.com/rss"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "张鑫旭-鑫空间-鑫生活",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.zhangxinxu.com/wordpress/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "木遥的窗子",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://blog.farmostwood.net/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "游戏研究社",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.yystv.cn/rss/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "潮流周刊",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://weekly.tw93.fun/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "maxOS",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://maxoxo.me/rss/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "中国日报: 双语新闻",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/chinadaily/dual"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "轶哥博客",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.wyr.me/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "GeekPlux",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://geekplux.com/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "知乎日报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/zhihu/daily"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "IT之家-24 小时最热",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://localhost:1200/ithome/ranking/24h"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "CSS-Tricks",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://css-tricks.com/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "十点读书",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/duhaoshu"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://plink.anyfeeder.com/weixin/almosthuman2014"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "罗辑思维",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/luojisw"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "读库小报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/dukuxiaobao"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "MacTalk-池建强的随想录",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://macshuo.com/?feed=rss2"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Julia Evans",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://jvns.ca/atom.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Xuanwo's Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://xuanwo.io/index.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "反斗限免",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://free.apprcn.com/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "异次元软件世界",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://feed.iplaysoft.com"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Amicoyuan的高性能计算世界",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://my-rssh-gwb5d33jd-amicoyuan.vercel.app/hexo/fluid/xingyuanjie.top"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "少数派 -- Matrix",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/ssapi/matrix"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "扯氮集",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://weiwuhui.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "青年文摘",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/qnwzwx"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "书单来了",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/shudanlaile"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "新华社新闻_新华网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/newscn/whxw"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "InfoQ 推荐",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/infoq/recommend"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "三联生活周刊",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/lifeweek"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Deepzz's Blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://deepzz.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "资源分享 - Telegram Channel",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://localhost:1200/telegram/channel/res_share"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "美团技术团队",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://tech.meituan.com/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "商业 - 财富中文网 - FORTUNEChina.com",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/fortunechina/shangye"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://plink.anyfeeder.com/weixin/The-Intellectual"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "一天一篇经济学人(双语)",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/Economist_fans"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "二丫讲梵",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://wiki.eryajf.net/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "MIT 科技评论 - 本周热榜",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/mittrchina/hot"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "华尔街日报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/wsj/cn"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "影视资源联盟 - Telegram Channel",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://localhost:1200/telegram/channel/yszylm"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "BAI YUN",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://baiyun.me/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Dan Abramov's Overreacted Blog RSS Feed",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://overreacted.io/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "哈佛商业评论",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/hbrchinese"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "参考消息",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/ckxxwx"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "法广",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/rfi/cn"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "唐巧的博客",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://blog.devtang.com/atom.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "免费白嫖公益代理/羊毛 - Telegram Channel",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://localhost:1200/telegram/channel/yangmaoshare"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "奔跑中的奶酪",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.runningcheese.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "BBC",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/bbc/cn"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "少数派",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://sspai.me/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "吴晓波频道",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/wuxiaobopd"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "财富中文网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/fortunechina"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "央视新闻",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/cctvnewscenter"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "MacTalk",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/sagacity-mac"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "中国日报: 时政",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/chinadaily/china"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "光明日报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/guangmingribao"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "elmagnifico",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://elmagnifico.tech/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "东哥解读电商",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/dgjdds"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "疯投圈",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://crazy.capital/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "阑夕",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/techread"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "人民日报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/people-daily"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "半月谈",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/banyuetan-weixin"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "华尔街见闻",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/wallstreetcn"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "超能网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/expreview"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "雷峰网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/leiphone"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "虎嗅网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/huxiu_com"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "有书",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/youshucc"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "医学界",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/yixuejiezazhi"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "前端之巅",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/frontshow"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "钛媒体：引领未来商业与生活新知",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/tmtpost"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "果壳网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/Guokr42"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "洞见",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/DJ00123987"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "利维坦",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/liweitan2014"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "第一财经周刊",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/CBNweekly2008"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "科技 - 财富中文网 - FORTUNEChina.com",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/fortunechina/keji"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "卢昌海的个人主页",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.changhai.org/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "猫笔刀",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/maobidao"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "澎湃新闻 - 首页头条",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/thepaper"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "小道消息",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/WebNotes"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "香港凤凰周刊",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/phoenixweekly"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "叶檀财经",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/tancaijing"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "人民日报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/rmrbwx"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "CSDN",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/CSDNnews"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "爱范儿",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/ifanr"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "新浪专栏-创事记",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/sina/csj"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "喷嚏-70",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/pentitugua"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "澳大利亚广播公司",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/abc/cn"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "微软研究院AI头条",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/MSRAsia"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "长安街知事",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/capitalnews"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "新智元",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/AI_era"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "搬砖小组",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/banzhuanxiaozu"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "首页头条--人民网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/people"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Phoenix's island",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://blog.phoenixlzx.com/atom.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Engadget",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://www.engadget.com/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "中国日报: 财经",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/chinadaily/caijing"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "饭统戴老板",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/worldofboss"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "棱镜",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/lengjing_qqfinance"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "侠客岛",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/xiake_island"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Tony Bai",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://tonybai.com/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "ImportNew",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/importnew"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "全栈应用开发:精益实践",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.phodal.com/blog/feeds/rss/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "南方周末-新闻",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/infzm/news"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "新经济100人",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/qiyejiagc"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "人民网-英语新闻",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/people/english"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "纽约时报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/nytimes/cn"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "财新网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/caixinwang"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "纽约时报中文网 国际纵览",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://cn.nytimes.com/rss/news.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "少数派",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/sspai"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "六神磊磊读金庸",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/dujinyong6"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "喷嚏网-铂程斋",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/dapenti/xilei"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "喷嚏网-财经风云",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/dapenti/caijing"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Vista看天下",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/vistaweek"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Tiny Projects",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://tinyprojects.dev/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "腾讯科技",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/qqtech"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "笨方法学写作",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.cnfeat.com/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Knowyourself",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/knowyourself2015"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "魔宙",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/mzmojo"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "观止·每日一文",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/meiriyiwen"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "解放军报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/jiefangjunbao"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "脑洞故事板",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/ndgs233"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "科技美学",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/kejimx"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "国家人文历史",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/gjrwls"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "毛有话说",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/mao-talk"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "环球科学",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/ScientificAmerican"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "BBC 英语教学",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/bbc/learningenglish"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "环球时报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/hqsbwx"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "今日话题 - 雪球",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://xueqiu.com/hots/topic/rss"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Josh Comeau's blog",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.joshwcomeau.com/rss.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "德林社",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/delinshe"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "人民网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/people_rmw"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "软餐 - 新鲜软件资讯",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/ruancan"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "中国日报: 专栏",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/chinadaily/column"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "纽约时报双语版",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/nytimes/dual"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "唐书房",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/clouds70"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "web.dev",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://web.dev/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "地球知识局",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/diqiuzhishiju"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "人民网-国内新闻",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/people/politics"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "读小库",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/duxiaoku666"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "理想岛",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/lixiangdao002"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "单读",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/dandureading"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "极客公园",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/geekpark"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "头条 - 求是网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/qstheory"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "新华网",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/newsxinhua"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "MOOC",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/mooc"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "西秦公子",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.ixiqin.com/feed/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "理想生活实验室",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/toodaylab"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "界面",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/wowjiemian"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "人人都是产品经理",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/woshipm"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "中国国家地理",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/dili360"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "界面新闻: 商业",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/jiemian/business"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "央视财经",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/cctvyscj"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "新世相",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/thefair2"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "小胡子哥的个人网站",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://www.barretlee.com/rss2.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "新浪体育",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/sports_sina"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "小明明s à domicile",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.dongwm.com/atom.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "美股研究社",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/meigushe"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "译言",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/yeeyancom"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "caoz的梦呓",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/caozsay"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "钛媒体：引领未来商业与生活新知",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.tmtpost.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "新财富",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/newfortune"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "21世纪经济报道",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/jjbd21"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "小球飞鱼",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://mantyke.icu/index.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "槽边往事",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/bitsea"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "澎湃新闻",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/thepapernews"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "维基百科优良条目供稿",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://zh.wikipedia.org/w/api.php?action=featuredfeed&feed=good&feedformat=atom"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "笔记侠",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/Notesman"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "DBA Notes",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://dbanotes.net/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "物种日历",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/guokrpac"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "王登科-DK博客",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://greatdk.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "人民网-国际新闻",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/people/world"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "经济学人",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/theeconomist"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "X博士",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/doctorx666"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "张佳玮写字的地方",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/zhangjiawei_1983"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "三节课",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/sanjieke01"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "涛叔",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://taoshu.in/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "南方周末",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/nanfangzhoumo"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "أخبار - آخر أخبار اليوم   الجزيرة نت",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/aljazeera/news"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "界面新闻: 新闻",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/jiemian/news"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "中国日报: 资讯",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/chinadaily/world"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "简书首页",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/jianshu/home"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "cnBeta",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/cnbeta"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "虎嗅",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/huxiu"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "经济日报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/jingjiribao"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "人人都是产品经理",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.woshipm.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "果壳网 科学人",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/guokr/scientific"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "热门文章 - 日榜 - 人人都是产品经理",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/woshipm/popular"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "新京报书评周刊",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/ibookreview"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "触乐",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://www.chuapp.com/feed"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "V2EX - 技术",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.v2ex.com/feed/tab/tech.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "机核",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/gcores"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "雪球",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/xueqiujinghua"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "虹膜",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/IrisMagazine"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "南方周末-推荐",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/infzm/recommends"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "连岳",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/ilianyue"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "人物",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/renwumag1980"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "架构师之路",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/gh_10a6b96351a9"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "福布斯",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/forbes_china"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "看理想",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/ikanlixiang"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "中国企业家杂志",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/iceo-com-cn"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "Anthony Fu",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://antfu.me/feed.xml"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "月光博客",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://feed.williamlong.info/"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "豆瓣最受欢迎的书评",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://www.douban.com/feed/review/book"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "简书",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/jianshuio"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "南都周刊",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/nbweekly"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "刘润",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/runliu-pub"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "经济观察报",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/eeo-com-cn"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "丁香医生",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/DingXiangYiSheng"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "小众软件",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/appinn"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "丁香妈妈",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/DingXiangMaMi"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "历史研习社",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/weixin/mingqinghistory"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   },
+   {
+    "name": "界面新闻: 财经",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "https://plink.anyfeeder.com/jiemian/finance"
+    },
+    "tier": "T2",
+    "participation_mode": "hot_signal"
+   }
+  ],
+  "weibo": [
+   {
+    "name": "量子位（微博）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://rsshub:1200/weibo/user/6105753431",
+     "rsshub": true
+    },
+    "tier": "T2",
+    "participation_mode": "editorial",
+    "needs_rsshub_container": true
+   },
+   {
+    "name": "机器之心Pro（微博）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://rsshub:1200/weibo/user/3996876140",
+     "rsshub": true
+    },
+    "tier": "T2",
+    "participation_mode": "editorial",
+    "needs_rsshub_container": true
+   },
+   {
+    "name": "爱范儿（微博）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://rsshub:1200/weibo/user/1642720480",
+     "rsshub": true
+    },
+    "tier": "T2",
+    "participation_mode": "editorial",
+    "needs_rsshub_container": true
+   },
+   {
+    "name": "新智元（微博）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://rsshub:1200/weibo/user/5703921756",
+     "rsshub": true
+    },
+    "tier": "T2",
+    "participation_mode": "editorial",
+    "needs_rsshub_container": true
+   },
+   {
+    "name": "智东西（微博）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://rsshub:1200/weibo/user/5213469505",
+     "rsshub": true
+    },
+    "tier": "T2",
+    "participation_mode": "editorial",
+    "needs_rsshub_container": true
+   },
+   {
+    "name": "36氪（微博）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://rsshub:1200/weibo/user/1750070171",
+     "rsshub": true
+    },
+    "tier": "T2",
+    "participation_mode": "editorial",
+    "needs_rsshub_container": true
+   },
+   {
+    "name": "虎嗅APP（微博）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://rsshub:1200/weibo/user/2357213493",
+     "rsshub": true
+    },
+    "tier": "T2",
+    "participation_mode": "editorial",
+    "needs_rsshub_container": true
+   },
+   {
+    "name": "极客公园（微博）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://rsshub:1200/weibo/user/1735559201",
+     "rsshub": true
+    },
+    "tier": "T2",
+    "participation_mode": "editorial",
+    "needs_rsshub_container": true
+   },
+   {
+    "name": "硅星人Pro（微博）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://rsshub:1200/weibo/user/7307132662",
+     "rsshub": true
+    },
+    "tier": "T2",
+    "participation_mode": "editorial",
+    "needs_rsshub_container": true
+   },
+   {
+    "name": "CSDN（微博）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://rsshub:1200/weibo/user/1798777247",
+     "rsshub": true
+    },
+    "tier": "T2",
+    "participation_mode": "editorial",
+    "needs_rsshub_container": true
+   },
+   {
+    "name": "InfoQ（微博）",
+    "kind": "rss",
+    "config": {
+     "feedUrl": "http://rsshub:1200/weibo/user/1746173800",
+     "rsshub": true
+    },
+    "tier": "T2",
+    "participation_mode": "editorial",
+    "needs_rsshub_container": true
+   }
+  ],
+  "watch_preview": [
+   {
+    "name": "LangChain Blog",
+    "url": "https://blog.langchain.com/"
+   },
+   {
+    "name": "Every",
+    "url": "https://every.to/latest"
+   },
+   {
+    "name": "Baseten Blog",
+    "url": "https://www.baseten.co/blog/"
+   },
+   {
+    "name": "Epoch AI",
+    "url": "https://epoch.ai/blog"
+   },
+   {
+    "name": "Mistral News",
+    "url": "https://mistral.ai/news/"
+   },
+   {
+    "name": "Anthropic Research",
+    "url": "https://www.anthropic.com/research"
+   },
+   {
+    "name": "Runway News",
+    "url": "https://runwayml.com/news"
+   },
+   {
+    "name": "Cognition Blog",
+    "url": "https://cognition.ai/blog"
+   },
+   {
+    "name": "Suno Blog",
+    "url": "https://suno.com/blog"
+   },
+   {
+    "name": "Fireworks AI Blog",
+    "url": "https://fireworks.ai/blog"
+   },
+   {
+    "name": "LlamaIndex Blog",
+    "url": "https://www.llamaindex.ai/blog"
+   },
+   {
+    "name": "Augment Code Blog",
+    "url": "https://www.augmentcode.com/blog"
+   },
+   {
+    "name": "DeepSeek 更新日志",
+    "url": "https://api-docs.deepseek.com/news/"
+   },
+   {
+    "name": "IBM Research AI",
+    "url": "https://research.ibm.com/artificial-intelligence"
+   },
+   {
+    "name": "LG AI Research",
+    "url": "https://www.lgresearch.ai/blog"
+   },
+   {
+    "name": "Factory",
+    "url": "https://factory.ai/news"
+   },
+   {
+    "name": "Stanford HAI News",
+    "url": "https://hai.stanford.edu/news"
+   },
+   {
+    "name": "Google Cloud Databases",
+    "url": "https://cloud.google.com/blog/products/databases"
+   },
+   {
+    "name": "Preferred Networks",
+    "url": "https://www.preferred.jp/en/blog/"
+   },
+   {
+    "name": "AGIBOT 智元",
+    "url": "https://www.agibot.com.cn/"
+   },
+   {
+    "name": "Canary Media：Data Centers",
+    "url": "https://www.canarymedia.com/articles/data-centers"
+   },
+   {
+    "name": "Mohamed Moustafa",
+    "url": "https://mmoustafa.com/blog"
+   },
+   {
+    "name": "elsewhere.news",
+    "url": "https://elsewhere.news/"
+   },
+   {
+    "name": "alibabagroup",
+    "url": "https://alibabagroup.com/"
+   },
+   {
+    "name": "asml investors",
+    "url": "https://asml.com/en/investors"
+   },
+   {
+    "name": "azure.microsoft blog",
+    "url": "https://azure.microsoft.com/blog"
+   },
+   {
+    "name": "bnef",
+    "url": "https://bnef.com/"
+   },
+   {
+    "name": "bydglobal",
+    "url": "https://bydglobal.com/"
+   },
+   {
+    "name": "bytedance",
+    "url": "https://bytedance.com/"
+   },
+   {
+    "name": "caixin",
+    "url": "https://caixin.com/"
+   },
+   {
+    "name": "catl",
+    "url": "https://catl.com/"
+   },
+   {
+    "name": "cbre insights",
+    "url": "https://cbre.com/insights"
+   },
+   {
+    "name": "clinicaltrials",
+    "url": "https://clinicaltrials.gov/"
+   },
+   {
+    "name": "coinbase blog",
+    "url": "https://coinbase.com/blog"
+   },
+   {
+    "name": "courtlistener",
+    "url": "https://courtlistener.com/"
+   },
+   {
+    "name": "deepseek",
+    "url": "https://deepseek.com/"
+   },
+   {
+    "name": "digitimes",
+    "url": "https://digitimes.com/"
+   },
+   {
+    "name": "fda",
+    "url": "https://fda.gov/"
+   },
+   {
+    "name": "federalreserve",
+    "url": "https://federalreserve.gov/"
+   },
+   {
+    "name": "fiercebiotech",
+    "url": "https://fiercebiotech.com/"
+   },
+   {
+    "name": "figure",
+    "url": "https://figure.ai/"
+   },
+   {
+    "name": "fintechbrainfood",
+    "url": "https://fintechbrainfood.com/"
+   },
+   {
+    "name": "goldmansachs insights",
+    "url": "https://goldmansachs.com/insights"
+   },
+   {
+    "name": "investor.nvidia",
+    "url": "https://investor.nvidia.com/"
+   },
+   {
+    "name": "investor.tsmc",
+    "url": "https://investor.tsmc.com/"
+   },
+   {
+    "name": "jll research",
+    "url": "https://jll.com/research"
+   },
+   {
+    "name": "law360",
+    "url": "https://law360.com/"
+   },
+   {
+    "name": "mi global",
+    "url": "https://mi.com/global"
+   },
+   {
+    "name": "nature medicine",
+    "url": "https://nature.com/medicine"
+   },
+   {
+    "name": "nejm",
+    "url": "https://nejm.org/"
+   },
+   {
+    "name": "physicalintelligence",
+    "url": "https://physicalintelligence.com/"
+   },
+   {
+    "name": "qwenlm.github",
+    "url": "https://qwenlm.github.io/"
+   },
+   {
+    "name": "retaildive",
+    "url": "https://retaildive.com/"
+   },
+   {
+    "name": "semianalysis",
+    "url": "https://semianalysis.com/"
+   },
+   {
+    "name": "supremecourt",
+    "url": "https://supremecourt.gov/"
+   },
+   {
+    "name": "tencent",
+    "url": "https://tencent.com/"
+   },
+   {
+    "name": "thelancet",
+    "url": "https://thelancet.com/"
+   },
+   {
+    "name": "therealdeal",
+    "url": "https://therealdeal.com/"
+   },
+   {
+    "name": "therobotreport",
+    "url": "https://therobotreport.com/"
+   },
+   {
+    "name": "trendforce",
+    "url": "https://trendforce.com/"
+   },
+   {
+    "name": "trip newsroom",
+    "url": "https://trip.com/newsroom"
+   },
+   {
+    "name": "unitree",
+    "url": "https://unitree.com/"
+   },
+   {
+    "name": "zhipuai.cn",
+    "url": "https://zhipuai.cn/"
+   },
+   {
+    "name": "zillow research",
+    "url": "https://zillow.com/research"
+   }
+  ]
+ }
+}
