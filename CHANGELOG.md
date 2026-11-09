@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed
+
+- README (zh / en): cut the tutoring asides and the long upstream paragraph; credit to AIHOT is one short line.
+
 ## [0.1.1] - 2026-11-09
 
 A security-only patch release: dependency updates, no change in behaviour or configuration.
