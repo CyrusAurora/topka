@@ -130,19 +130,42 @@ tag in a deployment: a tag can be moved, a verified digest cannot.
 
 ## 6. Once, after the repository is public
 
-These two settings cannot be prepared while the repository is private, and they are what makes the
-"supported versions" and reporting promises in [SECURITY.md](../SECURITY.md) real:
+These settings cannot be prepared while the repository is private, and they are what makes the
+"supported versions" and reporting promises in [SECURITY.md](../SECURITY.md) real. All were applied
+to `CyrusAurora/topka` on 2026-11-09, the day it went public.
 
-- **Branch protection on `main`**: Settings → Branches → a rule for `main` requiring the two jobs
-  of the `Check` workflow (status checks `check` and `docker`, branch up to date before merging) and
-  one approving review on a pull request, with stale reviews dismissed on push; force pushes and
-  deletion of `main` are refused. "Do not allow bypassing" is left off on purpose: with one
-  maintainer, a required review the author cannot give themselves would block every change, so the
-  maintainer (repository admin) can merge their own pull request once `check` and `docker` are green.
-  Everyone else needs the review. See [decision 0003](decisions/0003-single-maintainer.md).
+- **Branch protection on `main`**: a rule for `main` requiring the two jobs of the `Check` workflow
+  (status checks `check` and `docker`, branch up to date before merging), one approving review on a
+  pull request with stale reviews dismissed on push, resolved review conversations and a linear
+  history; force pushes and deletion of `main` are refused. "Do not allow bypassing" is left off on
+  purpose: with one maintainer, a required review the author cannot give themselves would block every
+  change, so the maintainer (repository admin) can merge their own pull request once `check` and
+  `docker` are green. Everyone else needs the review. See
+  [decision 0003](decisions/0003-single-maintainer.md). The same rule as one API call:
+
+  ```bash
+  gh api -X PUT repos/CyrusAurora/topka/branches/main/protection --input - <<'JSON'
+  {"required_status_checks":{"strict":true,"contexts":["check","docker"]},"enforce_admins":false,
+   "required_pull_request_reviews":{"required_approving_review_count":1,"dismiss_stale_reviews":true},
+   "restrictions":null,"allow_force_pushes":false,"allow_deletions":false,
+   "required_conversation_resolution":true,"required_linear_history":true}
+  JSON
+  ```
+
 - **Private vulnerability reporting**: Settings → Code security → enable "Private vulnerability
-  reporting". Then send one test report through the Security tab → "Report a vulnerability" and
-  confirm it arrives, so the channel is known to work before a real report needs it.
+  reporting" (`gh api -X PUT repos/CyrusAurora/topka/private-vulnerability-reporting`). GitHub does
+  not let a repository's own admin file a report through that form (the API answers 403 "not
+  authorized to report advisories in this repository"), so the channel is checked in two parts: the
+  setting reads back `{"enabled":true}`, and the maintainer side works end to end by creating a draft
+  advisory (`POST repos/CyrusAurora/topka/security-advisories`) and closing it. A draft advisory cannot
+  be deleted, only closed; the publish-day test one is `GHSA-4q24-vxhq-m6r2`, closed. A report from a
+  second account is the remaining unverified part.
+- **Dependabot alerts and security updates, secret scanning and push protection**: on.
+- **CodeQL alerts**: run the dismissal loop in
+  [security/codeql-triage.md](security/codeql-triage.md) after the first analysis of `main`.
+- **The image**: a package pushed by the release workflow of a public repository is public and linked
+  to it (`org.opencontainers.image.source`); check that `docker pull ghcr.io/cyrusaurora/topka:X.Y.Z`
+  works with no login.
 
 ## What CI covers, and what it does not
 
