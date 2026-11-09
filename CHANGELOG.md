@@ -5,6 +5,18 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-09
+
+A security-only patch release: dependency updates, no change in behaviour or configuration.
+
+### Security
+
+- Dependencies with published advisories, flagged by Dependabot on the public repository the day 0.1.0
+  went out: `undici` 7.30.0 → 7.30.2 (via `cheerio`; 4 high, 4 moderate, among them unbounded memory
+  in the EventSource parser), `fast-uri` 3.1.8 → 3.1.9 and 4.2.1 → 4.2.3 (via `fastify` / `ajv`; URI
+  scheme and host confusion), and `fflate` 0.7.3 → 0.7.5 (via `satori`, which pins it exactly, so
+  through an npm `overrides` entry; an infinite loop on malformed ZIP64). `npm audit` reports 0.
+
 ## [0.1.0] - 2026-11-09
 
 Everything in this first release: the product described in `README.md` and the work of preparing it
@@ -119,5 +131,6 @@ developed during a private trial. This repository starts from a single commit; t
 AIHOT framework this fork is based on lives in the upstream repository
 (https://github.com/KKKKhazix/AIHOT); see `NOTICE` for attribution.
 
-[Unreleased]: https://github.com/CyrusAurora/topka/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/CyrusAurora/topka/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/CyrusAurora/topka/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/CyrusAurora/topka/releases/tag/v0.1.0
