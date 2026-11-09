@@ -6,7 +6,7 @@
 // module remains for the web export script and the card-copy script.
 import { sql, type Db } from "../db.ts";
 import { cardCopyFor, writeCardCopy, type CardCopy } from "./card-copy.ts";
-import { capPerSource } from "./issue-rules.ts";
+import { capPerSource, nextIssueAtInTz, DEFAULT_TIMEZONE } from "./issue-rules.ts";
 import {
   AckRejected, DEFAULT_WINDOW_HOURS, MAX_WINDOW_DAYS, NO_CHANGE_DETAIL, NO_CHANGE_TITLE, QUIET_DAY_MEAN, RECENT_IMPORT_HOURS, TODAY_NOTICE,
   todayCardCount, type TodayResult,
@@ -46,7 +46,7 @@ export interface UserTodayPayload {
   generatedAt: string;
   window: { since: string; until: string; basis: "checkpoint" | "default" | "capped" | "finished" };
   checkpoint: { readThrough: string | null; freshAt: string | null };
-  /** The day is finished: the window is frozen until the next 08:00 Beijing. */
+  /** The day is finished: the window is frozen until the next 08:00 local in the user's timezone. */
   dayDone: boolean;
   result: TodayResult;
   emptyState: { title: string; detail: string } | null;
@@ -65,10 +65,14 @@ export interface UserTodayPayload {
 
 const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : null);
 
-/** The next 00:00 UTC (08:00 Beijing) strictly after `now`: when a finished day turns. */
+/** The next 08:00 Asia/Shanghai strictly after `now` (legacy wrapper; prefer nextFreshAtInTz). */
 export function nextFreshAt(now: Date): Date {
-  const day = 86_400_000;
-  return new Date(Math.floor(now.getTime() / day) * day + day);
+  return nextIssueAtInTz(now, DEFAULT_TIMEZONE);
+}
+
+/** The next 08:00 local in `tz` strictly after `now`: when a finished day turns for that user. */
+export function nextFreshAtInTz(now: Date, tz: string): Date {
+  return nextIssueAtInTz(now, tz);
 }
 
 interface CheckpointRow {
@@ -110,7 +114,7 @@ export async function buildUserToday(userId: string, opts: { now?: Date; cards?:
   const cp = await readCheckpointRow(userId, db);
   const floor = new Date(now.getTime() - MAX_WINDOW_DAYS * 86_400_000);
   const freshAt = cp?.fresh_at ?? null;
-  // A finished day stays frozen on its own window until the next 08:00 Beijing.
+  // A finished day stays frozen on its own window until the next 08:00 local in the user's timezone.
   const frozen = freshAt !== null && freshAt.getTime() > now.getTime();
   let since: Date;
   let until: Date;

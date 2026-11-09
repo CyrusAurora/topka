@@ -71,7 +71,7 @@ export async function registerWithInvite(input: RegisterInput, db: Sql = sql, mo
       const [user] = await tx<SessionUser[]>`
         INSERT INTO users (id, email, password_hash, display_name)
         VALUES (${newUuid()}, ${address}, ${passwordHash}, ${address.split("@")[0] ?? null})
-        RETURNING id, email, display_name AS "displayName", locale, role`;
+        RETURNING id, email, display_name AS "displayName", locale, timezone, role`;
       const token = await createSession(user!.id, { userAgent: input.userAgent, ip: input.ip }, tx);
       return { token, user: user! };
     });
