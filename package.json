@@ -1,6 +1,6 @@
 {
   "name": "topka",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "homepage": "https://github.com/CyrusAurora/topka#readme",
   "repository": {
@@ -52,5 +52,8 @@
     "opentype.js": "2.0.0",
     "playwright-core": "^1.64.1",
     "typescript": "7.0.2"
+  },
+  "overrides": {
+    "fflate": "0.7.5"
   }
 }

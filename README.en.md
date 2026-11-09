@@ -9,7 +9,7 @@
 > *"Only what changed. When the evidence is thin, it says so."*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.1.1-blue)](CHANGELOG.md)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-Docker%20Compose-2496ED?logo=docker&logoColor=white)](#run-it-first-no-api-key)
 [![BYOK](https://img.shields.io/badge/BYOK-bring%20your%20own%20key-6f42c1)](#connect-real-sources-and-a-model)
 
