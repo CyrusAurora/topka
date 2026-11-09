@@ -3,11 +3,13 @@
 // factory because the component tests run under node --test, which cannot load JSX; the route file
 // is a thin shell around it.
 import { createElement, useEffect, useState, type FC, type ReactElement } from "react";
+import { SOURCE_REGION_TOKENS, sourceMatchesRegionFilter } from "@topka/contracts/regions";
 
 export interface PackSourceView {
   id: string;
   name: string;
   publisher: string | null;
+  regions?: string[];
 }
 
 export interface PackView {
@@ -69,6 +71,14 @@ export function effectiveTarget(name: string, pack: PackView | null): string {
   return name.trim() || (pack?.label.trim() ?? "");
 }
 
+/** Filter a pack's sources by region (same rule as the API: empty = all, `global` always visible). */
+export function filterSourcesByRegion(sources: readonly PackSourceView[], filter: readonly string[]): PackSourceView[] {
+  return sources.filter((source) => sourceMatchesRegionFilter(source.regions ?? ["global"], filter));
+}
+
+export const REGION_FILTER_LABEL = "按区域找";
+export const REGION_FILTER_ALL = "全部";
+
 // --- the component -----------------------------------------------------------
 
 type Step = "packs" | "sources" | "naming" | "confirm" | "done";
@@ -86,6 +96,7 @@ interface WizardState {
   created: boolean;
   createdProject: { id: string; target: string; purpose: string } | null;
   createError: string | null;
+  regionFilter: string[];
 }
 
 const initialState: WizardState = {
@@ -101,6 +112,7 @@ const initialState: WizardState = {
   created: false,
   createdProject: null,
   createError: null,
+  regionFilter: [],
 };
 
 export interface GuidedCreationProps {
@@ -224,12 +236,33 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
       ),
     );
   } else if (state.step === "sources" && pack) {
+    const visible = filterSourcesByRegion(pack.sources, state.regionFilter);
     body = createElement("div", null,
       createElement("h2", { className: "text-[15px] font-semibold text-ink" }, `第二步：${pack.label}包盯这些来源，勾上重点看的`),
-      pack.sources.length === 0
-        ? createElement("p", { role: "status", className: "mt-4 text-[13.5px] text-ink-2" }, EMPTY_PACK_HINT)
+      createElement("div", { className: "mt-3 flex flex-wrap items-center gap-1.5", "aria-label": REGION_FILTER_LABEL },
+        createElement("span", { className: "mr-1 text-[12px] text-ink-3" }, REGION_FILTER_LABEL),
+        createElement("button", {
+          key: "all",
+          type: "button",
+          "aria-pressed": state.regionFilter.length === 0,
+          onClick: () => setState((s) => ({ ...s, regionFilter: [] })),
+          className: state.regionFilter.length === 0 ? `${primary} !h-8 !px-3 !text-[12px]` : `${secondary} !h-8 !px-3 !text-[12px]`,
+        }, REGION_FILTER_ALL),
+        ...SOURCE_REGION_TOKENS.filter((t) => t !== "global").map((token) => {
+          const active = state.regionFilter.includes(token);
+          return createElement("button", {
+            key: token,
+            type: "button",
+            "aria-pressed": active,
+            onClick: () => setState((s) => ({ ...s, regionFilter: active ? s.regionFilter.filter((r) => r !== token) : [...s.regionFilter, token] })),
+            className: active ? `${primary} !h-8 !px-3 !text-[12px]` : `${secondary} !h-8 !px-3 !text-[12px]`,
+          }, token.toUpperCase());
+        }),
+      ),
+      visible.length === 0
+        ? createElement("p", { role: "status", className: "mt-4 text-[13.5px] text-ink-2" }, pack.sources.length === 0 ? EMPTY_PACK_HINT : "这个区域没有来源，换个区域或选全部。")
         : createElement("ul", { className: "mt-4 flex flex-col gap-2" },
-            pack.sources.map((source) =>
+            visible.map((source) =>
               createElement("li", { key: source.id },
                 createElement("label", { className: "flex min-h-11 items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-2 text-[14px] text-ink" },
                   createElement("input", {

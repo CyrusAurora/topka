@@ -7,6 +7,7 @@ import { createElement } from "react";
 import {
   assemblePurpose,
   validateDraft,
+  filterSourcesByRegion,
   GuidedCreation,
   PACKS_UNAVAILABLE,
   EMPTY_PACK_HINT,
@@ -177,4 +178,16 @@ test("draft validation answers with the handover's refusal copy", () => {
   assert.equal(validateDraft({ target: "", purpose: "有目的", pack: null }), "name", "without a pack there is no label to fall back on, so the name is required");
   assert.equal(validateDraft({ target: "名字", purpose: "有目的", pack }), null, "an empty name falls back to the pack label: nothing to refuse");
   assert.ok(GOAL_PURPOSE_REQUIRED.length > 0);
+});
+
+test("the region filter hides the wrong region and always keeps global", () => {
+  const sources = [
+    { id: "a", name: "A", publisher: null, regions: ["us"] },
+    { id: "b", name: "B", publisher: null, regions: ["global"] },
+    { id: "c", name: "C", publisher: null, regions: ["cn", "global"] },
+    { id: "d", name: "D", publisher: null, regions: ["cn"] },
+  ];
+  assert.deepEqual(filterSourcesByRegion(sources, []).map((s) => s.id), ["a", "b", "c", "d"], "empty filter shows all");
+  assert.deepEqual(filterSourcesByRegion(sources, ["cn"]).map((s) => s.id), ["b", "c", "d"], "filter cn hides {us} but keeps global and cn");
+  assert.deepEqual(filterSourcesByRegion(sources, ["us"]).map((s) => s.id), ["a", "b", "c"], "filter us keeps {us}, {global} and {cn,global}");
 });

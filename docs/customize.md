@@ -69,6 +69,17 @@ Key fields of a source:
 | `participation_mode` | `editorial` joins selection and the "all" stream; `hot_signal` is only heat evidence; `isolated` never appears on public pages |
 | `first_party` | published by the party itself (official site/blog/account) |
 | `site_fulltext` | whether full text may be shown on this site. **Default off**: summary + link only. Turn on only when the source clearly allows it |
+| `regions` | geography (not industry scope): `text[]` default `["global"]`; ISO 3166-1 alpha-2 lowercase plus `global`. Pack seeds may set `"regions": ["cn", "global"]`; omit to keep the default. The wizard's region chips filter on this; the unfiltered list shows everything. |
+
+### Source regions (geography, optional)
+
+Every source carries `regions` (default `["global"]`). Tag with the publisher's home geography plus
+`global` when the source is worldwide, e.g. a CN publisher `"regions": ["cn", "global"]`, a US lab
+`"regions": ["us", "global"]`. The project wizard offers `global|cn|us|eu|jp` chips (default: no chip =
+show all); under a filter, a `global` source is always visible and others show only on overlap. More
+tokens may be added later without a schema change — any lowercase token is stored. Region never
+blocks an explicit pick: it is a discovery filter only, and `in_scope` stays industry scope, not
+geography.
 
 ## 4. Selection criteria: `industry/prompts/`
 
