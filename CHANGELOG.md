@@ -5,6 +5,11 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- Sources have `regions` (`text[]`, default `["global"]`); the project wizard can filter by region
+  (`global|cn|us|eu|jp`, default unchanged — unfiltered shows all, `global` always visible).
+
 ### Changed
 
 - README (zh / en): cut the tutoring asides and the long upstream paragraph; credit to AIHOT is one short line.

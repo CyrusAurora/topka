@@ -25,7 +25,10 @@
         "github"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
     },
     {
       "id": "rss:e14c5ff7991a6173cbfbac5135a322ff",
@@ -49,7 +52,10 @@
         "embodied"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
     },
     {
       "id": "rss:c5128acd9dbcbd3848d8a80a11adbacc",
@@ -73,7 +79,10 @@
         "embodied"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
     },
     {
       "id": "rss:4f99ce5c031ad791127b53a036992a91",

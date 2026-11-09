@@ -3,6 +3,7 @@ import path from "node:path";
 import { sql, type Db, type Sql } from "../db.ts";
 import { REPO_ROOT } from "../config.ts";
 import { assertSupportedConfig } from "../sources/config-keys.ts";
+import { normalizeRegions } from "../sources/regions.ts";
 
 export interface PackSource {
   id: string;
@@ -17,6 +18,7 @@ export interface PackSource {
   tags?: string[];
   site_fulltext?: boolean;
   syndicate_fulltext?: boolean;
+  regions?: string[];
 }
 
 export interface SourcePack {
@@ -58,20 +60,21 @@ async function runSeed(pack: SourcePack, tx: Db): Promise<PackSeedResult> {
   for (const s of pack.sources) assertSupportedConfig(s.kind, s.config);
 
   for (const s of pack.sources) {
-    const byId = await tx<{ id: string; kind: string; config: Record<string, unknown>; tags: string[] | null }[]>`
-      SELECT id, kind, config, tags FROM sources WHERE id = ${s.id}`;
+    const byId = await tx<{ id: string; kind: string; config: Record<string, unknown>; tags: string[] | null; regions: string[] | null }[]>`
+      SELECT id, kind, config, tags, regions FROM sources WHERE id = ${s.id}`;
     let existing = byId[0];
     if (!existing) {
-      const byName = await tx<{ id: string; kind: string; config: Record<string, unknown>; tags: string[] | null }[]>`
-        SELECT id, kind, config, tags FROM sources WHERE name = ${s.name} AND kind = ${s.kind}`;
+      const byName = await tx<{ id: string; kind: string; config: Record<string, unknown>; tags: string[] | null; regions: string[] | null }[]>`
+        SELECT id, kind, config, tags, regions FROM sources WHERE name = ${s.name} AND kind = ${s.kind}`;
       if (byName.length > 1) throw new Error(`ambiguous source name ${s.name}`);
       existing = byName[0];
     }
 
+    const seedRegions = s.regions !== undefined ? normalizeRegions(s.regions) : null;
     if (!existing) {
       const [row] = await tx<{ id: string }[]>`
-        INSERT INTO sources (id, name, kind, config, tier, first_party, participation_mode, interval_minutes, tags, site_fulltext, syndicate_fulltext, enabled, imported_from, next_fetch_at)
-        VALUES (${s.id}, ${s.name}, ${s.kind}, ${tx.json(s.config as never)}, ${s.tier ?? "T2"}, ${s.first_party ?? false}, ${s.participation_mode ?? "editorial"}, ${s.interval_minutes ?? 60}, ${s.tags ?? []}, ${s.site_fulltext ?? false}, ${s.syndicate_fulltext ?? false}, false, ${`pack:${pack.id}`}, now())
+        INSERT INTO sources (id, name, kind, config, tier, first_party, participation_mode, interval_minutes, tags, site_fulltext, syndicate_fulltext, regions, enabled, imported_from, next_fetch_at)
+        VALUES (${s.id}, ${s.name}, ${s.kind}, ${tx.json(s.config as never)}, ${s.tier ?? "T2"}, ${s.first_party ?? false}, ${s.participation_mode ?? "editorial"}, ${s.interval_minutes ?? 60}, ${s.tags ?? []}, ${s.site_fulltext ?? false}, ${s.syndicate_fulltext ?? false}, ${seedRegions ?? ["global"]}, false, ${`pack:${pack.id}`}, now())
         RETURNING id`;
       const resolved = row?.id ?? s.id;
       inserted.push(resolved);
@@ -81,14 +84,17 @@ async function runSeed(pack: SourcePack, tx: Db): Promise<PackSeedResult> {
       const existingTags = existing.tags ?? [];
       const mergedConfig = { ...existingConfig, ...s.config };
       const mergedTags = [...new Set([...existingTags, ...(s.tags ?? [])])];
+      const existingRegions = normalizeRegions(existing.regions);
+      const mergedRegions = seedRegions === null ? existingRegions : seedRegions;
       const configSame = stableJson(mergedConfig) === stableJson(existingConfig);
       const tagsSame =
         stableJson([...existingTags].sort()) === stableJson([...mergedTags].sort());
-      if (configSame && tagsSame) {
+      const regionsSame = stableJson([...existingRegions].sort()) === stableJson([...mergedRegions].sort());
+      if (configSame && tagsSame && regionsSame) {
         unchanged.push(existing.id);
       } else {
         await tx`
-          UPDATE sources SET config = ${tx.json(mergedConfig as never)}, tags = ${mergedTags}, updated_at = now()
+          UPDATE sources SET config = ${tx.json(mergedConfig as never)}, tags = ${mergedTags}, regions = ${mergedRegions}, updated_at = now()
           WHERE id = ${existing.id}`;
         merged.push(existing.id);
       }
@@ -102,6 +108,7 @@ async function runSeed(pack: SourcePack, tx: Db): Promise<PackSeedResult> {
       id,
       name: pack.sources[i]!.name,
       publisher: pack.sources[i]!.publisher,
+      regions: pack.sources[i]!.regions !== undefined ? normalizeRegions(pack.sources[i]!.regions) : ["global"],
     }));
     const [row] = await tx<{ id: string }[]>`
       INSERT INTO source_packs (id, label, sources, updated_at)

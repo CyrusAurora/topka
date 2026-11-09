@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { ProjectRejected, createProject } from "@topka/backend/projects/create-project";
 import { UnknownSourcesError } from "@topka/backend/projects/bind-sources";
 import { listSourcePacks } from "@topka/backend/projects/packs";
+import { parseRegionFilter } from "@topka/backend/sources/regions";
 import { loadPackPrefs, savePackPrefs } from "@topka/backend/projects/pack-prefs";
 import { resolveSession, SESSION_COOKIE } from "@topka/backend/accounts/session";
 import { requireProjectOwner, listOwnedProjects } from "@topka/backend/publication/project-owner";
@@ -60,12 +61,15 @@ async function ownedProject(req: FastifyRequest) {
 }
 
 export function registerProjects(app: FastifyInstance) {
-  // The pack catalog behind sign-in: the product face is private (decision D10).
+  // The pack catalog behind sign-in: the product face is private (decision D10). Optional
+  // ?regions=cn,us filters the sources inside each pack (server-side, same `global` rule as the
+  // wizard); absent, the response is unchanged. Binding is never rejected by region.
   app.get("/api/packs", async (req, reply) => {
     reply.header("Cache-Control", "no-store");
     const user = await sessionOf(req);
     if (!user) return sendProblem(req, reply, { status: 401, code: "unauthorized", detail: "请先登录。" });
-    return { packs: await listSourcePacks() };
+    const regions = parseRegionFilter((req.query as { regions?: string } | undefined)?.regions);
+    return { packs: await listSourcePacks(sql, regions.length ? { regions } : undefined) };
   });
 
   app.post("/api/projects", async (req, reply) => {
