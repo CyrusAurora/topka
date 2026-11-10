@@ -3,9 +3,10 @@
 // the route file is a thin shell around it. Reads /api/me/today with the visitor's session; a
 // single issue reader reuses the same card list.
 import { createElement, useCallback, useEffect, useState, type FC, type ReactElement } from "react";
+import { issueDayIn } from "../../lib/issue-day.ts";
+import { messages, useT, useUiPrefs, type UiLocale } from "../../lib/i18n.ts";
 import {
   cardRows,
-  MAGAZINE_COPY,
   masthead,
   projectLabelOf,
   type CardRow,
@@ -21,7 +22,8 @@ export interface MagazineTodayProps {
 type Phase = "loading" | "signed-out" | "failed" | "ready";
 
 /** What 今天 shows, from the payload the reader has: the fixed issue, or its honest empty state. */
-function viewOf(payload: MagazineIssuePayload): TodayView {
+function viewOf(payload: MagazineIssuePayload, locale: UiLocale = "zh-CN"): TodayView {
+  const t = messages(locale);
   const opened = payload.opened ?? [];
   const projects = payload.projects ?? [];
   const issue = payload.issue ?? null;
@@ -39,11 +41,14 @@ function viewOf(payload: MagazineIssuePayload): TodayView {
     issue,
     opened,
     archive: payload.archive ?? [],
-    notice: payload.notice?.trim() || MAGAZINE_COPY.noticeFallback,
+    // The API's notice is fixed Chinese copy: an English page shows its own.
+    notice: (locale === "zh-CN" && payload.notice?.trim()) || t.magazine.noticeFallback,
   };
 }
 
 export const MagazineToday: FC<MagazineTodayProps> = (props) => {
+  const t = useT();
+  const { locale, timeZone } = useUiPrefs();
   const doFetch = props.fetchImpl ?? fetch.bind(globalThis);
   const [state, setState] = useState<{ phase: Phase; view: TodayView | null }>({ phase: "loading", view: null });
   const [openId, setOpenId] = useState("");
@@ -62,12 +67,12 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
         return;
       }
       const payload = (await res.json()) as MagazineIssuePayload;
-      setState({ phase: "ready", view: viewOf(payload) });
+      setState({ phase: "ready", view: viewOf(payload, locale) });
     } catch {
       setState({ phase: "failed", view: null });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     void load();
@@ -104,58 +109,57 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
 
   if (state.phase === "loading") {
     return createElement("div", { className: "magazine mx-auto w-full max-w-[560px] px-4 py-6" },
-      createElement("h1", { className: "mag-title" }, "今日"),
-      createElement("p", { role: "status", className: "mag-note" }, MAGAZINE_COPY.loading),
+      createElement("h1", { className: "mag-title" }, t.magazine.today),
+      createElement("p", { role: "status", className: "mag-note" }, t.magazine.loading),
     );
   }
 
   if (state.phase === "signed-out") {
     return createElement("div", { className: "magazine mx-auto w-full max-w-[560px] px-4 py-16" },
-      createElement("h1", { className: "mag-title" }, "今日"),
+      createElement("h1", { className: "mag-title" }, t.magazine.today),
       createElement("div", { className: "mag-empty" },
-        createElement("div", { className: "e-t" }, MAGAZINE_COPY.signedOut),
-        createElement("a", { href: "/login", className: "e-cta" }, MAGAZINE_COPY.goToLogin),
-        createElement("a", { href: "/register", className: "e-cta mt-2" }, MAGAZINE_COPY.goToRegister),
+        createElement("div", { className: "e-t" }, t.magazine.signedOut),
+        createElement("a", { href: "/login", className: "e-cta" }, t.magazine.goToLogin),
+        createElement("a", { href: "/register", className: "e-cta mt-2" }, t.magazine.goToRegister),
       ),
     );
   }
 
   if (state.phase === "failed" || !v) {
     return createElement("div", { className: "magazine mx-auto w-full max-w-[560px] px-4 py-16" },
-      createElement("h1", { className: "mag-title" }, "今日"),
+      createElement("h1", { className: "mag-title" }, t.magazine.today),
       createElement("div", { className: "mag-empty" },
-        createElement("div", { className: "e-t" }, MAGAZINE_COPY.failed),
+        createElement("div", { className: "e-t" }, t.magazine.failed),
       ),
     );
   }
 
-  const today = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  // The masthead's day: the issue's own date when it is there; the reader's today while preparing.
-  const day = v.issue?.date ?? `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-  const head = masthead(day);
-  const rows = cardRows(v);
-  const zeroSub = v.projects.length > 1 ? MAGAZINE_COPY.zeroSub : `「${v.projects[0]?.target ?? ""}」今天没有够分量的新进展。`;
+  // The masthead's day: the issue's own date when it is there; while it is being prepared, the issue
+  // day in the reader's time zone (not the browser's or the server's calendar).
+  const day = v.issue?.date ?? issueDayIn(new Date(), timeZone);
+  const head = masthead(day, locale);
+  const rows = cardRows(v, new Date(), locale, timeZone);
+  const zeroSub = v.projects.length > 1 ? t.magazine.zeroSub : t.magazine.zeroSubSingle(v.projects[0]?.target ?? "");
 
   let body: ReactElement;
   if (v.phase === "first") {
     body = createElement("div", { className: "mag-empty" },
-      createElement("div", { className: "e-t" }, MAGAZINE_COPY.firstTitle),
-      createElement("div", { className: "e-s" }, MAGAZINE_COPY.firstSub),
+      createElement("div", { className: "e-t" }, t.magazine.firstTitle),
+      createElement("div", { className: "e-s" }, t.magazine.firstSub),
       createElement("div", { className: "f-cta-group mt-5" },
-        createElement("a", { href: "/chat", className: "f-cta" }, MAGAZINE_COPY.goChat),
-        createElement("a", { href: "/projects/new", className: "f-cta secondary" }, MAGAZINE_COPY.goCreate),
+        createElement("a", { href: "/chat", className: "f-cta" }, t.magazine.goChat),
+        createElement("a", { href: "/projects/new", className: "f-cta secondary" }, t.magazine.goCreate),
       ),
     );
   } else if (v.phase === "preparing") {
-    const label = v.projects.length > 1 ? `${v.projects.length} 个项目` : v.projects[0]?.target ?? "";
+    const label = v.projects.length > 1 ? t.magazine.projectsCount(v.projects.length) : v.projects[0]?.target ?? "";
     body = createElement("div", { className: "mag-empty" },
-      createElement("div", { className: "e-t" }, MAGAZINE_COPY.preparingTitle),
-      createElement("div", { className: "e-s" }, `「${label}」有了新进展就会出现在这里，之后每天早上 8:00 更新。`),
+      createElement("div", { className: "e-t" }, t.magazine.preparingTitle),
+      createElement("div", { className: "e-s" }, t.magazine.preparingProject(label)),
     );
   } else if (v.phase === "zero") {
     body = createElement("div", { className: "mag-empty" },
-      createElement("div", { className: "e-t" }, MAGAZINE_COPY.zeroTitle),
+      createElement("div", { className: "e-t" }, t.magazine.zeroTitle),
       createElement("div", { className: "e-s" }, zeroSub),
     );
   } else {
@@ -182,30 +186,30 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
               row.core ? createElement("div", { className: "m-why" }, row.core) : null,
               createElement("div", { className: "m-meta" },
                 createElement("span", { className: "m-src" }, metaLine(row, v.projects.length > 1)),
-                createElement("span", { className: "m-tog" }, open ? "收起" : "展开"),
+                createElement("span", { className: "m-tog" }, open ? t.magazine.collapse : t.magazine.expand),
               ),
             ),
           ),
           open ? createElement("div", { className: "m-more" },
             createElement("div", { className: "m-more-in" },
               createElement("div", { className: "m-more-pad" },
-                createElement("div", { className: "m-lab" }, "讲了什么 · AI 摘要"),
+                createElement("div", { className: "m-lab" }, t.magazine.summaryLabel),
                 row.summary
                   ? createElement("div", { className: "m-sum" }, row.summary)
-                  : createElement("div", { className: "m-sum muted" }, "摘要还在路上，先看原文出处。"),
+                  : createElement("div", { className: "m-sum muted" }, t.magazine.summaryPending),
                 createElement("div", { className: "m-src-row" },
                   createElement("span", { className: "m-host" }, row.host),
                   createElement("button", {
                     type: "button",
                     className: `m-copy hit ${copiedId === row.id ? "done" : ""}`,
                     onClick: () => void copy(row),
-                  }, copiedId === row.id ? "已复制 ✓" : "复制原文链接"),
+                  }, copiedId === row.id ? t.magazine.copied : t.magazine.copyLink),
                 ),
                 createElement("div", { className: "m-acts" },
                   row.tag
-                    ? createElement("a", { className: "m-mute hit", href: `/chat?prefill=${encodeURIComponent(`不想再看到「${row.tag}」这类内容`)}` }, `不想再看到「${row.tag}」这类`)
+                    ? createElement("a", { className: "m-mute hit", href: `/chat?prefill=${encodeURIComponent(t.magazine.muteTopicPrefill(row.tag))}` }, t.magazine.muteTopic(row.tag))
                     : null,
-                  createElement("button", { type: "button", className: "m-close hit", onClick: () => setOpenId("") }, "收起"),
+                  createElement("button", { type: "button", className: "m-close hit", onClick: () => setOpenId("") }, t.magazine.collapse),
                 ),
               ),
             ),
@@ -224,7 +228,7 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
         ),
         createElement("div", { className: "mag-issue" },
           createElement("div", { className: "mag-no" }, v.issue?.no ? `No. ${String(v.issue.no).padStart(3, "0")}` : ""),
-          createElement("div", { className: "mag-proj" }, projectLabelOf(v.projects)),
+          createElement("div", { className: "mag-proj" }, projectLabelOf(v.projects, locale)),
         ),
       ),
       createElement("div", { className: "mag-rule" }),
@@ -235,9 +239,9 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
     body,
     createElement("div", { className: "mag-foot" },
       createElement("div", { className: "f-row" },
-        createElement("span", { className: "f-l" }, MAGAZINE_COPY.updateEveryMorning),
+        createElement("span", { className: "f-l" }, t.magazine.updateEveryMorning),
         createElement("span", { className: "f-r" },
-          createElement("a", { className: "f-a hit", href: "/archive" }, MAGAZINE_COPY.archive),
+          createElement("a", { className: "f-a hit", href: "/archive" }, t.magazine.archive),
         ),
       ),
     ),

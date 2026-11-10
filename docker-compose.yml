@@ -99,7 +99,7 @@ services:
 
   # Pinned to a dated build by digest ("latest" changes daily); docs/release.md step 1 bumps it.
   rsshub:
-    image: diygod/rsshub:2026-11-08@sha256:5d63ad35c5685f8bacc09f3c2d9bcf3d0615f85dd9671cab4fc1c2c1d2f925ca
+    image: diygod/rsshub:2026-11-10@sha256:6ce545753185ed7c5c1043c452992c878098fe6e58accb3510d576ad79f6b16c
     restart: unless-stopped
 
 volumes:

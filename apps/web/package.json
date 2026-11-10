@@ -1,6 +1,6 @@
 {
   "name": "@topka/web",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -22,6 +22,7 @@
     "react-router": "8.5.1"
   },
   "devDependencies": {
+    "@babel/parser": "7.29.9",
     "@react-router/dev": "8.5.1",
     "@tailwindcss/vite": "4.3.5",
     "@types/jsdom": "^30.0.0",

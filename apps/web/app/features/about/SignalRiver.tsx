@@ -9,6 +9,7 @@
 import { SITE, withSubject } from "@topka/industry/site";
 import { useEffect, useRef, type ReactNode } from "react";
 import { shortSourceName } from "../../lib/format";
+import { useT } from "../../lib/i18n";
 
 export interface RiverSource {
   name: string;
@@ -20,7 +21,6 @@ export interface RiverSource {
 export const STAGES = [0, 0.25, 0.5, 0.75, 1] as const;
 
 const STEP = 3;
-const KIND: Record<string, string> = { x_search: "X 账号", rss: "RSS", web_list: "网页", mp_account: "公众号", json_list: "接口" };
 const FLASH_MS = 900;
 const INTRO_MS = 1800;
 /** Slow in, slow out: the river starts gently, crosses, and settles. */
@@ -290,6 +290,10 @@ export function SignalRiver({
   className?: string;
   children?: ReactNode;
 }) {
+  // The hover labels read the current dictionary without restarting the animation.
+  const strings = useT().about.river;
+  const words = useRef(strings);
+  words.current = strings;
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const labelRef = useRef<HTMLDivElement>(null);
@@ -482,7 +486,7 @@ export function SignalRiver({
       const p = L.paper;
       if (x >= p.x - 8 && x <= p.x + p.w + 8 && y >= p.y - 8 && y <= p.y + p.h + 8) {
         hover = { s: null, bundle: null, paper: true };
-        place(x, y, withSubject("日报"), "每天 08:00 出刊");
+        place(x, y, withSubject(words.current.paper), words.current.paperNote);
         redraw();
         return;
       }
@@ -505,13 +509,16 @@ export function SignalRiver({
       const b = L.bundles[s.bundle]!;
       if (x < L.x2) {
         hover = { s: best, bundle: null, paper: false };
-        const kind = s.source ? (KIND[s.source.kind] ?? "信源") : "信源";
-        place(x, y, s.source ? shortSourceName(s.source.name) : "一个信源", s.source?.heatOnly ? `${kind} · 只计入热度` : kind);
+        const w = words.current;
+        const kinds: Record<string, string> = { x_search: w.kinds.x, rss: "RSS", web_list: w.kinds.web, mp_account: w.kinds.mp, json_list: w.kinds.api };
+        const kind = s.source ? (kinds[s.source.kind] ?? w.legendSource) : w.legendSource;
+        place(x, y, s.source ? shortSourceName(s.source.name) : w.oneSource, s.source?.heatOnly ? `${kind}${w.heatOnly}` : kind);
       } else {
         hover = { s: null, bundle: s.bundle, paper: false };
-        if (x < L.gate) place(x, y, "同一件事", `${b.n} 个来源的报道合成一条`);
-        else if (b.kept) place(x, y, "进了精选", "有信息量，分数也够");
-        else place(x, y, "没进精选", "信息不够、重复或只是营销");
+        const w = words.current;
+        if (x < L.gate) place(x, y, w.sameStory, w.merged(b.n));
+        else if (b.kept) place(x, y, w.selectedLabel, w.selectedNote);
+        else place(x, y, w.rejectedLabel, w.rejectedNote);
       }
       redraw();
     };

@@ -1,7 +1,8 @@
 // Page metadata from one place: title template, canonical address, OG images, robots. The site's name
 // and wording come from the industry pack (industry/site.ts); its address from SITE_URL.
 import type { MetaDescriptor } from "react-router";
-import { SITE } from "@topka/industry/site";
+import { SITE, siteCopy } from "@topka/industry/site";
+import type { UiLocale } from "./i18n.ts";
 
 /**
  * The site's address: SITE_URL while rendering on the server (what crawlers and share previews read),
@@ -15,6 +16,9 @@ export function siteUrl(): string {
 export const HOME_TITLE = SITE.homeTitle;
 export const SITE_DESCRIPTION = SITE.description;
 
+/** Open Graph locale names for the UI locales. */
+const OG_LOCALE: Record<UiLocale, string> = { "zh-CN": "zh_CN", en: "en_US" };
+
 export interface PageMetaInput {
   title?: string | null;
   /** Use `title` verbatim as the document title (no " · <site>" suffix). */
@@ -26,6 +30,8 @@ export interface PageMetaInput {
   nofollow?: boolean;
   type?: "website" | "article";
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
+  /** The page's UI locale (the root loader's); picks the site copy and og:locale. Defaults to SITE.locale. */
+  locale?: UiLocale;
 }
 
 /**
@@ -47,8 +53,10 @@ export function titled(title: string): string {
 
 export function pageMeta(input: PageMetaInput): MetaDescriptor[] {
   const base = siteUrl();
-  const title = input.title ? (input.rawTitle ? input.title : titled(input.title)) : HOME_TITLE;
-  const description = input.description ?? SITE_DESCRIPTION;
+  const locale: UiLocale = input.locale ?? ((SITE.locale as string) === "en" ? "en" : "zh-CN");
+  const copy = siteCopy(locale);
+  const title = input.title ? (input.rawTitle ? input.title : titled(input.title)) : copy.homeTitle;
+  const description = input.description ?? copy.description;
   const url = `${base}${input.path}`;
   const image = input.image ? (input.image.startsWith("http") ? input.image : `${base}${input.image}`) : `${base}/og/site.png`;
   const tags: MetaDescriptor[] = [
@@ -57,15 +65,15 @@ export function pageMeta(input: PageMetaInput): MetaDescriptor[] {
     { tagName: "link", rel: "canonical", href: url },
     { property: "og:site_name", content: SITE.name },
     { property: "og:type", content: input.type ?? "website" },
-    { property: "og:title", content: input.title ?? HOME_TITLE },
+    { property: "og:title", content: input.title ?? copy.homeTitle },
     { property: "og:description", content: description },
     { property: "og:url", content: url },
     { property: "og:image", content: image },
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
-    { property: "og:locale", content: SITE.locale.replace("-", "_") },
+    { property: "og:locale", content: OG_LOCALE[locale] },
     { name: "twitter:card", content: "summary_large_image" },
-    { name: "twitter:title", content: input.title ?? HOME_TITLE },
+    { name: "twitter:title", content: input.title ?? copy.homeTitle },
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: image },
   ];

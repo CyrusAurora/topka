@@ -4,6 +4,8 @@
 // is a thin shell around it.
 import { createElement, useEffect, useState, type FC, type ReactElement } from "react";
 import { SOURCE_REGION_TOKENS, sourceMatchesRegionFilter } from "@topka/contracts/regions";
+import { messages, problemMessage, useLocale, useT, type UiLocale } from "../../lib/i18n.ts";
+import { zh } from "../../lib/locales/projects.ts";
 
 export interface PackSourceView {
   id: string;
@@ -25,33 +27,23 @@ export interface PrefsView {
   picks: string[];
 }
 
-// --- locked copy (handover §2.2) --------------------------------------------
+// --- locked copy (handover §2.2); the values live in the dictionaries ------
 
-export const PACKS_LOADING = "正在读策展包……";
-export const PACKS_UNAVAILABLE = "策展包暂时不可用，稍后再试。";
-export const EMPTY_PACK_HINT = "这个包还没有配好来源清单，直接下一步起名也行。";
-export const GOAL_PURPOSE_REQUIRED = "目标和方向都要有，回去补一句描述再来。";
-export const NAME_REQUIRED = "起个名字再创建。";
-export const DONE_TITLE = "跟踪项目建好了";
-export const DONE_NOTICE = "采集每天早晚各跑一次，新动态会进简报。";
-export const OFFLINE_COPY = "没网，稍后再试。";
-export const CREATE_FAILED_COPY = "创建没有成功，请稍后再试。";
-export const WIZARD_TITLE = "选个方向开始盯";
-export const WIZARD_SUBTITLE = "四步：选包，挑来源，起个名，确认一下。不用填表。";
-export const NAMING_TITLE = "第三步：起个名就建好";
-export const NAMING_LABEL = "项目名（留空则用包名）";
-export const CONFIRM_LEAD = "以下是我理解的跟踪方向，确认后开始跟踪：";
-export const CONFIRM_SUBTITLE = "核对一下，没问题就创建";
-export const SOURCE_INFO_TAIL = "个包内来源持续更新。";
+export const PACKS_UNAVAILABLE = zh.wizard.packsUnavailable;
+export const EMPTY_PACK_HINT = zh.wizard.emptyPackHint;
+export const GOAL_PURPOSE_REQUIRED = zh.wizard.goalPurposeRequired;
+export const NAME_REQUIRED = zh.wizard.nameRequired;
+export const DONE_NOTICE = zh.wizard.doneNotice;
 
 /** Assembles the tracking purpose from the picks (handover §2.2, confirm card rules). */
-export function assemblePurpose(pack: PackView, picks: readonly string[]): string {
+export function assemblePurpose(pack: PackView, picks: readonly string[], locale: UiLocale = "zh-CN"): string {
+  const t = messages(locale).projects.wizard;
   const names = picks
     .map((id) => pack.sources.find((source) => source.id === id)?.name)
     .filter((name): name is string => Boolean(name));
-  if (names.length === 0) return `跟踪${pack.label}方向，覆盖全部${pack.sources.length}个来源`;
-  if (names.length <= 3) return `跟踪${pack.label}方向，重点看${names.join("、")}`;
-  return `跟踪${pack.label}方向，重点看${names.slice(0, 3).join("、")}等${names.length}个来源`;
+  if (names.length === 0) return t.purposeAll(pack.label, pack.sources.length);
+  if (names.length <= 3) return t.purposePicks(pack.label, names.join(t.namesJoin));
+  return t.purposePicksMany(pack.label, names.slice(0, 3).join(t.namesJoin), names.length);
 }
 
 /**
@@ -75,9 +67,6 @@ export function effectiveTarget(name: string, pack: PackView | null): string {
 export function filterSourcesByRegion(sources: readonly PackSourceView[], filter: readonly string[]): PackSourceView[] {
   return sources.filter((source) => sourceMatchesRegionFilter(source.regions ?? ["global"], filter));
 }
-
-export const REGION_FILTER_LABEL = "按区域找";
-export const REGION_FILTER_ALL = "全部";
 
 // --- the component -----------------------------------------------------------
 
@@ -121,6 +110,8 @@ export interface GuidedCreationProps {
 
 export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
   const doFetch = props.fetchImpl ?? fetch.bind(globalThis);
+  const t = useT().projects.wizard;
+  const locale = useLocale();
   const [state, setState] = useState<WizardState>(initialState);
 
   useEffect(() => {
@@ -158,7 +149,7 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
 
   const pack = state.packId ? state.packs.find((p) => p.id === state.packId) ?? null : null;
   const target = effectiveTarget(state.name, pack);
-  const purpose = pack ? assemblePurpose(pack, state.picks) : "";
+  const purpose = pack ? assemblePurpose(pack, state.picks, locale) : "";
 
   const choosePack = (chosen: PackView) => {
     if (chosen.available === false) return;
@@ -191,14 +182,14 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
         body: JSON.stringify({ target, purpose, sourceIds }),
       });
       if (!res.ok) {
-        const problem = (await res.json().catch(() => ({}))) as { detail?: string };
-        setState((s) => ({ ...s, creating: false, createError: problem.detail ?? CREATE_FAILED_COPY }));
+        const problem = (await res.json().catch(() => ({}))) as { code?: string; detail?: string; status?: number; retryAfter?: number };
+        setState((s) => ({ ...s, creating: false, createError: problemMessage(locale, problem, t.createFailed) }));
         return;
       }
       const body = (await res.json().catch(() => ({}))) as { project?: { id?: string } };
       setState((s) => ({ ...s, creating: false, created: true, step: "done", createdProject: { id: body.project?.id ?? "", target, purpose } }));
     } catch {
-      setState((s) => ({ ...s, creating: false, createError: OFFLINE_COPY }));
+      setState((s) => ({ ...s, creating: false, createError: t.offline }));
     }
   };
 
@@ -214,41 +205,41 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
 
   let body: ReactElement;
   if (state.phase === "loading") {
-    body = createElement("p", { role: "status", className: "mt-8 text-[14px] text-ink-3" }, PACKS_LOADING);
+    body = createElement("p", { role: "status", className: "mt-8 text-[14px] text-ink-3" }, t.packsLoading);
   } else if (state.phase === "unavailable") {
-    body = createElement("p", { role: "alert", className: "mt-8 text-[14px] text-hot" }, PACKS_UNAVAILABLE);
+    body = createElement("p", { role: "alert", className: "mt-8 text-[14px] text-hot" }, t.packsUnavailable);
   } else if (state.step === "packs") {
     const previous = state.prefs ? state.packs.find((p) => p.id === state.prefs!.packId) : null;
     body = createElement("div", null,
       previous && createElement("div", { className: "mb-5 rounded-2xl bg-bg-sunk px-4 py-3 text-[13px] text-ink-2" },
-        `上次你选了${previous.label}包`,
-        createElement("button", { type: "button", onClick: usePrevious, className: `${secondary} mt-2 w-full` }, "直接用上次的"),
+        t.previousPicked(previous.label),
+        createElement("button", { type: "button", onClick: usePrevious, className: `${secondary} mt-2 w-full` }, t.usePrevious),
       ),
       createElement("div", { className: "flex flex-col gap-2" },
         state.packs.map((p) =>
           p.available === false
-            ? createElement("div", { key: p.id, className: `${secondary} justify-between opacity-55`, "aria-disabled": "true" },
-                createElement("span", null, `${p.label}（${p.sources.length} 个源）`),
-                createElement("span", { className: "text-[12px] text-ink-3" }, "暂不可用"),
+            ? createElement("div", { key: p.id, className: `${secondary.replace("justify-center", "justify-between")} gap-3 opacity-55`, "aria-disabled": "true" },
+                createElement("span", null, t.packOption(p.label, p.sources.length)),
+                createElement("span", { className: "text-[12px] text-ink-3" }, t.unavailable),
               )
-            : createElement("button", { key: p.id, type: "button", onClick: () => choosePack(p), className: `${secondary} justify-start` }, `${p.label}（${p.sources.length} 个源）`),
+            : createElement("button", { key: p.id, type: "button", onClick: () => choosePack(p), className: secondary.replace("justify-center", "justify-start") }, t.packOption(p.label, p.sources.length)),
         ),
       ),
     );
   } else if (state.step === "sources" && pack) {
     const visible = filterSourcesByRegion(pack.sources, state.regionFilter);
     body = createElement("div", null,
-      createElement("h2", { className: "text-[15px] font-semibold text-ink" }, `第二步：${pack.label}包盯这些来源，勾上重点看的`),
-      createElement("div", { className: "mt-3 flex flex-wrap items-center gap-1.5", "aria-label": REGION_FILTER_LABEL },
-        createElement("span", { className: "mr-1 text-[12px] text-ink-3" }, REGION_FILTER_LABEL),
+      createElement("h2", { className: "text-[15px] font-semibold text-ink" }, t.sourcesTitle(pack.label)),
+      createElement("div", { className: "mt-3 flex flex-wrap items-center gap-1.5", "aria-label": t.regionFilterLabel },
+        createElement("span", { className: "mr-1 text-[12px] text-ink-3" }, t.regionFilterLabel),
         createElement("button", {
           key: "all",
           type: "button",
           "aria-pressed": state.regionFilter.length === 0,
           onClick: () => setState((s) => ({ ...s, regionFilter: [] })),
           className: state.regionFilter.length === 0 ? `${primary} !h-8 !px-3 !text-[12px]` : `${secondary} !h-8 !px-3 !text-[12px]`,
-        }, REGION_FILTER_ALL),
-        ...SOURCE_REGION_TOKENS.filter((t) => t !== "global").map((token) => {
+        }, t.regionFilterAll),
+        ...SOURCE_REGION_TOKENS.filter((region) => region !== "global").map((token) => {
           const active = state.regionFilter.includes(token);
           return createElement("button", {
             key: token,
@@ -260,7 +251,7 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
         }),
       ),
       visible.length === 0
-        ? createElement("p", { role: "status", className: "mt-4 text-[13.5px] text-ink-2" }, pack.sources.length === 0 ? EMPTY_PACK_HINT : "这个区域没有来源，换个区域或选全部。")
+        ? createElement("p", { role: "status", className: "mt-4 text-[13.5px] text-ink-2" }, pack.sources.length === 0 ? t.emptyPackHint : t.regionEmpty)
         : createElement("ul", { className: "mt-4 flex flex-col gap-2" },
             visible.map((source) =>
               createElement("li", { key: source.id },
@@ -273,25 +264,25 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
                     className: "size-4 accent-[var(--color-accent)]",
                   }),
                   createElement("span", null, source.name),
-                  source.publisher ? createElement("span", { className: "text-[12px] text-ink-3" }, `（${source.publisher}）`) : null,
+                  source.publisher ? createElement("span", { className: "text-[12px] text-ink-3" }, t.publisherNote(source.publisher)) : null,
                 ),
               ),
             ),
           ),
       createElement("div", { className: "mt-6 flex gap-2" },
-        createElement("button", { type: "button", onClick: () => setState((s) => ({ ...s, step: "naming", problem: null })), className: primary }, "就这些，下一步"),
-        createElement("button", { type: "button", onClick: () => setState((s) => ({ ...s, step: "packs", packId: null, picks: [] })), className: secondary }, "换个包"),
+        createElement("button", { type: "button", onClick: () => setState((s) => ({ ...s, step: "naming", problem: null })), className: primary }, t.thatAll),
+        createElement("button", { type: "button", onClick: () => setState((s) => ({ ...s, step: "packs", packId: null, picks: [] })), className: secondary }, t.changePack),
       ),
     );
   } else if (state.step === "naming" && pack) {
     const first = state.picks.length > 0 ? pack.sources.find((source) => source.id === state.picks[0]) : null;
     const infoLine = first
-      ? `${first.name}${first.publisher ? `（${first.publisher}）` : ""}；另有${pack.sources.length - 1}${SOURCE_INFO_TAIL}`
-      : `覆盖全部${pack.sources.length}个来源。`;
+      ? t.infoLinePicked(first.name, first.publisher ?? null, pack.sources.length)
+      : t.infoLineAll(pack.sources.length);
     body = createElement("div", null,
-      createElement("h2", { className: "text-[15px] font-semibold text-ink" }, NAMING_TITLE),
+      createElement("h2", { className: "text-[15px] font-semibold text-ink" }, t.namingTitle),
       createElement("p", { className: "mt-2 text-[13px] leading-relaxed text-ink-2" }, infoLine),
-      createElement("label", { htmlFor: "project-name", className: "mt-5 block text-[13px] font-medium text-ink-2" }, NAMING_LABEL),
+      createElement("label", { htmlFor: "project-name", className: "mt-5 block text-[13px] font-medium text-ink-2" }, t.namingLabel),
       createElement("input", {
         id: "project-name",
         type: "text",
@@ -300,47 +291,47 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
         placeholder: pack.label,
         className: "mt-2 h-11 w-full rounded-full border border-line-strong bg-surface px-4 text-[14.5px] text-ink outline-none transition-colors placeholder:text-ink-4 focus:border-accent",
       }),
-      state.problem && createElement("p", { role: "alert", className: "mt-3 text-[12.5px] text-hot" }, state.problem === "goal-purpose" ? GOAL_PURPOSE_REQUIRED : NAME_REQUIRED),
+      state.problem && createElement("p", { role: "alert", className: "mt-3 text-[12.5px] text-hot" }, state.problem === "goal-purpose" ? t.goalPurposeRequired : t.nameRequired),
       createElement("div", { className: "mt-6 flex gap-2" },
-        createElement("button", { type: "button", onClick: preview, className: primary }, "预览确认"),
-        createElement("button", { type: "button", onClick: () => setState((s) => ({ ...s, step: "sources" })), className: secondary }, "回去改来源"),
+        createElement("button", { type: "button", onClick: preview, className: primary }, t.previewConfirm),
+        createElement("button", { type: "button", onClick: () => setState((s) => ({ ...s, step: "sources" })), className: secondary }, t.backToSources),
       ),
     );
   } else if (state.step === "confirm" && pack) {
     const names = state.picks.map((id) => pack.sources.find((source) => source.id === id)?.name).filter((n): n is string => Boolean(n));
-    const summary = names.length > 0 ? `重点看${names.join("、")}` : `覆盖全部${pack.sources.length}个来源`;
+    const summary = names.length > 0 ? t.summaryPicks(names.join(t.namesJoin)) : t.summaryAll(pack.sources.length);
     body = createElement("div", null,
-      createElement("h2", { className: "text-[16px] font-semibold text-ink" }, `${pack.label} · 创建确认`),
-      createElement("p", { className: "mt-1 text-[13px] text-ink-3" }, CONFIRM_SUBTITLE),
-      createElement("p", { className: "mt-4 text-[13.5px] text-ink-2" }, CONFIRM_LEAD),
+      createElement("h2", { className: "text-[16px] font-semibold text-ink" }, t.confirmTitle(pack.label)),
+      createElement("p", { className: "mt-1 text-[13px] text-ink-3" }, t.confirmSubtitle),
+      createElement("p", { className: "mt-4 text-[13.5px] text-ink-2" }, t.confirmLead),
       createElement("div", { className: "mt-2 rounded-2xl border border-line bg-surface px-4 py-3" },
-        row("跟踪目标", target),
-        row("跟踪目的", purpose),
-        row("来源包摘要", summary),
+        row(t.targetLabel, target),
+        row(t.purposeLabel, purpose),
+        row(t.sourcesSummaryLabel, summary),
       ),
       state.createError && createElement("p", { role: "alert", className: "mt-3 text-[12.5px] text-hot" }, state.createError),
       createElement("div", { className: "mt-6 flex gap-2" },
-        createElement("button", { type: "button", onClick: () => void confirm(), disabled: state.creating || state.created, className: primary }, state.creating ? "正在创建…" : "确认创建"),
-        createElement("button", { type: "button", onClick: () => setState((s) => ({ ...s, step: "naming" })), disabled: state.creating, className: secondary }, "回去改"),
+        createElement("button", { type: "button", onClick: () => void confirm(), disabled: state.creating || state.created, className: primary }, state.creating ? t.creating : t.confirmCreate),
+        createElement("button", { type: "button", onClick: () => setState((s) => ({ ...s, step: "naming" })), disabled: state.creating, className: secondary }, t.backEdit),
       ),
     );
   } else if (state.step === "done" && state.createdProject) {
     body = createElement("div", null,
-      createElement("h2", { className: "text-[16px] font-semibold text-ink" }, DONE_TITLE),
+      createElement("h2", { className: "text-[16px] font-semibold text-ink" }, t.doneTitle),
       createElement("div", { className: "mt-3 rounded-2xl border border-line bg-surface px-4 py-3" },
-        row("跟踪目标", state.createdProject.target),
-        row("跟踪目的", state.createdProject.purpose),
+        row(t.targetLabel, state.createdProject.target),
+        row(t.purposeLabel, state.createdProject.purpose),
       ),
-      createElement("p", { className: "mt-4 text-[13px] leading-relaxed text-ink-2" }, DONE_NOTICE),
-      createElement("a", { href: "/projects", className: `${secondary} mt-6` }, "回到项目总览"),
+      createElement("p", { className: "mt-4 text-[13px] leading-relaxed text-ink-2" }, t.doneNotice),
+      createElement("a", { href: "/projects", className: `${secondary} mt-6` }, t.backToOverview),
     );
   } else {
-    body = createElement("p", { className: "mt-8 text-[14px] text-ink-3" }, PACKS_UNAVAILABLE);
+    body = createElement("p", { className: "mt-8 text-[14px] text-ink-3" }, t.packsUnavailable);
   }
 
   return createElement("div", { className: "mx-auto w-full max-w-[560px] px-4 py-10" },
-    createElement("h1", { className: "text-[17px] font-semibold text-ink" }, WIZARD_TITLE),
-    createElement("p", { className: "mt-1 text-[13px] text-ink-3" }, WIZARD_SUBTITLE),
+    createElement("h1", { className: "text-[17px] font-semibold text-ink" }, t.title),
+    createElement("p", { className: "mt-1 text-[13px] text-ink-3" }, t.subtitle),
     createElement("div", { className: "card mt-6 p-6" }, body),
   );
 }

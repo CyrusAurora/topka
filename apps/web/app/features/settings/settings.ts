@@ -4,6 +4,8 @@
 // list shows last four characters only, never plaintext. A plain .ts factory for the node --test
 // component tests; the route file is a thin shell.
 import { createElement, useCallback, useEffect, useState, type FC, type ReactElement } from "react";
+import { messages, problemMessage, useLocale, useT, type UiLocale } from "../../lib/i18n.ts";
+import { zh } from "../../lib/locales/settings.ts";
 
 export interface SettingsAccount {
   email: string;
@@ -34,12 +36,13 @@ export interface SettingsModelStatus {
 }
 
 /** The 「对话用的模型」 line, from the real status (not from whether keys can be stored). */
-export function chatModelLine(status: SettingsModelStatus | null | undefined): { text: string; tone: "ok" | "warn" } {
-  if (!status) return { text: SETTINGS_COPY.modelUnknown, tone: "warn" };
-  if (status.chat === "user-key") return { text: `${SETTINGS_COPY.modelUser}${status.userKey.last4 ? `（…${status.userKey.last4}）` : ""}`, tone: "ok" };
-  if (status.chat === "instance") return { text: SETTINGS_COPY.modelInstance, tone: "ok" };
-  if (status.reason === "model-calls-off") return { text: SETTINGS_COPY.modelOff, tone: "warn" };
-  return { text: status.byokAvailable ? SETTINGS_COPY.modelNoneByok : SETTINGS_COPY.modelNone, tone: "warn" };
+export function chatModelLine(status: SettingsModelStatus | null | undefined, locale: UiLocale = "zh-CN"): { text: string; tone: "ok" | "warn" } {
+  const t = messages(locale).settings;
+  if (!status) return { text: t.modelUnknown, tone: "warn" };
+  if (status.chat === "user-key") return { text: `${t.modelUser}${status.userKey.last4 ? t.modelUserLast4(status.userKey.last4) : ""}`, tone: "ok" };
+  if (status.chat === "instance") return { text: t.modelInstance, tone: "ok" };
+  if (status.reason === "model-calls-off") return { text: t.modelOff, tone: "warn" };
+  return { text: status.byokAvailable ? t.modelNoneByok : t.modelNone, tone: "warn" };
 }
 
 export interface SettingsProject {
@@ -58,66 +61,27 @@ export interface SettingsView {
   projects: SettingsProject[];
 }
 
-export const SETTINGS_COPY = {
-  title: "设置",
-  accountHeading: "账号",
-  localeLabel: "界面语言",
-  localeZh: "简体中文",
-  localeEn: "English",
-  localeSaved: "已保存。",
-  localeFailed: "保存没有成功。",
-  logout: "退出登录",
-  logoutDone: "已退出登录。",
-  deleteHeading: "注销账号",
-  deleteLead: "注销会删掉账号、项目和对话记录，无法恢复。输入密码确认。",
-  delete: "注销账号",
-  deleteDone: "账号已注销。",
-  wrongPassword: "密码不对，注销不了。",
-  keysHeading: "自带的模型 Key",
-  keysSub: "填你自己的 OpenAI 兼容 Key（要有 Base URL），你的对话优先用它；没填就用实例配置的模型（如果有）。只显示后四位。",
-  keyUnavailable: "这个实例没开放「自带 Key」：请改用实例的模型，或让管理员设置 KEY_ENCRYPTION_SECRET。",
-  providerLabel: "provider（字母、数字、连字符）",
-  apiKeyLabel: "Key",
-  baseUrlLabel: "Base URL（必填，公网 https 地址，例如 https://api.openai.com/v1）",
-  modelLabel: "模型（例如 gpt-4o-mini；留空用实例默认）",
-  saveKey: "保存",
-  keySaved: "已保存。",
-  keyRemoved: "已删除。",
-  noKeys: "还没有 Key。",
-  keyListSub: "当前保存的 Key：",
-  instanceKey: "对话用的模型",
-  modelUser: "你自己的 Key",
-  modelInstance: "实例的模型（可用）",
-  modelOff: "不可用：这个实例关闭了模型调用",
-  modelNoneByok: "没有可用的模型：在下面填你自己的 Key 就能对话",
-  modelNone: "没有可用的模型：实例没配置，也没开放自带 Key",
-  modelUnknown: "暂时读不到模型状态",
-  keyMissingBase: "已保存的 Key 缺 Base URL，对话还用不上它：删掉后带上 Base URL 重新保存。",
-  keyMissingModel: "已保存的 Key 没填模型，实例也没有默认模型：删掉后带上模型名重新保存。",
-  feedHeading: "每日提醒（订阅源）",
-  feedLead: "每天 08:00（台北时间）固定的 3 件会出现在一个只属于你的 Atom 订阅地址里：放进任意 RSS 阅读器（Feedly、Inoreader、NetNewsWire、Reeder…），新一期一到就提醒你。不发邮件、不推送。",
-  feedOff: "还没开。",
-  feedOn: "已开启",
-  feedEnable: "生成订阅地址",
-  feedRotate: "换一个地址",
-  feedDisable: "关闭",
-  feedCopy: "复制",
-  feedCopied: "已复制",
-  feedOnce: "这个地址只显示这一次，别分享给别人；丢了就「换一个地址」，旧地址立即失效。",
-  feedFailed: "没能完成，请稍后再试。",
-  projectsHeading: "项目",
-  noProjects: "还没有项目。",
-  projectsToday: "项目今日",
-  createProject: "新建项目",
-} as const;
+export const SETTINGS_COPY = zh;
 
 export interface SettingsPageProps {
   fetchImpl?: typeof fetch;
   /** After a successful delete the page may point the reader to the login door. */
   onDeleted?: () => void;
+  /** After the language or time zone changes: the page is drawn again in it (default: reload). */
+  onPrefsChanged?: () => void;
+}
+
+/** The IANA zones this browser knows, with the reader's current one kept even if it is not listed. */
+export function timeZoneOptions(current: string): string[] {
+  const known = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [];
+  const list = known.length ? [...known] : ["Asia/Shanghai", "Asia/Tokyo", "Europe/London", "America/New_York", "America/Los_Angeles", "UTC"];
+  if (current && !list.includes(current)) list.unshift(current);
+  return list;
 }
 
 export const SettingsPage: FC<SettingsPageProps> = (props) => {
+  const t = useT().settings;
+  const locale = useLocale();
   const doFetch = props.fetchImpl ?? fetch.bind(globalThis);
   const [view, setView] = useState<SettingsView>({
     phase: "loading",
@@ -137,6 +101,7 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
   const [feed, setFeed] = useState<{ enabled: boolean; url: string | null; state: "idle" | "sending" | "err"; copied: boolean }>({ enabled: false, url: null, state: "idle", copied: false });
   const [keyState, setKeyState] = useState<{ kind: "idle" | "sending" | "ok" | "err"; message?: string }>({ kind: "idle" });
   const [localeState, setLocaleState] = useState<{ kind: "idle" | "sending" | "ok" | "err" }>({ kind: "idle" });
+  const prefsChanged = props.onPrefsChanged ?? (() => window.location.reload());
 
   const load = useCallback(async () => {
     try {
@@ -227,16 +192,16 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
         body: JSON.stringify({ password: delPassword }),
       });
       if (!res.ok) {
-        const problem = (await res.json().catch(() => ({}))) as { detail?: string };
+        const problem = (await res.json().catch(() => ({}))) as { code?: string; detail?: string; status?: number; retryAfter?: number };
         setDelState("error");
-        setDelError(problem.detail ?? SETTINGS_COPY.wrongPassword);
+        setDelError(problemMessage(locale, problem, t.wrongPassword));
         return;
       }
       setDelState("done");
       window.setTimeout(() => (props.onDeleted ? props.onDeleted() : window.location.assign("/login")), 400);
     } catch {
       setDelState("error");
-      setDelError("没网，注销没有完成。");
+      setDelError(t.noNetworkDelete);
     }
   };
 
@@ -256,17 +221,17 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
         }),
       });
       if (res.ok) {
-        setKeyState({ kind: "ok", message: SETTINGS_COPY.keySaved });
+        setKeyState({ kind: "ok", message: t.keySaved });
         setKeyApi("");
         setKeyBase("");
         setKeyModel("");
         await load();
         return;
       }
-      const problem = (await res.json().catch(() => ({}))) as { detail?: string };
-      setKeyState({ kind: "err", message: problem.detail ?? "保存没有成功。" });
+      const problem = (await res.json().catch(() => ({}))) as { code?: string; detail?: string; status?: number; retryAfter?: number };
+      setKeyState({ kind: "err", message: problemMessage(locale, problem, t.saveFailed) });
     } catch {
-      setKeyState({ kind: "err", message: "没网，Key 没有保存。" });
+      setKeyState({ kind: "err", message: t.noNetworkKey });
     }
   };
 
@@ -297,7 +262,7 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
     try {
       const res = await doFetch(`/api/me/keys/${encodeURIComponent(provider)}`, { method: "DELETE" });
       if (res.ok) {
-        setKeyState({ kind: "ok", message: SETTINGS_COPY.keyRemoved });
+        setKeyState({ kind: "ok", message: t.keyRemoved });
         await load();
       }
     } catch {
@@ -305,18 +270,20 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
     }
   };
 
-  const setLocale = async (locale: string) => {
+  // Language and time zone go through the same PATCH; the page is drawn again in the new setting.
+  const setPrefs = async (change: { locale?: string; timezone?: string }) => {
     if (localeState.kind === "sending") return;
     setLocaleState({ kind: "sending" });
     try {
       const res = await doFetch("/api/auth/me", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ locale }),
+        body: JSON.stringify(change),
       });
       if (res.ok) {
         setLocaleState({ kind: "ok" });
         await load();
+        prefsChanged();
         return;
       }
       setLocaleState({ kind: "err" });
@@ -327,154 +294,166 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
 
   let body: ReactElement;
   if (v.phase === "loading") {
-    body = createElement("p", { role: "status", className: "mag-note" }, "正在读设置……");
+    body = createElement("p", { role: "status", className: "mag-note" }, t.loading);
   } else if (v.phase === "signed-out") {
     body = createElement("div", { className: "mag-empty" },
-      createElement("div", { className: "e-t" }, "请先登录。"),
-      createElement("a", { href: "/login", className: "e-cta" }, "去登录"),
+      createElement("div", { className: "e-t" }, t.signedOutTitle),
+      createElement("a", { href: "/login", className: "e-cta" }, t.signedOutCta),
     );
   } else if (v.phase === "failed") {
     body = createElement("div", { className: "mag-empty" },
-      createElement("div", { className: "e-t" }, "设置暂时打不开，请稍后再试。"),
+      createElement("div", { className: "e-t" }, t.loadFailed),
     );
   } else {
     const keyRows = v.keys.length
       ? createElement("div", { className: "settings-keylist" },
-          createElement("div", { className: "settings-note" }, SETTINGS_COPY.keyListSub),
+          createElement("div", { className: "settings-note" }, t.keyListSub),
           v.keys.map((k) =>
             createElement("div", { key: k.provider, className: "settings-row" },
-              createElement("span", null, `${k.provider}（${k.last4}）`),
-              createElement("button", { type: "button", className: "hitlink", onClick: () => void removeKey(k.provider) }, "删除"),
+              createElement("span", null, t.keyRow(k.provider, k.last4)),
+              createElement("button", { type: "button", className: "hitlink", onClick: () => void removeKey(k.provider) }, t.removeKey),
             ),
           ),
         )
-      : createElement("p", { className: "settings-note" }, SETTINGS_COPY.noKeys);
+      : createElement("p", { className: "settings-note" }, t.noKeys);
 
     const projRows = v.projects.length
       ? createElement("div", { className: "settings-projs" },
           v.projects.map((p) =>
             createElement("a", { key: p.id, href: `/today/${encodeURIComponent(p.slug)}`, className: "settings-proj-row" },
               createElement("span", null, p.target),
-              createElement("span", { className: "v" }, SETTINGS_COPY.projectsToday),
+              createElement("span", { className: "v" }, t.projectsToday),
             ),
           ),
           createElement("a", { href: "/projects/new", className: "settings-proj-row" },
-            createElement("span", null, SETTINGS_COPY.createProject),
+            createElement("span", null, t.createProject),
             createElement("span", { className: "v" }, "+"),
           ),
         )
-      : createElement("p", { className: "settings-note" }, SETTINGS_COPY.noProjects);
+      : createElement("p", { className: "settings-note" }, t.noProjects);
 
     body = createElement("div", null,
       createElement("section", { className: "settings-section" },
-        createElement("h2", null, SETTINGS_COPY.accountHeading),
+        createElement("h2", null, t.accountHeading),
         createElement("div", { className: "settings-row" },
-          createElement("span", null, "邮箱"),
+          createElement("span", null, t.emailLabel),
           createElement("span", { className: "v" }, v.account?.email ?? ""),
         ),
         createElement("div", { className: "settings-row" },
-          createElement("span", null, SETTINGS_COPY.localeLabel),
+          createElement("span", null, t.localeLabel),
           createElement("span", {
             className: "v",
             "data-testid": "locale-current",
-          }, v.account?.locale === "en" ? SETTINGS_COPY.localeEn : SETTINGS_COPY.localeZh),
+          }, v.account?.locale === "en" ? t.localeEn : t.localeZh),
         ),
         createElement("div", { className: "settings-actions" },
           createElement("button", {
             type: "button",
             "data-testid": "locale-zh",
-            onClick: () => void setLocale("zh-CN"),
+            onClick: () => void setPrefs({ locale: "zh-CN" }),
             disabled: localeState.kind === "sending",
             className: v.account?.locale !== "en" ? "primary" : "",
-          }, SETTINGS_COPY.localeZh),
+          }, t.localeZh),
           createElement("button", {
             type: "button",
             "data-testid": "locale-en",
-            onClick: () => void setLocale("en"),
+            onClick: () => void setPrefs({ locale: "en" }),
             disabled: localeState.kind === "sending",
             className: v.account?.locale === "en" ? "primary" : "",
-          }, SETTINGS_COPY.localeEn),
+          }, t.localeEn),
         ),
-        localeState.kind === "ok" ? createElement("p", { role: "status", className: "settings-msg ok" }, SETTINGS_COPY.localeSaved) : null,
-        localeState.kind === "err" ? createElement("p", { role: "alert", className: "settings-msg err" }, SETTINGS_COPY.localeFailed) : null,
         createElement("div", { className: "settings-row" },
-          createElement("span", null, SETTINGS_COPY.instanceKey),
-          createElement("span", { className: `v ${chatModelLine(v.keyStatus.model).tone === "warn" ? "warn" : ""}`, "data-testid": "chat-model-status" }, chatModelLine(v.keyStatus.model).text),
+          createElement("label", { htmlFor: "time-zone" }, t.timeZoneLabel),
+          createElement("select", {
+            id: "time-zone",
+            "data-testid": "timezone-select",
+            className: "v",
+            value: v.account?.timezone ?? "Asia/Shanghai",
+            disabled: localeState.kind === "sending",
+            onChange: (e: { target: { value: string } }) => void setPrefs({ timezone: e.target.value }),
+          }, timeZoneOptions(v.account?.timezone ?? "Asia/Shanghai").map((z) => createElement("option", { key: z, value: z }, z))),
+        ),
+        createElement("p", { className: "settings-note" }, t.timeZoneHint),
+        localeState.kind === "ok" ? createElement("p", { role: "status", className: "settings-msg ok" }, t.localeSaved) : null,
+        localeState.kind === "err" ? createElement("p", { role: "alert", className: "settings-msg err" }, t.localeFailed) : null,
+        createElement("div", { className: "settings-row" },
+          createElement("span", null, t.instanceKey),
+          createElement("span", { className: `v ${chatModelLine(v.keyStatus.model, locale).tone === "warn" ? "warn" : ""}`, "data-testid": "chat-model-status" }, chatModelLine(v.keyStatus.model, locale).text),
         ),
         createElement("div", { className: "settings-actions" },
           logoutState === "done"
-            ? createElement("p", { role: "status", className: "settings-msg ok" }, SETTINGS_COPY.logoutDone)
-            : createElement("button", { type: "button", onClick: logout, disabled: logoutState === "sending" }, logoutState === "sending" ? "正在退出…" : SETTINGS_COPY.logout),
+            ? createElement("p", { role: "status", className: "settings-msg ok" }, t.logoutDone)
+            : createElement("button", { type: "button", onClick: logout, disabled: logoutState === "sending" }, logoutState === "sending" ? t.logoutSending : t.logout),
         ),
       ),
 
       createElement("section", { className: "settings-section", id: "model-key" },
-        createElement("h2", null, SETTINGS_COPY.keysHeading),
-        createElement("p", { className: "settings-note" }, SETTINGS_COPY.keysSub),
+        createElement("h2", null, t.keysHeading),
+        createElement("p", { className: "settings-note" }, t.keysSub),
         v.keyStatus.model?.userKey.problem
-          ? createElement("p", { role: "alert", className: "settings-msg err" }, v.keyStatus.model.userKey.problem === "missing-base-url" ? SETTINGS_COPY.keyMissingBase : SETTINGS_COPY.keyMissingModel)
+          ? createElement("p", { role: "alert", className: "settings-msg err" }, v.keyStatus.model.userKey.problem === "missing-base-url" ? t.keyMissingBase : t.keyMissingModel)
           : null,
-        !v.keyStatus.configured ? createElement("p", { role: "alert", className: "settings-msg err" }, SETTINGS_COPY.keyUnavailable) : createElement("div", { className: "settings-form" },
+        !v.keyStatus.configured ? createElement("p", { role: "alert", className: "settings-msg err" }, t.keyUnavailable) : createElement("div", { className: "settings-form" },
           createElement("div", { className: "field" },
-            createElement("label", { htmlFor: "key-provider" }, SETTINGS_COPY.providerLabel),
+            createElement("label", { htmlFor: "key-provider" }, t.providerLabel),
             createElement("input", { id: "key-provider", value: keyProvider, onChange: (e) => setKeyProvider(e.target.value), placeholder: "openai" }),
           ),
           createElement("div", { className: "field" },
-            createElement("label", { htmlFor: "key-api" }, SETTINGS_COPY.apiKeyLabel),
+            createElement("label", { htmlFor: "key-api" }, t.apiKeyLabel),
             createElement("input", { id: "key-api", type: "password", autoComplete: "off", value: keyApi, onChange: (e) => setKeyApi(e.target.value), placeholder: "sk-…" }),
           ),
           createElement("div", { className: "field" },
-            createElement("label", { htmlFor: "key-base" }, SETTINGS_COPY.baseUrlLabel),
+            createElement("label", { htmlFor: "key-base" }, t.baseUrlLabel),
             createElement("input", { id: "key-base", value: keyBase, onChange: (e) => setKeyBase(e.target.value), placeholder: "https://…" }),
           ),
           createElement("div", { className: "field" },
-            createElement("label", { htmlFor: "key-model" }, SETTINGS_COPY.modelLabel),
+            createElement("label", { htmlFor: "key-model" }, t.modelLabel),
             createElement("input", { id: "key-model", value: keyModel, onChange: (e) => setKeyModel(e.target.value), placeholder: "gpt-4o-mini" }),
           ),
           createElement("div", { className: "settings-actions" },
-            createElement("button", { type: "button", className: "primary", onClick: () => void saveKey(), disabled: keyState.kind === "sending" || !keyProvider.trim() || !keyApi.trim() || !keyBase.trim() }, keyState.kind === "sending" ? "正在保存…" : SETTINGS_COPY.saveKey),
+            createElement("button", { type: "button", className: "primary", onClick: () => void saveKey(), disabled: keyState.kind === "sending" || !keyProvider.trim() || !keyApi.trim() || !keyBase.trim() }, keyState.kind === "sending" ? t.saveSending : t.saveKey),
           ),
-          keyState.kind === "ok" ? createElement("p", { role: "status", className: "settings-msg ok" }, keyState.message ?? SETTINGS_COPY.keySaved) : null,
-          keyState.kind === "err" ? createElement("p", { role: "alert", className: "settings-msg err" }, keyState.message ?? "保存没有成功。") : null,
+          keyState.kind === "ok" ? createElement("p", { role: "status", className: "settings-msg ok" }, keyState.message ?? t.keySaved) : null,
+          keyState.kind === "err" ? createElement("p", { role: "alert", className: "settings-msg err" }, keyState.message ?? t.saveFailed) : null,
         ),
         keyRows,
       ),
 
       createElement("section", { className: "settings-section", id: "reminder" },
-        createElement("h2", null, SETTINGS_COPY.feedHeading),
-        createElement("p", { className: "settings-note" }, SETTINGS_COPY.feedLead),
+        createElement("h2", null, t.feedHeading),
+        createElement("p", { className: "settings-note" }, t.feedLead),
         createElement("div", { className: "settings-row" },
-          createElement("span", null, "状态"),
-          createElement("span", { className: "v", "data-testid": "feed-state" }, feed.enabled ? SETTINGS_COPY.feedOn : SETTINGS_COPY.feedOff),
+          createElement("span", null, t.feedStatusLabel),
+          createElement("span", { className: "v", "data-testid": "feed-state" }, feed.enabled ? t.feedOn : t.feedOff),
         ),
         feed.url
           ? createElement("div", { className: "settings-form" },
-              createElement("input", { readOnly: true, value: feed.url, "aria-label": "订阅地址", "data-testid": "feed-url", onFocus: (e) => e.currentTarget.select() }),
-              createElement("p", { className: "settings-note" }, SETTINGS_COPY.feedOnce),
+              createElement("input", { readOnly: true, value: feed.url, "aria-label": t.feedUrlAria, "data-testid": "feed-url", onFocus: (e) => e.currentTarget.select() }),
+              createElement("p", { className: "settings-note" }, t.feedOnce),
             )
           : null,
         createElement("div", { className: "settings-actions" },
-          feed.url ? createElement("button", { type: "button", onClick: () => void copyFeed() }, feed.copied ? SETTINGS_COPY.feedCopied : SETTINGS_COPY.feedCopy) : null,
-          createElement("button", { type: "button", className: feed.enabled ? "" : "primary", onClick: () => void feedAction("POST"), disabled: feed.state === "sending" }, feed.enabled ? SETTINGS_COPY.feedRotate : SETTINGS_COPY.feedEnable),
-          feed.enabled ? createElement("button", { type: "button", onClick: () => void feedAction("DELETE"), disabled: feed.state === "sending" }, SETTINGS_COPY.feedDisable) : null,
+          feed.url ? createElement("button", { type: "button", onClick: () => void copyFeed() }, feed.copied ? t.feedCopied : t.feedCopy) : null,
+          createElement("button", { type: "button", className: feed.enabled ? "" : "primary", onClick: () => void feedAction("POST"), disabled: feed.state === "sending" }, feed.enabled ? t.feedRotate : t.feedEnable),
+          feed.enabled ? createElement("button", { type: "button", onClick: () => void feedAction("DELETE"), disabled: feed.state === "sending" }, t.feedDisable) : null,
         ),
-        feed.state === "err" ? createElement("p", { role: "alert", className: "settings-msg err" }, SETTINGS_COPY.feedFailed) : null,
+        feed.state === "err" ? createElement("p", { role: "alert", className: "settings-msg err" }, t.feedFailed) : null,
       ),
 
       createElement("section", { className: "settings-section" },
-        createElement("h2", null, SETTINGS_COPY.projectsHeading),
+        createElement("h2", null, t.projectsHeading),
         projRows,
       ),
 
       createElement("section", { className: "settings-section danger" },
-        createElement("h2", null, SETTINGS_COPY.deleteHeading),
-        createElement("p", { className: "settings-note" }, SETTINGS_COPY.deleteLead),
+        createElement("h2", null, t.deleteHeading),
+        createElement("p", { className: "settings-note" }, t.deleteLead),
         delState === "done"
-          ? createElement("p", { role: "status", className: "settings-msg ok" }, SETTINGS_COPY.deleteDone)
+          ? createElement("p", { role: "status", className: "settings-msg ok" }, t.deleteDone)
           : createElement("div", null,
               createElement("input", {
                 type: "password",
-                "aria-label": "确认密码",
+                "aria-label": t.confirmPasswordAria,
                 autoComplete: "current-password",
                 value: delPassword,
                 onChange: (e) => setDelPassword(e.target.value),
@@ -482,7 +461,7 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
                 style: { display: "block", width: "100%", marginBottom: 8 },
               }),
               createElement("div", { className: "settings-actions" },
-                createElement("button", { type: "button", className: "danger", onClick: () => void deleteAccount(), disabled: delState === "sending" || !delPassword }, delState === "sending" ? "正在注销…" : SETTINGS_COPY.delete),
+                createElement("button", { type: "button", className: "danger", onClick: () => void deleteAccount(), disabled: delState === "sending" || !delPassword }, delState === "sending" ? t.deleteSending : t.delete),
               ),
               delState === "error" && delError ? createElement("p", { role: "alert", className: "settings-msg err" }, delError) : null,
             ),
@@ -491,7 +470,7 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
   }
 
   return createElement("div", { className: "settings-page mx-auto w-full max-w-[560px] px-4 py-6" },
-    createElement("div", { className: "settings-title" }, SETTINGS_COPY.title),
+    createElement("div", { className: "settings-title" }, t.title),
     body,
   );
 };

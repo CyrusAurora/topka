@@ -4,6 +4,7 @@ import { Link, useFetcher } from "react-router";
 import { useEffect } from "react";
 import type { Route } from "./+types/runs";
 import { adminGet } from "../../lib/admin.server";
+import { messages, localeOf, useLocale, useT } from "../../lib/i18n";
 import { useAdminAction } from "../../features/admin/action";
 import { ago, bj, duration, num } from "../../features/admin/format";
 import { AdminPage, Badge, Button, Card, DataTable, Dot, Empty, Field, Json, ReasonDialog, Select, Stat, Time } from "../../features/admin/ui";
@@ -30,11 +31,14 @@ export async function loader({ request }: Route.LoaderArgs) {
   return adminGet<Runs>(request, "/api/admin/runs");
 }
 
-export const meta: Route.MetaFunction = () => [{ title: `运行 · ${SITE.name} 后台` }];
-
-const STATE_LABEL: Record<string, string> = { created: "排队", retry: "等待重试", active: "执行中" };
+export const meta: Route.MetaFunction = ({ matches }) => {
+  const t = messages(localeOf(matches));
+  return [{ title: t.adminRuns.runs.metaTitle(SITE.name) }];
+};
 
 export default function RunsAdmin({ loaderData }: Route.ComponentProps) {
+  const t = useT();
+  const locale = useLocale();
   const refresh = useFetcher<typeof loader>();
   const r = refresh.data ?? loaderData;
   const { run, pending } = useAdminAction();
@@ -44,11 +48,12 @@ export default function RunsAdmin({ loaderData }: Route.ComponentProps) {
   const [outcome, setOutcome] = useState<"sent" | "drop" | "resend">("sent");
   // Failure group to put back into processing ("" = every failure of the last 30 days).
   const [requeue, setRequeue] = useState<string | null>(null);
+  const stateLabel: Record<string, string> = { created: t.adminRuns.runs.stateCreated, retry: t.adminRuns.runs.stateRetry, active: t.adminRuns.runs.stateActive };
 
   // Live view: refresh every 20 s while visible.
   useEffect(() => {
-    const t = setInterval(() => document.visibilityState === "visible" && refresh.state === "idle" && refresh.load("/admin/runs"), 20_000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => document.visibilityState === "visible" && refresh.state === "idle" && refresh.load("/admin/runs"), 20_000);
+    return () => clearInterval(timer);
   }, [refresh]);
 
   const backlog = new Map<string, Record<string, { n: number; oldest: string }>>();
@@ -58,126 +63,126 @@ export default function RunsAdmin({ loaderData }: Route.ComponentProps) {
   const failing = r.jobs.filter((j) => j.status === "failed");
 
   return (
-    <AdminPage title="运行" subtitle={<>任务、队列、信源延迟与需要人工核对的回执和投递。每 20 秒自动刷新 · 最近检查 {bj(r.checkedAt)}</>}>
+    <AdminPage title={t.adminRuns.runs.title} subtitle={t.adminRuns.runs.subtitle(bj(r.checkedAt))}>
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Stat
           label="worker"
-          value={<span className="inline-flex items-center gap-2 text-[18px]"><Dot tone={worker?.alive ? "ok" : "bad"} />{worker ? (worker.alive ? "运行中" : "心跳中断") : "无心跳"}</span>}
-          hint={worker ? `${worker.host} · 心跳 ${ago(worker.at)}` : "worker 未上报心跳"}
+          value={<span className="inline-flex items-center gap-2 text-[18px]"><Dot tone={worker?.alive ? "ok" : "bad"} />{worker ? (worker.alive ? t.adminRuns.runs.workerRunning : t.adminRuns.runs.workerHeartbeatLost) : t.adminRuns.runs.workerNoHeartbeat}</span>}
+          hint={worker ? t.adminRuns.runs.heartbeatHint(worker.host, ago(worker.at, Date.now(), locale)) : t.adminRuns.runs.workerNoHeartbeatHint}
         />
-        <Stat label="队列积压" value={num(queued)} tone={queued > 500 ? "warn" : undefined} hint="排队与等待重试" />
-        <Stat label="失败的定时任务" value={num(failing.length)} tone={failing.length ? "bad" : "ok"} hint="最近一次运行失败" />
-        <Stat label="回执结果未知" value={num(r.receipts.issues.filter((x) => x.status === "unknown").length)} tone={r.receipts.issues.some((x) => x.status === "unknown") ? "bad" : "ok"} hint={`7 天 ${num(Object.values(r.receipts.counts).reduce((a, b) => a + b, 0))} 次付费请求`} />
-        <Stat label="投递待核实" value={num(r.deliveries.filter((d) => d.status === "unknown").length)} tone={r.deliveries.some((d) => d.status === "unknown") ? "bad" : "ok"} />
+        <Stat label={t.adminRuns.runs.backlogLabel} value={num(queued)} tone={queued > 500 ? "warn" : undefined} hint={t.adminRuns.runs.backlogHint} />
+        <Stat label={t.adminRuns.runs.failingJobsLabel} value={num(failing.length)} tone={failing.length ? "bad" : "ok"} hint={t.adminRuns.runs.failingJobsHint} />
+        <Stat label={t.adminRuns.runs.unknownReceiptsLabel} value={num(r.receipts.issues.filter((x) => x.status === "unknown").length)} tone={r.receipts.issues.some((x) => x.status === "unknown") ? "bad" : "ok"} hint={t.adminRuns.runs.paidRequests7d(num(Object.values(r.receipts.counts).reduce((a, b) => a + b, 0)))} />
+        <Stat label={t.adminRuns.runs.unknownDeliveriesLabel} value={num(r.deliveries.filter((d) => d.status === "unknown").length)} tone={r.deliveries.some((d) => d.status === "unknown") ? "bad" : "ok"} />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-2">
-        <Card title="队列" pad={false}>
+        <Card title={t.adminRuns.runs.queueCard} pad={false}>
           <DataTable
             dense
             rows={[...backlog.entries()]}
             rowKey={([name]) => name}
-            empty="队列是空的"
+            empty={t.adminRuns.runs.queueEmpty}
             columns={[
-              { key: "n", label: "队列", render: ([name]) => <span className="font-mono text-[12.5px]">{name}</span> },
+              { key: "n", label: t.adminRuns.runs.colQueue, render: ([name]) => <span className="font-mono text-[12.5px]">{name}</span> },
               ...(["created", "retry", "active"] as const).map((st) => ({
                 key: st,
-                label: STATE_LABEL[st],
+                label: stateLabel[st]!,
                 align: "right" as const,
-                render: ([, v]: [string, Record<string, { n: number; oldest: string }>]) => (v[st] ? <span title={`最早 ${bj(v[st]!.oldest, true)}`}>{num(v[st]!.n)}</span> : <span className="text-ink-4">0</span>),
+                render: ([, v]: [string, Record<string, { n: number; oldest: string }>]) => (v[st] ? <span title={t.adminRuns.runs.earliest(bj(v[st]!.oldest, true))}>{num(v[st]!.n)}</span> : <span className="text-ink-4">0</span>),
               })),
-              { key: "old", label: "最早排队", render: ([, v]) => <Time at={v.created?.oldest ?? v.retry?.oldest ?? null} /> },
+              { key: "old", label: t.adminRuns.runs.oldestQueued, render: ([, v]) => <Time at={v.created?.oldest ?? v.retry?.oldest ?? null} /> },
             ]}
           />
         </Card>
-        <Card title="定时任务" pad={false}>
+        <Card title={t.adminRuns.runs.jobsCard} pad={false}>
           <DataTable
             dense
             rows={r.jobs}
             rowKey={(j) => j.job}
             columns={[
-              { key: "j", label: "任务", render: (j) => <span className="font-mono text-[12.5px]">{j.job}</span> },
-              { key: "s", label: "上次", render: (j) => <Badge tone={j.status === "ok" ? "ok" : j.status === "failed" ? "bad" : "muted"} title={j.error ?? undefined}>{j.status ?? "运行中"}</Badge> },
-              { key: "at", label: "时间", render: (j) => <Time at={j.started_at} /> },
-              { key: "d", label: "耗时", align: "right", render: (j) => duration(j.started_at, j.finished_at) },
-              { key: "f", label: "24h 失败", align: "right", render: (j) => (j.failed_24h ? <span className="text-hot">{j.failed_24h}/{j.runs_24h}</span> : `0/${j.runs_24h}`) },
+              { key: "j", label: t.adminRuns.runs.colJob, render: (j) => <span className="font-mono text-[12.5px]">{j.job}</span> },
+              { key: "s", label: t.adminRuns.runs.colLast, render: (j) => <Badge tone={j.status === "ok" ? "ok" : j.status === "failed" ? "bad" : "muted"} title={j.error ?? undefined}>{j.status ?? t.adminRuns.runs.running}</Badge> },
+              { key: "at", label: t.adminRuns.runs.colTime, render: (j) => <Time at={j.started_at} /> },
+              { key: "d", label: t.adminRuns.runs.colDuration, align: "right", render: (j) => duration(j.started_at, j.finished_at) },
+              { key: "f", label: t.adminRuns.runs.colFailed24h, align: "right", render: (j) => (j.failed_24h ? <span className="text-hot">{j.failed_24h}/{j.runs_24h}</span> : `0/${j.runs_24h}`) },
             ]}
           />
         </Card>
       </div>
 
       {r.failedJobs.length > 0 && (
-        <Card className="mt-5" title="24 小时内失败的队列任务" pad={false}>
+        <Card className="mt-5" title={t.adminRuns.runs.failedJobsCard} pad={false}>
           <DataTable
             dense
             rows={r.failedJobs}
             rowKey={(j) => j.name}
             columns={[
-              { key: "n", label: "队列", render: (j) => <span className="font-mono text-[12.5px]">{j.name}</span> },
-              { key: "c", label: "失败", align: "right", render: (j) => num(j.failed) },
-              { key: "l", label: "最近", render: (j) => <Time at={j.last} /> },
-              { key: "o", label: "最近错误", render: (j) => <span className="line-clamp-2 font-mono text-[11.5px] text-ink-3">{j.last_output}</span> },
+              { key: "n", label: t.adminRuns.runs.colQueue, render: (j) => <span className="font-mono text-[12.5px]">{j.name}</span> },
+              { key: "c", label: t.adminRuns.runs.colFailed, align: "right", render: (j) => num(j.failed) },
+              { key: "l", label: t.adminRuns.runs.colRecent, render: (j) => <Time at={j.last} /> },
+              { key: "o", label: t.adminRuns.runs.colLastError, render: (j) => <span className="line-clamp-2 font-mono text-[11.5px] text-ink-3">{j.last_output}</span> },
             ]}
           />
         </Card>
       )}
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
-        <Card title="需要核对的付费回执" right={<span>{Object.entries(r.receipts.counts).map(([k, v]) => `${k} ${v}`).join(" · ")}</span>} pad={false}>
+        <Card title={t.adminRuns.runs.receiptsCard} right={<span>{Object.entries(r.receipts.counts).map(([k, v]) => `${k} ${v}`).join(" · ")}</span>} pad={false}>
           <DataTable
             dense
             rows={r.receipts.issues}
             rowKey={(x) => x.id}
-            empty="没有待处理的回执"
+            empty={t.adminRuns.runs.receiptsEmpty}
             columns={[
-              { key: "id", label: "回执", render: (x) => <span className="num">#{x.id}</span> },
-              { key: "s", label: "状态", render: (x) => <Badge tone={x.status === "unknown" ? "bad" : "warn"}>{x.status}</Badge> },
-              { key: "w", label: "服务", render: (x) => <span className="whitespace-nowrap">{x.service}{x.model ? ` · ${x.model}` : ""}</span> },
-              { key: "p", label: "用途", render: (x) => (x.subject && /^[\w-]{10,}$/.test(x.subject) && x.purpose.includes("analy") ? <Link className="text-accent" to={`/admin/content/${x.subject}`}>{x.purpose}</Link> : x.purpose) },
-              { key: "e", label: "错误", render: (x) => <span className="line-clamp-2 text-[12px] text-ink-3" title={x.error ?? ""}>{x.error}</span> },
-              { key: "a", label: "", render: (x) => (x.status === "unknown" ? <Button size="sm" onClick={() => setReceipt(x)}>核对</Button> : null) },
+              { key: "id", label: t.adminRuns.runs.colReceipt, render: (x) => <span className="num">#{x.id}</span> },
+              { key: "s", label: t.adminRuns.runs.colStatus, render: (x) => <Badge tone={x.status === "unknown" ? "bad" : "warn"}>{x.status}</Badge> },
+              { key: "w", label: t.adminRuns.runs.colService, render: (x) => <span className="whitespace-nowrap">{x.service}{x.model ? ` · ${x.model}` : ""}</span> },
+              { key: "p", label: t.adminRuns.runs.colPurpose, render: (x) => (x.subject && /^[\w-]{10,}$/.test(x.subject) && x.purpose.includes("analy") ? <Link className="text-accent" to={`/admin/content/${x.subject}`}>{x.purpose}</Link> : x.purpose) },
+              { key: "e", label: t.adminRuns.runs.colError, render: (x) => <span className="line-clamp-2 text-[12px] text-ink-3" title={x.error ?? ""}>{x.error}</span> },
+              { key: "a", label: "", render: (x) => (x.status === "unknown" ? <Button size="sm" onClick={() => setReceipt(x)}>{t.adminRuns.runs.checkButton}</Button> : null) },
             ]}
           />
         </Card>
-        <Card title="需要核实的投递" pad={false}>
+        <Card title={t.adminRuns.runs.deliveriesCard} pad={false}>
           <DataTable
             dense
             rows={r.deliveries}
             rowKey={(d) => d.id}
-            empty="没有待核实的投递"
+            empty={t.adminRuns.runs.deliveriesEmpty}
             columns={[
-              { key: "t", label: "目标", render: (d) => d.target_key },
-              { key: "s", label: "状态", render: (d) => <Badge tone={d.status === "unknown" ? "bad" : "warn"}>{d.status}</Badge> },
-              { key: "sub", label: "内容", render: (d) => (d.subject_kind === "selected" ? <Link className="text-accent" to={`/admin/content/${d.subject_id}`}>{d.subject_id}</Link> : `${d.subject_kind} ${d.subject_id}`) },
-              { key: "at", label: "时间", render: (d) => <Time at={d.updated_at} /> },
-              { key: "a", label: "", render: (d) => <Button size="sm" onClick={() => setDelivery(d)}>处理</Button> },
+              { key: "t", label: t.adminRuns.runs.colTarget, render: (d) => d.target_key },
+              { key: "s", label: t.adminRuns.runs.colStatus, render: (d) => <Badge tone={d.status === "unknown" ? "bad" : "warn"}>{d.status}</Badge> },
+              { key: "sub", label: t.adminRuns.runs.colContent, render: (d) => (d.subject_kind === "selected" ? <Link className="text-accent" to={`/admin/content/${d.subject_id}`}>{d.subject_id}</Link> : `${d.subject_kind} ${d.subject_id}`) },
+              { key: "at", label: t.adminRuns.runs.colTime, render: (d) => <Time at={d.updated_at} /> },
+              { key: "a", label: "", render: (d) => <Button size="sm" onClick={() => setDelivery(d)}>{t.adminRuns.runs.handleButton}</Button> },
             ]}
           />
         </Card>
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
-        <Card title="延迟或失败的信源" right={<Link className="text-accent" to="/admin/sources?health=failing">全部失败信源</Link>} pad={false}>
+        <Card title={t.adminRuns.runs.laggingCard} right={<Link className="text-accent" to="/admin/sources?health=failing">{t.adminRuns.runs.allFailing}</Link>} pad={false}>
           <DataTable
             dense
             rows={r.lagging}
             rowKey={(s) => s.id}
-            empty="信源都按时采集"
+            empty={t.adminRuns.runs.laggingEmpty}
             columns={[
-              { key: "n", label: "信源", render: (s) => <Link className="text-ink hover:text-accent" to={`/admin/sources/${encodeURIComponent(s.id)}`}>{s.name}</Link> },
-              { key: "h", label: "健康", render: (s) => <Badge tone={s.health === "failing" ? "bad" : s.health === "degraded" ? "warn" : "muted"}>{s.health}</Badge> },
-              { key: "ok", label: "上次成功", render: (s) => <Time at={s.last_ok_at} /> },
-              { key: "nx", label: "应抓", render: (s) => <Time at={s.next_fetch_at} /> },
-              { key: "e", label: "错误", render: (s) => <span className="line-clamp-1 text-[12px] text-ink-3" title={s.last_error ?? ""}>{s.last_error}</span> },
+              { key: "n", label: t.adminRuns.runs.colSource, render: (s) => <Link className="text-ink hover:text-accent" to={`/admin/sources/${encodeURIComponent(s.id)}`}>{s.name}</Link> },
+              { key: "h", label: t.adminRuns.runs.colHealth, render: (s) => <Badge tone={s.health === "failing" ? "bad" : s.health === "degraded" ? "warn" : "muted"}>{s.health}</Badge> },
+              { key: "ok", label: t.adminRuns.runs.colLastOk, render: (s) => <Time at={s.last_ok_at} /> },
+              { key: "nx", label: t.adminRuns.runs.colNextFetch, render: (s) => <Time at={s.next_fetch_at} /> },
+              { key: "e", label: t.adminRuns.runs.colError, render: (s) => <span className="line-clamp-1 text-[12px] text-ink-3" title={s.last_error ?? ""}>{s.last_error}</span> },
             ]}
           />
         </Card>
         <Card
-          title="处理失败（30 天，按错误归类）"
+          title={t.adminRuns.runs.errorsCard}
           right={
             <span className="flex items-center gap-3">
-              {r.retrying.count > 0 && <span>等待重试 {num(r.retrying.count)} 条 · 下一次 <Time at={r.retrying.next} /></span>}
-              {r.errors.length > 0 && <Button size="sm" onClick={() => setRequeue("")}>全部重新处理</Button>}
+              {r.retrying.count > 0 && <span>{t.adminRuns.runs.retrying(num(r.retrying.count))} <Time at={r.retrying.next} /></span>}
+              {r.errors.length > 0 && <Button size="sm" onClick={() => setRequeue("")}>{t.adminRuns.runs.requeueAll}</Button>}
             </span>
           }
           pad={false}
@@ -186,13 +191,13 @@ export default function RunsAdmin({ loaderData }: Route.ComponentProps) {
             dense
             rows={r.errors}
             rowKey={(e) => e.error}
-            empty="没有处理失败"
+            empty={t.adminRuns.runs.errorsEmpty}
             columns={[
-              { key: "e", label: "错误", render: (e) => <span className="font-mono text-[11.5px] text-ink-2">{e.error}</span> },
-              { key: "n", label: "条数", align: "right", render: (e) => num(e.n) },
-              { key: "x", label: "示例", render: (e) => <Link className="text-accent" to={`/admin/content/${e.example}`}>查看</Link> },
-              { key: "l", label: "最近", render: (e) => <Time at={e.last} /> },
-              { key: "a", label: "", align: "right", render: (e) => <Button size="sm" onClick={() => setRequeue(e.error)}>重新处理</Button> },
+              { key: "e", label: t.adminRuns.runs.colError, render: (e) => <span className="font-mono text-[11.5px] text-ink-2">{e.error}</span> },
+              { key: "n", label: t.adminRuns.runs.colErrorCount, align: "right", render: (e) => num(e.n) },
+              { key: "x", label: t.adminRuns.runs.colExample, render: (e) => <Link className="text-accent" to={`/admin/content/${e.example}`}>{t.adminRuns.runs.viewButton}</Link> },
+              { key: "l", label: t.adminRuns.runs.colRecent, render: (e) => <Time at={e.last} /> },
+              { key: "a", label: "", align: "right", render: (e) => <Button size="sm" onClick={() => setRequeue(e.error)}>{t.adminRuns.runs.requeueButton}</Button> },
             ]}
           />
         </Card>
@@ -201,8 +206,8 @@ export default function RunsAdmin({ loaderData }: Route.ComponentProps) {
       {r.leaderboard && (
         <Card
           className="mt-5"
-          title="模型榜评测来源"
-          right={<span>最近抓取 {bj(r.leaderboard.at)} · 成功 {r.leaderboard.sources.filter((x) => x.ok).length}/{r.leaderboard.sources.length}</span>}
+          title={t.adminRuns.runs.leaderboardCard}
+          right={<span>{t.adminRuns.runs.leaderboardRight(bj(r.leaderboard.at), r.leaderboard.sources.filter((x) => x.ok).length, r.leaderboard.sources.length)}</span>}
           pad={false}
         >
           <div className="max-h-[360px] overflow-y-auto">
@@ -211,11 +216,11 @@ export default function RunsAdmin({ loaderData }: Route.ComponentProps) {
               rows={r.leaderboard.sources}
               rowKey={(x) => x.key}
               columns={[
-                { key: "k", label: "来源", render: (x) => <span className="font-mono text-[12.5px]">{x.key}</span> },
-                { key: "s", label: "上次抓取", render: (x) => <Badge tone={x.ok ? "ok" : "bad"}>{x.ok ? (x.changed ? "有更新" : "无变化") : "失败"}</Badge> },
-                { key: "ok", label: "上次成功", render: (x) => <Time at={x.lastOkAt} /> },
-                { key: "n", label: "行数", align: "right", render: (x) => (x.rows == null ? "—" : num(x.rows)) },
-                { key: "e", label: "错误", render: (x) => <span className="line-clamp-1 text-[12px] text-ink-3" title={x.error ?? ""}>{x.error}</span> },
+                { key: "k", label: t.adminRuns.runs.colOrigin, render: (x) => <span className="font-mono text-[12.5px]">{x.key}</span> },
+                { key: "s", label: t.adminRuns.runs.colLastFetch, render: (x) => <Badge tone={x.ok ? "ok" : "bad"}>{x.ok ? (x.changed ? t.adminRuns.runs.updatedBadge : t.adminRuns.runs.noChangeBadge) : t.adminRuns.runs.failedBadge}</Badge> },
+                { key: "ok", label: t.adminRuns.runs.colLastOk, render: (x) => <Time at={x.lastOkAt} /> },
+                { key: "n", label: t.adminRuns.runs.colRows, align: "right", render: (x) => (x.rows == null ? "—" : num(x.rows)) },
+                { key: "e", label: t.adminRuns.runs.colError, render: (x) => <span className="line-clamp-1 text-[12px] text-ink-3" title={x.error ?? ""}>{x.error}</span> },
               ]}
             />
           </div>
@@ -223,49 +228,49 @@ export default function RunsAdmin({ loaderData }: Route.ComponentProps) {
       )}
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
-        <Card title="任务时间线" pad={false}>
+        <Card title={t.adminRuns.runs.timelineCard} pad={false}>
           <div className="max-h-[420px] overflow-y-auto">
             <DataTable
               dense
               rows={r.timeline}
-              rowKey={(t) => t.id}
+              rowKey={(row) => row.id}
               columns={[
-                { key: "at", label: "开始", render: (t) => <span className="num whitespace-nowrap">{bj(t.started_at)}</span> },
-                { key: "j", label: "任务", render: (t) => <span className="font-mono text-[12px]">{t.job}</span> },
-                { key: "s", label: "结果", render: (t) => <Badge tone={t.status === "ok" ? "ok" : t.status === "failed" ? "bad" : "muted"} title={t.error ?? undefined}>{t.status ?? "运行中"}</Badge> },
-                { key: "d", label: "耗时", align: "right", render: (t) => duration(t.started_at, t.finished_at) },
+                { key: "at", label: t.adminRuns.runs.colStart, render: (row) => <span className="num whitespace-nowrap">{bj(row.started_at)}</span> },
+                { key: "j", label: t.adminRuns.runs.colJob, render: (row) => <span className="font-mono text-[12px]">{row.job}</span> },
+                { key: "s", label: t.adminRuns.runs.colResult, render: (row) => <Badge tone={row.status === "ok" ? "ok" : row.status === "failed" ? "bad" : "muted"} title={row.error ?? undefined}>{row.status ?? t.adminRuns.runs.running}</Badge> },
+                { key: "d", label: t.adminRuns.runs.colDuration, align: "right", render: (row) => duration(row.started_at, row.finished_at) },
               ]}
             />
           </div>
         </Card>
-        <Card title="外部上报" pad={false}>
+        <Card title={t.adminRuns.runs.ingestCard} pad={false}>
           {r.ingest.length ? (
             <DataTable
               dense
               rows={r.ingest}
               rowKey={(e) => `${e.client}-${e.created_at}`}
               columns={[
-                { key: "at", label: "时间", render: (e) => <Time at={e.created_at} /> },
-                { key: "c", label: "客户端", render: (e) => e.client },
-                { key: "k", label: "类型", render: (e) => e.kind },
-                { key: "s", label: "结果", render: (e) => <Badge tone={e.status === "ok" ? "ok" : e.status === "error" ? "bad" : "muted"} title={e.error ?? undefined}>{e.status}</Badge> },
-                { key: "x", label: "摘要", render: (e) => <Json value={e.summary} label="摘要" /> },
+                { key: "at", label: t.adminRuns.runs.colTime, render: (e) => <Time at={e.created_at} /> },
+                { key: "c", label: t.adminRuns.runs.colClient, render: (e) => e.client },
+                { key: "k", label: t.adminRuns.runs.colKind, render: (e) => e.kind },
+                { key: "s", label: t.adminRuns.runs.colResult, render: (e) => <Badge tone={e.status === "ok" ? "ok" : e.status === "error" ? "bad" : "muted"} title={e.error ?? undefined}>{e.status}</Badge> },
+                { key: "x", label: t.adminRuns.runs.colSummary, render: (e) => <Json value={e.summary} label={t.adminRuns.runs.colSummary} /> },
               ]}
             />
           ) : (
-            <Empty>还没有外部上报（公众号截图监控、采集脚本）</Empty>
+            <Empty>{t.adminRuns.runs.ingestEmpty}</Empty>
           )}
         </Card>
       </div>
 
       {r.processes.length > 0 && (
-        <Card className="mt-5" title="进程">
+        <Card className="mt-5" title={t.adminRuns.runs.processesCard}>
           <ul className="grid gap-2 text-[13px] sm:grid-cols-2 lg:grid-cols-3">
             {r.processes.map((p) => (
               <li key={p.role} className="flex items-center gap-2">
                 <Dot tone={p.alive ? "ok" : "bad"} />
                 <span className="font-medium">{p.role}</span>
-                <span className="text-ink-3">{p.host} · pid {p.pid} · {p.release} · 启动于 {bj(p.startedAt)}</span>
+                <span className="text-ink-3">{p.host} · pid {p.pid} · {p.release}{t.adminRuns.runs.startedAt(bj(p.startedAt))}</span>
               </li>
             ))}
           </ul>
@@ -274,44 +279,44 @@ export default function RunsAdmin({ loaderData }: Route.ComponentProps) {
 
       <ReasonDialog
         open={!!receipt}
-        title={`核对回执 #${receipt?.id ?? ""}`}
-        description="结果未知的请求不会自动重发。先到供应商控制台确认这次请求有没有计费，再放行：放行后下一次处理会重新发起调用。"
-        confirmLabel="记录并放行"
+        title={t.adminRuns.runs.receiptTitle(String(receipt?.id ?? ""))}
+        description={t.adminRuns.runs.receiptDescription}
+        confirmLabel={t.adminRuns.runs.recordAndRelease}
         busy={pending === "release"}
         onClose={() => setReceipt(null)}
-        onSubmit={async (note) => (await run("POST", `/api/admin/receipts/${receipt!.id}/release`, { billed: billed === "true", note }, { label: "release", success: "已放行" })) !== null}
+        onSubmit={async (note) => (await run("POST", `/api/admin/receipts/${receipt!.id}/release`, { billed: billed === "true", note }, { label: "release", success: t.adminRuns.runs.releasedToast })) !== null}
       >
-        <Field label="供应商是否计费">
+        <Field label={t.adminRuns.runs.billedField}>
           <Select value={billed} onChange={(e) => setBilled(e.target.value)}>
-            <option value="false">未计费（请求没有被接受）</option>
-            <option value="true">已计费（结果没有取回）</option>
+            <option value="false">{t.adminRuns.runs.notBilled}</option>
+            <option value="true">{t.adminRuns.runs.billed}</option>
           </Select>
         </Field>
       </ReasonDialog>
       <ReasonDialog
         open={requeue !== null}
-        title={requeue ? "重新处理这一类失败" : "重新处理全部失败"}
-        description="这些文章会重新进入处理队列（正文、判断、发布）。模型调用会重新计费；供应商拒绝的内容可能再次失败。"
-        confirmLabel="重新处理"
+        title={requeue ? t.adminRuns.runs.requeueGroup : t.adminRuns.runs.requeueAllTitle}
+        description={t.adminRuns.runs.requeueDescription}
+        confirmLabel={t.adminRuns.runs.requeue}
         busy={pending === "requeue"}
         onClose={() => setRequeue(null)}
-        onSubmit={async (reason) => (await run("POST", "/api/admin/processing/requeue", { group: requeue || null, reason }, { label: "requeue", success: "已重新排队" })) !== null}
+        onSubmit={async (reason) => (await run("POST", "/api/admin/processing/requeue", { group: requeue || null, reason }, { label: "requeue", success: t.adminRuns.runs.requeuedToast })) !== null}
       />
       <ReasonDialog
         open={!!delivery}
-        title="处理投递"
-        description="先到对应飞书群确认有没有收到。确认没收到再重发；开发环境不会真的发出。"
-        confirmLabel="确认"
+        title={t.adminRuns.runs.resolveDelivery}
+        description={t.adminRuns.runs.deliveryDescription}
+        confirmLabel={t.adminRuns.runs.confirm}
         danger={outcome === "resend"}
         busy={pending === "delivery"}
         onClose={() => setDelivery(null)}
-        onSubmit={async (note) => (await run("POST", `/api/admin/deliveries/${delivery!.id}/resolve`, { outcome, note }, { label: "delivery", success: "已处理" })) !== null}
+        onSubmit={async (note) => (await run("POST", `/api/admin/deliveries/${delivery!.id}/resolve`, { outcome, note }, { label: "delivery", success: t.adminRuns.runs.deliveredToast })) !== null}
       >
-        <Field label="结果">
+        <Field label={t.adminRuns.runs.resultField}>
           <Select value={outcome} onChange={(e) => setOutcome(e.target.value as typeof outcome)}>
-            <option value="sent">群里已收到，标记为已送达</option>
-            <option value="drop">不再发送</option>
-            <option value="resend">群里没有，重新发送</option>
+            <option value="sent">{t.adminRuns.runs.sentOption}</option>
+            <option value="drop">{t.adminRuns.runs.dropOption}</option>
+            <option value="resend">{t.adminRuns.runs.resendOption}</option>
           </Select>
         </Field>
       </ReasonDialog>

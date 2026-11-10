@@ -43,10 +43,11 @@ after(async () => {
 
 let n = 0;
 /** A selected article with full text and a summary. */
-async function article(): Promise<string> {
+async function article(over: { bodyHtml?: string; language?: string } = {}): Promise<string> {
   n += 1;
   const { articleId } = await upsertMaterial({
-    sourceId: SOURCE, url: `https://example.com/${T}-${n}`, title: `Test ${n}`, bodyText: BODY, bodyHtml: `<p>${BODY}</p>`, bodyStatus: "ok", via: "fetch", publishedAt: new Date(),
+    sourceId: SOURCE, url: `https://example.com/${T}-${n}`, title: `Test ${n}`, bodyText: BODY, bodyHtml: over.bodyHtml ?? `<p>${BODY}</p>`, bodyStatus: "ok", via: "fetch", publishedAt: new Date(),
+    language: over.language,
   });
   await sql`INSERT INTO analyses (article_id, input_revision, origin, relevance, category, title_zh, summary_zh, reason_zh, score, selected)
             VALUES (${articleId}, 1, 'rule', 'pass', 'ai-models', ${`标题${n}-${T}`}, ${`SUMMARY-${n}-${T}`}, '理由', 90, true)`;
@@ -70,8 +71,7 @@ async function get(url: string, headers: Record<string, string> = {}) {
 }
 
 test("site reading sends one language while exports retain both, including after withdrawal", async () => {
-  const id = await article();
-  await sql`UPDATE articles SET language = 'en', body_html = '<h2>Original heading</h2><p>Original full body</p>' WHERE id = ${id}`;
+  const id = await article({ language: "en", bodyHtml: "<h2>Original heading</h2><p>Original full body</p>" });
   await sql`INSERT INTO translations (article_id, revision, body_html, body_text, origin) VALUES (${id}, 1, '<h2>译文标题</h2><p>中文完整正文</p>', '中文完整正文', 'source')`;
   await publishArticle(id, released());
   const normal = JSON.parse((await get(`/api/site/items/${id}`)).body);
@@ -291,7 +291,7 @@ test("v1 story retains website content and fallback ordering without the website
 });
 
 
-test("unchanged republishing preserves freshness, while URL-only changes still reach the projection and ledger", async () => {
+test("unchanged republishing preserves freshness, while a URL-only difference in the projection is repaired", async () => {
   const id = await article();
   await publishArticle(id, released());
   const state = async () => (await sql`SELECT xmin::text AS row_version, updated_at, revision, url FROM publications WHERE article_id = ${id}`)[0]!;
@@ -303,14 +303,18 @@ test("unchanged republishing preserves freshness, while URL-only changes still r
   assert.deepEqual({ ...await state() }, { ...before }, "no new tuple or freshness timestamp for identical content");
   assert.equal((await sql`SELECT max(seq) AS seq FROM selected_ledger WHERE article_id = ${id}`)[0]!.seq, ledger!.seq);
 
-  const url = `https://example.com/${T}-corrected`;
-  await sql`UPDATE articles SET url = ${url} WHERE id = ${id}`;
+  // An article's URL never changes (migration 0059), so a URL-only difference is a projection
+  // written from older data: republishing repairs it. Sync clients were sent the article's URL all
+  // along (the ledger payload is built from the article), so nothing new goes to the ledger.
+  const [{ url }] = await sql<{ url: string }[]>`SELECT url FROM articles WHERE id = ${id}`;
+  await sql`UPDATE publications SET url = ${`https://example.com/${T}-stale`} WHERE article_id = ${id}`;
+  const stale = await state();
   const result = await publishArticle(id);
   assert.equal(result!.changed, false, "URL is deliberately outside the presentation fingerprint");
-  assert.equal(result!.ledger, "upsert", "the public URL change is still recorded for sync clients");
+  assert.equal(result!.ledger, null, "the ledger payload already carried the article's URL");
   const changed = await state();
   assert.equal(changed.url, url);
-  assert.notEqual(changed.row_version, before.row_version);
+  assert.notEqual(changed.row_version, stale.row_version);
   assert.ok(changed.updated_at >= before.updated_at);
   assert.equal(changed.revision, before.revision);
 });

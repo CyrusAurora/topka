@@ -13,7 +13,7 @@ export const SITE = {
   /** 首页的完整标题（浏览器标签、搜索结果）。 */
   homeTitle: "Topka — 持续情报工作台 · 每日精选与事件追踪",
   /** 一句话介绍：搜索引擎、分享卡片、RSS、llms.txt 会用。 */
-  description: "声明你要盯什么、为什么盯；系统持续采集固定信源，把跨来源的重复报道归并成事件，回访时只给你带出处的 重要更新，证据不足时如实说 暂不判断。",
+  description: "声明你要盯什么、为什么盯；系统持续采集固定信源，把跨来源的重复报道归并成事件，回访时只给你带出处的重要更新。不够格就少发或当天不出，宁少不凑。",
   /** 首页左上角和侧边栏下面的一行小字。 */
   tagline: "盯住你在意的事，每条都有出处",
   /** 界面语言（HTML lang、og:locale）。 */
@@ -77,6 +77,50 @@ export const ABOUT = {
   /** 页面底部的版权与下架说明（结尾会接“反馈页”的链接）。 */
   copyright: `${SITE.name} 是聚合摘要和阅读索引，原文版权归各来源所有。如果你是来源方，希望更正、下架或调整展示方式，可以通过`,
 } as const;
+
+/**
+ * English copy for readers whose interface language is en (a user's locale, or SITE_LOCALE=en for the
+ * whole instance). Same fields as the Chinese ones above; keep the two in step when you edit either.
+ */
+export const SITE_EN = {
+  homeTitle: `${SITE.name} — continuous intelligence · a daily pick and event tracking`,
+  description:
+    "Say what you want to watch and why. The system keeps collecting from fixed sources, merges duplicate coverage across sources into events, and on each visit brings you only the important updates, each with its source. When nothing clears the bar it sends less, or skips the day: fewer, never padded.",
+  tagline: "Watch what matters to you, every item sourced",
+  footerNote: "Powered by the Topka open-source framework (MIT) · Topka project layer",
+} as const;
+
+export const ABOUT_EN = {
+  kicker: `About ${SITE.name}`,
+  headline: ["You name what to watch.", "It comes to you only when something moves."] as [string, string],
+  lead: `${SITE.name} watches {sources} sources for you: it collects, merges coverage into events and sorts them by project, and puts out a daily issue every morning at 08:00.`,
+  steps: {
+    collect: "Official blogs, media, X accounts, WeChat official accounts and all kinds of feeds; active sources are checked every 15 minutes.",
+    store: "Everything collected is kept, and coverage of the same story is grouped; accounts that only count toward heat are included, which is where the trending list comes from.",
+    select: "A model first checks that it belongs to this field and carries real information, then writes the title, summary and reason; marketing copy and reposts stay out.",
+    publish: "A daily issue at 08:00, a weekly on Mondays and a monthly on the 1st; the very best items can be pushed to a Feishu group.",
+  },
+  copyright: `${SITE.name} is an aggregated summary and reading index; copyright in the originals stays with each source. If you run a source and want something corrected, taken down or shown differently, reach us through the`,
+} as const;
+
+/** The site's reader-facing copy in a UI language ("en" or the Chinese default). */
+export function siteCopy(locale: string): { homeTitle: string; description: string; tagline: string; footerNote: string } {
+  return locale === "en" ? SITE_EN : SITE;
+}
+
+export interface AboutCopy {
+  kicker: string;
+  headline: readonly [string, string];
+  lead: string;
+  steps: { collect: string; store: string; select: string; publish: string };
+  copyright: string;
+  maker: typeof ABOUT.maker;
+}
+
+/** The about page's copy in a UI language; the maker block is the operator's own and is not translated. */
+export function aboutCopy(locale: string): AboutCopy {
+  return locale === "en" ? { ...ABOUT_EN, maker: ABOUT.maker } : ABOUT;
+}
 
 /** “AI 日报”这类说法：行业词和名词之间，英文词加空格，中文词不加。 */
 export function withSubject(noun: string): string {

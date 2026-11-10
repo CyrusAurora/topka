@@ -1,6 +1,7 @@
 // Reader state kept only in this browser; nothing about a reader leaves it. Storage failures degrade
 // silently. Keep the keys and formats once readers have data under them.
 import { useSyncExternalStore } from "react";
+import { messages, type UiLocale } from "./i18n.ts";
 
 export const KEYS = {
   starred: "topka-starred-items",
@@ -253,24 +254,25 @@ export interface ImportReport {
 }
 
 /** Merge: existing stars are not overwritten, read ids are unioned, theme only if unset. */
-export function importBundle(text: string): ImportReport {
-  if (text.length > IMPORT_MAX_CHARS) throw new Error("文件过大（上限 2,000,000 字符）");
+export function importBundle(text: string, locale: UiLocale = "zh-CN"): ImportReport {
+  const t = messages(locale).common;
+  if (text.length > IMPORT_MAX_CHARS) throw new Error(t.fileTooLarge);
   let data: unknown;
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error("不是有效的 JSON 文件");
+    throw new Error(t.invalidJson);
   }
   const d = data as Partial<ExportBundle>;
-  if (!d || typeof d !== "object" || d.version !== 1) throw new Error("文件格式不对（需要 version: 1）");
+  if (!d || typeof d !== "object" || d.version !== 1) throw new Error(t.invalidFormat);
   return mergeLocalData({
     starred: Array.isArray(d.starred) ? d.starred : [],
     read: Array.isArray(d.read) ? d.read : [],
     theme: d.theme ?? null,
-  });
+  }, locale);
 }
 
-export function mergeLocalData(incoming: { starred: unknown[]; read: unknown[]; theme: unknown }): ImportReport {
+export function mergeLocalData(incoming: { starred: unknown[]; read: unknown[]; theme: unknown }, locale: UiLocale = "zh-CN"): ImportReport {
   const current = getStarred();
   const have = new Set(current.map((s) => s.id));
   const additions: LocalStarredItem[] = [];
@@ -286,7 +288,7 @@ export function mergeLocalData(incoming: { starred: unknown[]; read: unknown[]; 
   starredSkipped += additions.length - accepted.length;
   const mergedStarred = [...current, ...accepted].sort((a, b) => Date.parse(b.savedAt) - Date.parse(a.savedAt));
   // An import is reported only after it was written; a failure here leaves the browser as it was.
-  if (!writeRaw(KEYS.starred, JSON.stringify(mergedStarred))) throw new Error("浏览器存储已满或不可用，这次没有导入任何内容。");
+  if (!writeRaw(KEYS.starred, JSON.stringify(mergedStarred))) throw new Error(messages(locale).common.storageUnavailable);
 
   const readIds = getReadIds();
   const readHave = new Set(readIds);

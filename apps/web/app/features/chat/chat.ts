@@ -8,6 +8,11 @@
 // Web chat is instance-only: the assistant's model call is the user's BYOK key or the instance's
 // free chain.
 import { createElement, useCallback, useEffect, useRef, useState, type FC, type ReactElement } from "react";
+import { messages, problemMessage, useLocale, useT, type UiLocale } from "../../lib/i18n.ts";
+import { zh } from "../../lib/locales/chat.ts";
+
+/** The free-answer chip the intake always appends (intake-core.cjs OTHER); shown in the page's language. */
+const SERVER_OTHER = "其他"; // i18n-data: the server's chip text
 
 /** One message of the thread (GET /api/me/chat, the post's own answer, or a local pending line). */
 export interface ChatMsg {
@@ -47,49 +52,11 @@ export interface ProposalCard {
 
 const CARD_TTL_MS = 24 * 3600 * 1000;
 
-/** The server's quota / busy replies (project-assistant.quotaReply): the reader can send the last line again. */
+// i18n-data: the server's quota / busy replies, matched as sent; not display text.
 const BUSY_REPLY = /免费额度用完了|没有可用的免费模型|模型这会儿.*忙|对话次数用完了|没想明白/;
 const busy = (m: ChatMsg) => m.role === "assistant" && (m.turnStatus === "deferred" || BUSY_REPLY.test(m.text ?? ""));
 
-/** Why a card has no buttons, in plain words. */
-const CLOSED: Record<string, string> = {
-  sending: "处理中……",
-  applied: "已确认 ✓",
-  superseded: "已被后面的新卡片替换",
-  cancelled: "已放弃",
-  expired: "已过期（超过 24 小时没确认）。再说一次就会出新卡片。",
-  gone: "这个项目已经不在了",
-  failed: "没能生效，再说一次试试",
-  closed: "已关闭",
-};
-
-export const CHAT_COPY = {
-  title: "对话",
-  hint: "说一句想跟踪或想弄清楚什么，例如「帮我跟踪人形机器人」。我会问几个选择题，帮你把问题问准，确认后才会创建。",
-  thinking: "正在想……",
-  stuck: "消息已收到，后台暂时没连上。连上后会自动回复，不用重发。",
-  notYet: "回复还没到。消息不会丢；也可以再发一次。",
-  send: "发送",
-  placeholder: "说说你想跟踪什么…",
-  projects: "我的项目",
-  noProjects: "还没有项目。直接说想跟踪什么就行。",
-  sheetTip: "点一个项目，输入框会填上「修改…：」，接着说怎么改。",
-  deleteProject: "删除",
-  other: "其他",
-  otherHint: "直接在下面输入你的情况…",
-  more: "展开全部",
-  signedOut: "登录后才能对话：对话会帮你建跟踪项目，项目跟着账号走。",
-  login: "登录",
-  register: "注册新账号",
-  noModelKey: "还没有可用的模型。去「设置」填你自己的模型 Key（OpenAI 兼容，需要 Base URL），就能对话了。",
-  noModelAdmin: "这个实例还没配置模型，也没开放「自带 Key」，对话暂时用不了。请联系管理员。",
-  modelOff: "这个实例暂时关闭了模型调用，对话用不了。请稍后再试，或联系管理员。",
-  toSettings: "去设置",
-  failed: "这次没能答复，请稍后再试。",
-  tooMany: "发得太快了，歇一会儿再发。",
-  notSent: "没发出去",
-  retry: "再发一次",
-} as const;
+export const CHAT_COPY = zh;
 
 /** Why the composer is closed: not signed in, or nothing can answer (with the way out). */
 export type ChatGate = { kind: "signed-out" } | { kind: "no-model"; text: string; settings: boolean };
@@ -97,88 +64,93 @@ export type ChatGate = { kind: "signed-out" } | { kind: "no-model"; text: string
 /** The /api/me/model-status answer, as far as the chat page reads it. */
 export interface ModelStatusView { chat?: "user-key" | "instance" | "none"; reason?: string | null; byokAvailable?: boolean }
 
-export function gateForStatus(status: ModelStatusView): ChatGate | null {
+export function gateForStatus(status: ModelStatusView, locale: UiLocale = "zh-CN"): ChatGate | null {
+  const t = messages(locale).chat;
   if (status.chat !== "none") return null;
-  if (status.reason === "model-calls-off") return { kind: "no-model", text: CHAT_COPY.modelOff, settings: false };
+  if (status.reason === "model-calls-off") return { kind: "no-model", text: t.modelOff, settings: false };
   return status.byokAvailable
-    ? { kind: "no-model", text: CHAT_COPY.noModelKey, settings: true }
-    : { kind: "no-model", text: CHAT_COPY.noModelAdmin, settings: false };
+    ? { kind: "no-model", text: t.noModelKey, settings: true }
+    : { kind: "no-model", text: t.noModelAdmin, settings: false };
 }
 
 /** An intake card: the real problem, what to track and the key variables up front; the rest folded. */
-function intakeCard(cv: Record<string, unknown>): ReactElement {
+function intakeCard(cv: Record<string, unknown>, locale: UiLocale = "zh-CN"): ReactElement {
+  const t = messages(locale).chat;
   const it = cv.intake as IntakeBrief;
   return createElement("span", { style: { display: "block" } },
     createElement("span", { className: "kv" },
-      createElement("span", { className: "k" }, "真正的问题"), createElement("span", { className: "v" }, it.question || String(cv.purpose || "—")),
-      createElement("span", { className: "k" }, "跟踪什么"), createElement("span", { className: "v" }, `${String(cv.target || "—")}${cv.focus && cv.focus !== "没有特别指定" ? `：${String(cv.focus)}` : ""}`),
-      createElement("span", { className: "k" }, "关键变量"), createElement("span", { className: "v" }, list(it.variables)),
+      createElement("span", { className: "k" }, t.kRealProblem), createElement("span", { className: "v" }, it.question || String(cv.purpose || "—")),
+      createElement("span", { className: "k" }, t.kTrackWhat), createElement("span", { className: "v" }, `${String(cv.target || "—")}${cv.focus && cv.focus !== t.focusDefault ? `${t.focusSep}${String(cv.focus)}` : ""}`),
+      createElement("span", { className: "k" }, t.kKeyVars), createElement("span", { className: "v" }, list(it.variables, locale)),
     ),
     createElement("details", { className: "chat-more" },
-      createElement("summary", null, CHAT_COPY.more),
+      createElement("summary", null, t.more),
       createElement("span", { className: "kv" },
-        createElement("span", { className: "k" }, "判断"), createElement("span", { className: "v" }, it.judgement || "—"),
-        createElement("span", { className: "k" }, "理由"), createElement("span", { className: "v" }, list(it.reasons)),
-        createElement("span", { className: "k" }, "下一步"), createElement("span", { className: "v" }, it.next || "—"),
-        createElement("span", { className: "k" }, "已确认"), createElement("span", { className: "v" }, list(it.facts)),
-        createElement("span", { className: "k" }, "待验证"), createElement("span", { className: "v" }, list(it.assumptions)),
-        createElement("span", { className: "k" }, "排除"), createElement("span", { className: "v" }, String(cv.exclusions || "无")),
-        createElement("span", { className: "k" }, "信源"), createElement("span", { className: "v" }, String(cv.sourcesText)),
+        createElement("span", { className: "k" }, t.kJudgement), createElement("span", { className: "v" }, it.judgement || "—"),
+        createElement("span", { className: "k" }, t.kReasons), createElement("span", { className: "v" }, list(it.reasons, locale)),
+        createElement("span", { className: "k" }, t.kNext), createElement("span", { className: "v" }, it.next || "—"),
+        createElement("span", { className: "k" }, t.kConfirmed), createElement("span", { className: "v" }, list(it.facts, locale)),
+        createElement("span", { className: "k" }, t.kToVerify), createElement("span", { className: "v" }, list(it.assumptions, locale)),
+        createElement("span", { className: "k" }, t.kExclude), createElement("span", { className: "v" }, String(cv.exclusions || t.none)),
+        createElement("span", { className: "k" }, t.kSources), createElement("span", { className: "v" }, String(cv.sourcesText)),
       ),
     ),
   );
 }
 
-const list = (xs: string[] | undefined) => (xs && xs.length ? xs.join("；") : "—");
+const list = (xs: string[] | undefined, locale: UiLocale = "zh-CN") => (xs && xs.length ? xs.join(messages(locale).chat.listJoin) : "—");
 
 /** The summarized question's block under a confirm message: the question up front, the rest folded. */
-function intakeBlock(it: IntakeSummary): ReactElement {
+function intakeBlock(it: IntakeSummary, locale: UiLocale = "zh-CN"): ReactElement {
+  const t = messages(locale).chat;
   return createElement("span", { className: "chat-intake" },
     createElement("span", { className: "iq" }, it.question),
     createElement("details", null,
-      createElement("summary", null, "我是怎么整理的"),
+      createElement("summary", null, t.intakeHow),
       createElement("span", { className: "kv" },
-        createElement("span", { className: "k" }, "你最初说"), createElement("span", { className: "v" }, it.ask || "—"),
-        createElement("span", { className: "k" }, "真正的问题"), createElement("span", { className: "v" }, it.problem || "—"),
-        createElement("span", { className: "k" }, "已确认"), createElement("span", { className: "v" }, list(it.facts)),
-        createElement("span", { className: "k" }, "待验证"), createElement("span", { className: "v" }, list(it.assumptions)),
-        createElement("span", { className: "k" }, "关键变量"), createElement("span", { className: "v" }, list(it.variables)),
+        createElement("span", { className: "k" }, t.kInitialAsk), createElement("span", { className: "v" }, it.ask || "—"),
+        createElement("span", { className: "k" }, t.kRealProblem), createElement("span", { className: "v" }, it.problem || "—"),
+        createElement("span", { className: "k" }, t.kConfirmed), createElement("span", { className: "v" }, list(it.facts, locale)),
+        createElement("span", { className: "k" }, t.kToVerify), createElement("span", { className: "v" }, list(it.assumptions, locale)),
+        createElement("span", { className: "k" }, t.kKeyVars), createElement("span", { className: "v" }, list(it.variables, locale)),
       ),
     ),
   );
 }
 
-function cardViewOf(m: ChatMsg, latestCardId: string | null): Record<string, unknown> | null {
+function cardViewOf(m: ChatMsg, latestCardId: string | null, locale: UiLocale = "zh-CN"): Record<string, unknown> | null {
+  const t = messages(locale).chat;
   const c = m.card;
   if (!c) return null;
   const p = c.payload ?? { target: "", purpose: "", focus: "", exclusions: "", sourceIds: [] as string[] };
   const collecting = c.sources?.collecting ?? [];
   const pending = c.sources?.pending ?? [];
-  const names = [...collecting, ...pending].slice(0, 3).map((s) => s.name).join("、");
+  const names = [...collecting, ...pending].slice(0, 3).map((s) => s.name).join(t.nameJoin);
+  const total = collecting.length + pending.length;
   const view: Record<string, unknown> = {
     id: c.id,
     kind: c.kind,
-    title: c.kind === "create" ? "新建跟踪项目" : c.kind === "update" ? `修改「${c.before?.target ?? p.target ?? ""}」` : `删除「${c.before?.target ?? ""}」`,
+    title: c.kind === "create" ? t.createTitle : c.kind === "update" ? t.updateTitle(c.before?.target ?? p.target ?? "") : t.deleteTitle(c.before?.target ?? ""),
     target: p.target ?? "",
     purpose: p.purpose ?? "",
-    focus: p.focus ?? "没有特别指定",
-    exclusions: p.exclusions ?? "无",
-    sourcesText: collecting.length + pending.length
-      ? `${collecting.length + pending.length} 个${pending.length ? `（${pending.length} 个待启用）` : ""}${names ? `：${names}${collecting.length + pending.length > 3 ? " 等" : ""}` : ""}`
-      : "没有选到合适的信源",
+    focus: p.focus ?? t.focusDefault,
+    exclusions: p.exclusions ?? t.none,
+    sourcesText: total
+      ? `${t.sourcesCount(total)}${pending.length ? t.sourcesPending(pending.length) : ""}${names ? t.sourcesNames(names, total > 3) : ""}`
+      : t.sourcesNone,
     delPurpose: c.before?.purpose ?? "",
-    delSources: c.before ? `${c.before.sources} 个绑定将解除` : "",
+    delSources: c.before ? t.delSources(c.before.sources) : "",
     warning: c.warning,
     intake: p.intake ?? null,
-    confirmLabel: c.kind === "create" ? "确认创建" : c.kind === "update" ? "确认修改" : "确认删除",
-    reviseLabel: c.kind === "delete" ? "取消" : "再改改",
+    confirmLabel: c.kind === "create" ? t.confirmCreate : c.kind === "update" ? t.confirmUpdate : t.confirmDelete,
+    reviseLabel: c.kind === "delete" ? t.cancel : t.revise,
   };
   let status = c.status || "proposed";
   if (status === "proposed" && c.createdAt && Date.now() - new Date(c.createdAt).getTime() > CARD_TTL_MS) status = "expired";
   if (status === "proposed" && c.id !== latestCardId) status = "superseded";
   view.status = status;
   view.open = status === "proposed";
-  view.closedText = CLOSED[status] ?? CLOSED.closed;
+  view.closedText = t.closed[status as keyof typeof t.closed] ?? t.closed.closed;
   view.closedTone = status === "applied" ? "ok" : status === "sending" ? "" : "off";
   return view;
 }
@@ -196,23 +168,26 @@ export interface ChatPageProps {
   pollEveryMs?: number;
 }
 
-function gateBanner(gate: ChatGate): ReactElement {
+function gateBanner(gate: ChatGate, locale: UiLocale = "zh-CN"): ReactElement {
+  const t = messages(locale).chat;
   if (gate.kind === "signed-out") {
     return createElement("div", { role: "alert", className: "chat-gate" },
-      createElement("p", null, CHAT_COPY.signedOut),
+      createElement("p", null, t.signedOut),
       createElement("span", { className: "btns" },
-        createElement("a", { href: "/login?next=%2Fchat", className: "btn dark" }, CHAT_COPY.login),
-        createElement("a", { href: "/register", className: "btn" }, CHAT_COPY.register),
+        createElement("a", { href: "/login?next=%2Fchat", className: "btn dark" }, t.login),
+        createElement("a", { href: "/register", className: "btn" }, t.register),
       ),
     );
   }
   return createElement("div", { role: "alert", className: "chat-gate" },
     createElement("p", null, gate.text),
-    gate.settings ? createElement("span", { className: "btns" }, createElement("a", { href: "/settings#model-key", className: "btn dark" }, CHAT_COPY.toSettings)) : null,
+    gate.settings ? createElement("span", { className: "btns" }, createElement("a", { href: "/settings#model-key", className: "btn dark" }, t.toSettings)) : null,
   );
 }
 
 export const ChatPage: FC<ChatPageProps> = (props) => {
+  const t = useT().chat;
+  const locale = useLocale();
   const doFetch = props.fetchImpl ?? fetch.bind(globalThis);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [projects, setProjects] = useState<Array<{ id: string; target: string; purpose: string; focus: string; exclusions: string }>>([]);
@@ -288,7 +263,7 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
       const res = await doFetch("/api/me/model-status");
       if (res.status === 401) return setGate({ kind: "signed-out" });
       if (!res.ok) return;
-      const g = gateForStatus((await res.json()) as ModelStatusView);
+      const g = gateForStatus((await res.json()) as ModelStatusView, locale);
       if (g) setGate((cur) => cur ?? g);
     } catch {
       // Unknown: let the reader try; the send itself answers honestly.
@@ -324,12 +299,12 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
         }
         if (!noted && Date.now() - since > 15_000) {
           noted = true;
-          setNote(CHAT_COPY.stuck);
+          setNote(t.stuck);
         }
         if (Date.now() > until) {
           setWaiting(false);
           stopPoll();
-          setNote(CHAT_COPY.notYet);
+          setNote(t.notYet);
           if (lost) {
             setMessages((cur) => cur.map((m) => (m.clientId === lost.clientId && m.role === "user" && m.pendingLocal ? { ...m, failed: true } : m)));
             setRetry(lost);
@@ -369,15 +344,16 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
       if (timer) clearTimeout(timer);
       if (!res.ok) {
         // The server answered "no": say why at once; never wait on a turn that will not come.
-        const problem = (await res.json().catch(() => ({}))) as { code?: string; detail?: string };
+        const problem = (await res.json().catch(() => ({}))) as { code?: string; detail?: string; status?: number; retryAfter?: number };
         setSending(false);
         markFailed(clientId);
         if (res.status === 401) return setGate({ kind: "signed-out" });
         if (res.status === 409 && problem.code === "no_model") {
           void loadStatus();
-          return setGate({ kind: "no-model", text: problem.detail || CHAT_COPY.noModelKey, settings: /设置/.test(problem.detail ?? "设置") });
+          // i18n-data: the detail text is shown only when the server sends it; the regex detects whether it points at settings, it is not display text.
+          return setGate({ kind: "no-model", text: locale === "zh-CN" ? problem.detail || t.noModelKey : t.noModelKey, settings: /设置/.test(problem.detail ?? "设置") });
         }
-        setNote(res.status === 429 ? problem.detail || CHAT_COPY.tooMany : problem.detail || CHAT_COPY.failed);
+        setNote(problemMessage(locale, problem, res.status === 429 ? t.tooMany : t.failed));
         setRetry({ clientId, text });
         return;
       }
@@ -411,8 +387,8 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const pick = (chip: string) => {
-    if (chip === CHAT_COPY.other) {
-      setNote(CHAT_COPY.otherHint);
+    if (chip === t.other || chip === SERVER_OTHER) {
+      setNote(t.otherHint);
       inputRef.current?.focus();
       return;
     }
@@ -451,7 +427,7 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
       if (!res.ok) return;
       const body = (await res.json()) as { card?: ProposalCard | null };
       if (body.card) {
-        setMessages((cur) => [...cur, { role: "assistant", text: `确认删除「${body.card?.before?.target ?? ""}」吗？`, createdAt: Date.now(), card: body.card ?? null }]);
+        setMessages((cur) => [...cur, { role: "assistant", text: t.deleteConfirm(body.card?.before?.target ?? ""), createdAt: Date.now(), card: body.card ?? null }]);
       }
     } catch {
       // The list's delete stays a no-op on failure.
@@ -460,7 +436,7 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
 
   const editProject = (target: string) => {
     setShowProjects(false);
-    setInput(`修改「${target}」：`);
+    setInput(t.editPrefill(target));
   };
 
   const cards = messages.filter((m) => m.card);
@@ -470,36 +446,36 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
 
   const lastIndex = messages.length - 1;
   const body: ReactElement[] = messages.map((m, index) => {
-    const cv = m.card ? cardViewOf(m, latestCardId) : null;
+    const cv = m.card ? cardViewOf(m, latestCardId, locale) : null;
     const key = m.clientId ?? `m${m.createdAt}`;
     const isBusy = busy(m);
     const retryText = isBusy && m.replyTo ? sent.get(m.replyTo) : undefined;
     return createElement("div", { key, className: "chat-msg", id: `m-${key}` },
       m.role === "user"
         ? createElement("span", { className: `u ${m.failed ? "failed" : ""}` }, m.text,
-            m.failed ? createElement("span", { className: "chat-failed" }, ` · ${CHAT_COPY.notSent}`) : null)
+            m.failed ? createElement("span", { className: "chat-failed" }, ` · ${t.notSent}`) : null)
         : createElement("span", { className: `a ${isBusy ? "note" : ""}` },
             m.text ? createElement("span", { style: { whiteSpace: "pre-line" } }, m.text) : null,
-            m.intake ? intakeBlock(m.intake) : null,
+            m.intake ? intakeBlock(m.intake, locale) : null,
             m.chips && m.chips.length && index === lastIndex && !waiting && !sending
               ? createElement("span", { className: "chat-chips" },
-                  m.chips.map((c) => createElement("button", { key: c, type: "button", className: `chip ${c === CHAT_COPY.other ? "other" : ""}`, onClick: () => pick(c) }, c)))
+                  m.chips.map((c) => createElement("button", { key: c, type: "button", className: `chip ${c === t.other || c === SERVER_OTHER ? "other" : ""}`, onClick: () => pick(c) }, c === SERVER_OTHER ? t.other : c)))
               : null,
             cv ? createElement("span", { className: `chat-card ${cv.kind === "delete" ? "danger" : ""} ${cv.open || cv.status === "sending" || cv.status === "applied" ? "" : "dim"}`, style: { display: "block", marginTop: 8 } },
                 createElement("span", { className: "ct" }, String(cv.title)),
                 cv.intake
-                  ? intakeCard(cv)
+                  ? intakeCard(cv, locale)
                   : cv.kind !== "delete"
                   ? createElement("span", { className: "kv" },
-                      createElement("span", { className: "k" }, "对象"), createElement("span", { className: "v" }, String(cv.target || "—")),
-                      createElement("span", { className: "k" }, "目标"), createElement("span", { className: "v" }, String(cv.purpose || "—")),
-                      createElement("span", { className: "k" }, "关注重点"), createElement("span", { className: "v" }, String(cv.focus)),
-                      createElement("span", { className: "k" }, "排除"), createElement("span", { className: "v" }, String(cv.exclusions)),
-                      createElement("span", { className: "k" }, "信源"), createElement("span", { className: "v" }, String(cv.sourcesText)),
+                      createElement("span", { className: "k" }, t.kObject), createElement("span", { className: "v" }, String(cv.target || "—")),
+                      createElement("span", { className: "k" }, t.kTarget), createElement("span", { className: "v" }, String(cv.purpose || "—")),
+                      createElement("span", { className: "k" }, t.kFocus), createElement("span", { className: "v" }, String(cv.focus)),
+                      createElement("span", { className: "k" }, t.kExclude), createElement("span", { className: "v" }, String(cv.exclusions)),
+                      createElement("span", { className: "k" }, t.kSources), createElement("span", { className: "v" }, String(cv.sourcesText)),
                     )
                   : createElement("span", { className: "kv" },
-                      createElement("span", { className: "k" }, "目标"), createElement("span", { className: "v" }, String(cv.delPurpose || "—")),
-                      String(cv.delSources) ? createElement("span", { className: "k" }, "信源") : null,
+                      createElement("span", { className: "k" }, t.kTarget), createElement("span", { className: "v" }, String(cv.delPurpose || "—")),
+                      String(cv.delSources) ? createElement("span", { className: "k" }, t.kSources) : null,
                       String(cv.delSources) ? createElement("span", { className: "v" }, String(cv.delSources)) : null,
                     ),
                 cv.warning ? createElement("span", { className: "warn" }, String(cv.warning)) : null,
@@ -511,23 +487,23 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
                   : createElement("span", { className: `closed ${cv.closedTone === "ok" ? "ok" : ""}` }, String(cv.closedText)),
               )
             : null,
-            retryText ? createElement("button", { type: "button", className: "chat-retry", onClick: () => void resend(retryText) }, "再发一次") : null,
+            retryText ? createElement("button", { type: "button", className: "chat-retry", onClick: () => void resend(retryText) }, t.retry) : null,
           ),
     );
   });
 
   return createElement("div", { className: "chat-shell mx-auto w-full max-w-[560px] px-4 py-6" },
-    createElement("div", { className: "chat-title" }, CHAT_COPY.title),
-    createElement("button", { type: "button", className: "chat-projbar", onClick: () => setShowProjects((s) => !s) }, `我的项目（${projects.length}）`),
+    createElement("div", { className: "chat-title" }, t.title),
+    createElement("button", { type: "button", className: "chat-projbar", onClick: () => setShowProjects((s) => !s) }, t.projectsButton(projects.length)),
     createElement("div", { className: "chat-list" },
-      !messages.length && !waiting ? createElement("p", { className: "chat-hint" }, CHAT_COPY.hint) : null,
+      !messages.length && !waiting ? createElement("p", { className: "chat-hint" }, t.hint) : null,
       ...body,
-      waiting ? createElement("p", { className: "chat-msg" }, createElement("span", { className: "a thinking" }, CHAT_COPY.thinking)) : null,
+      waiting ? createElement("p", { className: "chat-msg" }, createElement("span", { className: "a thinking" }, t.thinking)) : null,
       note ? createElement("p", { role: "status", className: "chat-note" }, note) : null,
       retry && !waiting && !sending && !gate
-        ? createElement("button", { type: "button", className: "chat-retry", onClick: () => void resend(retry.text, retry.clientId) }, CHAT_COPY.retry)
+        ? createElement("button", { type: "button", className: "chat-retry", onClick: () => void resend(retry.text, retry.clientId) }, t.retry)
         : null,
-      gate ? gateBanner(gate) : null,
+      gate ? gateBanner(gate, locale) : null,
     ),
     createElement("div", { className: "chat-inputbar" },
       createElement("input", {
@@ -540,31 +516,31 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
             void send();
           }
         },
-        placeholder: CHAT_COPY.placeholder,
+        placeholder: t.placeholder,
         maxLength: 500,
         disabled: sending || !!gate,
       }),
-      createElement("button", { type: "button", onClick: () => void send(), disabled: !input.trim() || sending || waiting || !!gate }, sending ? "…" : CHAT_COPY.send),
+      createElement("button", { type: "button", onClick: () => void send(), disabled: !input.trim() || sending || waiting || !!gate }, sending ? "…" : t.send),
     ),
     showProjects ? createElement("div", { className: "chat-sheet-mask", onClick: () => setShowProjects(false) },
       createElement("div", { className: "chat-sheet", onClick: (e) => e.stopPropagation() },
         createElement("div", { className: "chat-sheet-head" },
-          createElement("span", null, CHAT_COPY.projects),
-          createElement("span", { className: "count" }, `${projects.length} 个`),
+          createElement("span", null, t.projects),
+          createElement("span", { className: "count" }, t.projectsCount(projects.length)),
         ),
-        projects.length === 0 ? createElement("p", { className: "chat-empty" }, CHAT_COPY.noProjects) : createElement("div", { className: "chat-proj-list" },
+        projects.length === 0 ? createElement("p", { className: "chat-empty" }, t.noProjects) : createElement("div", { className: "chat-proj-list" },
           projects.map((p) =>
             createElement("div", { key: p.id, className: "chat-proj-card" },
               createElement("button", { type: "button", className: "pname", onClick: () => editProject(p.target) }, p.target),
               p.purpose ? createElement("p", { className: "ppurpose" }, p.purpose) : null,
               createElement("div", { className: "pfoot" },
                 createElement("span", { className: "pmeta" }, ""),
-                createElement("button", { type: "button", className: "pdel", onClick: () => void deleteProject(p.id) }, CHAT_COPY.deleteProject),
+                createElement("button", { type: "button", className: "pdel", onClick: () => void deleteProject(p.id) }, t.deleteProject),
               ),
             ),
           ),
         ),
-        createElement("p", { className: "chat-sheet-tip" }, CHAT_COPY.sheetTip),
+        createElement("p", { className: "chat-sheet-tip" }, t.sheetTip),
       ),
     ) : null,
   );

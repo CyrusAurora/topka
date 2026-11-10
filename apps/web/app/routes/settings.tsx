@@ -3,10 +3,14 @@ import { SITE } from "@topka/industry/site";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/settings";
 import { pageMeta } from "../lib/seo";
+import { localeOf, messages } from "../lib/i18n";
 import { SettingsPage } from "../features/settings/settings";
 
-export const meta: Route.MetaFunction = () =>
-  pageMeta({ title: "设置", description: `账号、自带模型 Key 与项目：${SITE.name}。`, path: "/settings", noindex: true });
+export const meta: Route.MetaFunction = ({ matches }) => {
+  const locale = localeOf(matches);
+  const t = messages(locale);
+  return pageMeta({ title: t.settings.metaTitle, description: t.settings.metaDescription(SITE.name), path: "/settings", noindex: true, locale });
+};
 
 export function headers() {
   return { "Cache-Control": "no-store" };

@@ -75,7 +75,10 @@ test("the admin API: no session 401, a write without the CSRF token 403", async 
   assert.equal((await get("/api/admin/sources")).statusCode, 401);
   const w = await app.inject({ method: "POST", url: "/api/admin/processing/requeue", headers: { cookie: admin, "content-type": "application/json" }, payload: "{}" });
   assert.equal(w.statusCode, 403);
-  assert.equal((await get("/api/admin/me", admin)).statusCode, 200);
+  const me = await get("/api/admin/me", admin);
+  assert.equal(me.statusCode, 200);
+  // The password admin is marked, so the page names it by role in its own language.
+  assert.equal((JSON.parse(me.body) as { builtIn?: boolean }).builtIn, true);
 });
 
 test("admin reads answer without a server error behind a password session", async () => {

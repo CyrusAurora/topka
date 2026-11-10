@@ -75,11 +75,23 @@ const server = createServer((req, res) => {
   });
 });
 
+// A signed-in reader's pages follow their own language and time zone (root loader), so a request
+// carrying the reader session is answered privately; public answers vary on Cookie so a cache never
+// hands a visitor's page to a reader or the other way round.
+const READER_SESSION_COOKIE = process.env.SESSION_COOKIE_NAME || "topka_session";
+function hasReaderSession(cookieHeader: string | undefined): boolean {
+  return (cookieHeader ?? "").split(";").some((part) => {
+    const eq = part.indexOf("=");
+    return eq > 0 && part.slice(0, eq).trim() === READER_SESSION_COOKIE && part.slice(eq + 1).trim() !== "";
+  });
+}
+
 /** Public navigation returns all matched loaders, so `_routes` never changes a cached answer. */
 function pageCache(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse) {
   const url = new URL(req.url ?? "/", "http://web.local");
   const pathname = decodeURIComponent(url.pathname).replace(/\.data$/, "");
   const publicRead = (req.method === "GET" || req.method === "HEAD") && !/^\/admin(?:\/|$)/i.test(pathname);
+  const personal = hasReaderSession(req.headers.cookie);
   if (publicRead && url.pathname.endsWith(".data")) {
     url.searchParams.delete("_routes");
     req.url = url.pathname + url.search;
@@ -92,7 +104,7 @@ function pageCache(req: import("node:http").IncomingMessage, res: import("node:h
     const outgoing = typeof messageOrHeaders === "string" ? headers : messageOrHeaders;
     for (const [name, value] of Object.entries(outgoing ?? {})) if (value !== undefined) res.setHeader(name, value);
     const cc = String(res.getHeader("Cache-Control") ?? "");
-    if (!publicRead || status !== 200 || res.hasHeader("Set-Cookie") || !cc || /(?:private|no-store)/i.test(cc)) {
+    if (!publicRead || personal || status !== 200 || res.hasHeader("Set-Cookie") || !cc || /(?:private|no-store)/i.test(cc)) {
       res.removeHeader("Expires");
       res.setHeader("Cache-Control", "private, no-store");
       res.setHeader("X-Accel-Expires", "0");
@@ -104,6 +116,8 @@ function pageCache(req: import("node:http").IncomingMessage, res: import("node:h
       // A sibling loader may have delayed this response after the selected loader set its TTL.
       const seconds = /(?:^|,)\s*no-cache(?:,|$)/i.test(cc) || expires === "0" ? 0
         : Math.max(0, Math.min(sharedSeconds, Number(expires.slice(1)) - nowSeconds));
+      const vary = String(res.getHeader("Vary") ?? "");
+      if (!/(?:^|,)\s*cookie\s*(?:,|$)/i.test(vary)) res.setHeader("Vary", vary ? `${vary}, Cookie` : "Cookie");
       res.setHeader("Date", now.toUTCString());
       res.setHeader("X-Accel-Expires", seconds > 0 ? expires : "0");
       // Reuse intent-prefetched data in the browser within the same shared-cache deadline (capped).

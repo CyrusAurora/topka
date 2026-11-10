@@ -29,10 +29,12 @@ async function renderWith(status: unknown, keysBody: unknown = { keys: [], encry
     return { status: 404, body: {} };
   });
   const page = await mount();
-  await page.render(createElement(SettingsPage, { fetchImpl: stub.fetch }));
+  await page.render(createElement(SettingsPage, { fetchImpl: stub.fetch, onPrefsChanged: () => { prefsRedraws++; } }));
   await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
   return { page, stub };
 }
+
+let prefsRedraws = 0;
 
 test("settings shows no usable model even though keys can be stored", async () => {
   const { page } = await renderWith(st({}));
@@ -64,6 +66,7 @@ test("settings locale selector shows current value and PATCHes", async () => {
   const patch = stub.calls.find((c) => c.url === "/api/auth/me" && c.init?.method === "PATCH");
   assert.ok(patch, "locale PATCH sent");
   assert.equal((patch!.init?.body as string), JSON.stringify({ locale: "en" }));
+  assert.equal(prefsRedraws, 1, "the page is drawn again in the new language, not left in the old one");
   await page.teardown();
 });
 
@@ -81,7 +84,7 @@ test("the reminder feed: generate shows the URL once, rotate replaces it, disabl
     return { status: 404, body: {} };
   });
   const page = await mount();
-  await page.render(createElement(SettingsPage, { fetchImpl: stub.fetch }));
+  await page.render(createElement(SettingsPage, { fetchImpl: stub.fetch, onPrefsChanged: () => {} }));
   await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
   assert.equal(page.container.querySelector("[data-testid=feed-state]")?.textContent, SETTINGS_COPY.feedOff);
   await click(buttonByText(page.container, SETTINGS_COPY.feedEnable));
@@ -92,5 +95,35 @@ test("the reminder feed: generate shows the URL once, rotate replaces it, disabl
   await click(buttonByText(page.container, SETTINGS_COPY.feedDisable));
   assert.equal(page.container.querySelector("[data-testid=feed-url]"), null);
   assert.equal(page.container.querySelector("[data-testid=feed-state]")?.textContent, SETTINGS_COPY.feedOff);
+  await page.teardown();
+});
+
+test("the time zone is the reader's own: picking one saves it and draws the page again", async () => {
+  const patches: unknown[] = [];
+  let redrawn = 0;
+  const stub = stubFetch((url, init) => {
+    if (url === "/api/auth/me" && init?.method === "PATCH") {
+      patches.push(JSON.parse(String(init.body)));
+      return { body: { user: { email: "a@example.com", locale: "zh-CN", timezone: "Europe/London" } } };
+    }
+    if (url === "/api/auth/me") return { body: { user: { email: "a@example.com", locale: "zh-CN", timezone: "Asia/Shanghai" } } };
+    if (url === "/api/me/keys") return { body: { keys: [], encryptionConfigured: true } };
+    if (url === "/api/me/model-status") return { body: st({}) };
+    if (url === "/api/projects") return { body: { projects: [] } };
+    return { status: 404, body: {} };
+  });
+  const page = await mount();
+  await page.render(createElement(SettingsPage, { fetchImpl: stub.fetch, onPrefsChanged: () => { redrawn++; } }));
+  await act(async () => { await new Promise((r) => setTimeout(r, 20)); });
+  const select = page.container.querySelector("[data-testid=timezone-select]") as HTMLSelectElement;
+  assert.equal(select.value, "Asia/Shanghai", "the stored zone is selected");
+  assert.ok([...select.options].some((o) => o.value === "America/New_York"), "the browser's zone list is offered");
+  await act(async () => {
+    select.value = "Europe/London";
+    select.dispatchEvent(new select.ownerDocument.defaultView!.Event("change", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 20));
+  });
+  assert.deepEqual(patches, [{ timezone: "Europe/London" }]);
+  assert.equal(redrawn, 1, "the page is drawn again in the new zone");
   await page.teardown();
 });

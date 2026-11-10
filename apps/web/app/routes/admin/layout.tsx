@@ -8,6 +8,7 @@ import { NavigationProgress } from "../../components/shell/Chrome";
 import type { AdminMe } from "../../features/admin/action";
 import { Toaster } from "../../features/admin/toast";
 import { adminGet } from "../../lib/admin.server";
+import { localeOf, messages, useT, type Messages } from "../../lib/i18n";
 
 type Counts = Partial<Record<"feedback" | "sources" | "runs" | "monitor", number>>;
 
@@ -19,31 +20,39 @@ export async function loader({ request }: Route.LoaderArgs) {
 // Counts follow every navigation and command; the identity does not change.
 export const shouldRevalidate: ShouldRevalidateFunction = () => true;
 
-export const meta: Route.MetaFunction = () => [{ title: `${SITE.name} 后台` }, { name: "robots", content: "noindex, nofollow" }];
+export const meta: Route.MetaFunction = ({ matches }) => {
+  const t = messages(localeOf(matches));
+  return [{ title: t.adminShell.layout.metaTitle(SITE.name) }, { name: "robots", content: "noindex, nofollow" }];
+};
 
 export const headers: Route.HeadersFunction = () => ({ "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" });
 
-const NAV: Array<{ group: string; items: Array<{ to: string; label: string; count?: keyof Counts; tone?: "bad" | "accent" }> }> = [
-  {
-    group: "内容",
-    items: [
-      { to: "/admin/content", label: "内容诊断" },
-      { to: "/admin/sources", label: "信源", count: "sources", tone: "bad" },
-      ...(FEATURES.codexResetMonitor ? [{ to: "/admin/monitor", label: "Codex 重置", count: "monitor" as const, tone: "accent" as const }] : []),
-      { to: "/admin/feedback", label: "反馈", count: "feedback", tone: "accent" },
-    ],
-  },
-  {
-    group: "系统",
-    items: [
-      { to: "/admin/runs", label: "运行", count: "runs", tone: "bad" },
-      { to: "/admin/models", label: "模型与评测" },
-      { to: "/admin/selectbench", label: "SelectBench" },
-      { to: "/admin/settings", label: "设置" },
-      { to: "/admin/audit", label: "审计记录" },
-    ],
-  },
-];
+type NavEntry = { group: string; items: Array<{ to: string; label: string; count?: keyof Counts; tone?: "bad" | "accent" }> };
+
+function buildNav(t: Messages): NavEntry[] {
+  const n = t.adminShell.layout;
+  return [
+    {
+      group: n.groupContent,
+      items: [
+        { to: "/admin/content", label: n.navContent },
+        { to: "/admin/sources", label: n.navSources, count: "sources", tone: "bad" },
+        ...(FEATURES.codexResetMonitor ? [{ to: "/admin/monitor", label: n.navMonitor, count: "monitor" as const, tone: "accent" as const }] : []),
+        { to: "/admin/feedback", label: n.navFeedback, count: "feedback", tone: "accent" },
+      ],
+    },
+    {
+      group: n.groupSystem,
+      items: [
+        { to: "/admin/runs", label: n.navRuns, count: "runs", tone: "bad" },
+        { to: "/admin/models", label: n.navModels },
+        { to: "/admin/selectbench", label: n.navSelectBench },
+        { to: "/admin/settings", label: n.navSettings },
+        { to: "/admin/audit", label: n.navAudit },
+      ],
+    },
+  ];
+}
 
 function NavItem({ to, label, count, tone }: { to: string; label: string; count?: number; tone?: "bad" | "accent" }) {
   return (
@@ -65,17 +74,19 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
   const { me, counts } = loaderData;
   const navigation = useNavigation();
   const location = useLocation();
-  const flat = NAV.flatMap((g) => g.items);
+  const t = useT();
+  const nav = buildNav(t);
+  const flat = nav.flatMap((g) => g.items);
   return (
     <div className="flex min-h-dvh bg-bg">
       <NavigationProgress active={navigation.state === "loading"} />
       <aside className="sticky top-0 hidden h-dvh w-[216px] shrink-0 flex-col border-r border-line bg-bg-sunk/50 px-3 py-4 lg:flex">
         <a href="/" className="mb-5 flex items-center gap-2 px-2">
           <RingMark className="size-6 text-accent" />
-          <span className="text-[15px] font-semibold tracking-tight text-ink">{SITE.name} 后台</span>
+          <span className="text-[15px] font-semibold tracking-tight text-ink">{SITE.name} {t.adminShell.backstage}</span>
         </a>
         <nav className="flex-1 space-y-4 overflow-y-auto">
-          {NAV.map((g) => (
+          {nav.map((g) => (
             <div key={g.group}>
               <div className="mb-1 px-3 text-[11.5px] font-medium tracking-wide text-ink-4">{g.group}</div>
               <div className="space-y-0.5">
@@ -88,11 +99,11 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
         </nav>
         <div className="mt-3 border-t border-line px-2 pt-3 text-[12.5px] text-ink-3">
           <div className="flex items-center justify-between gap-2">
-            <span className="truncate">{me.name}</span>
-            {me.dev && <span className="rounded bg-amber/15 px-1.5 text-[11px] font-medium text-amber">开发</span>}
+            <span className="truncate">{me.builtIn ? t.adminShell.layout.builtInAdmin : me.name}</span>
+            {me.dev && <span className="rounded bg-amber/15 px-1.5 text-[11px] font-medium text-amber">{t.adminShell.layout.devBadge}</span>}
           </div>
           <form method="post" action="/api/auth/logout" className="mt-1.5">
-            <button type="submit" className="text-ink-4 hover:text-ink-2">退出登录</button>
+            <button type="submit" className="text-ink-4 hover:text-ink-2">{t.adminShell.layout.logout}</button>
           </form>
         </div>
       </aside>
@@ -100,8 +111,8 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
         <div className="sticky top-0 z-40 border-b border-line bg-bg/85 backdrop-blur lg:hidden">
           <div className="flex items-center gap-2 px-4 pt-3">
             <RingMark className="size-5 text-accent" />
-            <span className="text-[14px] font-semibold text-ink">{SITE.name} 后台</span>
-            {me.dev && <span className="rounded bg-amber/15 px-1.5 text-[11px] font-medium text-amber">开发</span>}
+            <span className="text-[14px] font-semibold text-ink">{SITE.name} {t.adminShell.backstage}</span>
+            {me.dev && <span className="rounded bg-amber/15 px-1.5 text-[11px] font-medium text-amber">{t.adminShell.layout.devBadge}</span>}
           </div>
           <nav className="no-scrollbar flex gap-1 overflow-x-auto px-3 py-2">
             {flat.map((i) => {

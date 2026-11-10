@@ -5,7 +5,8 @@
 // The endpoint answers { issue } only (no opened/projects), so the read marks come back empty and
 // the project label is what the issue's own items carry.
 import { createElement, useCallback, useEffect, useState, type FC, type ReactElement } from "react";
-import { cardMeta, hostOf, MAGAZINE_COPY, masthead, type CardRow, type IssueCard } from "./view.ts";
+import { useT, useUiPrefs } from "../../lib/i18n.ts";
+import { cardMeta, hostOf, masthead, type CardRow, type IssueCard } from "./view.ts";
 
 export interface MagazineIssueProps {
   date: string;
@@ -20,6 +21,8 @@ interface IssueState {
 }
 
 export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
+  const t = useT();
+  const { locale, timeZone } = useUiPrefs();
   const doFetch = props.fetchImpl ?? fetch.bind(globalThis);
   const path = `/api/me/issues/${encodeURIComponent(props.date)}`;
   const [state, setState] = useState<IssueState>({ phase: "loading", issue: null });
@@ -86,12 +89,12 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
     }
   };
 
-  const titleEl = createElement("h1", { className: "mag-title" }, "往期 · " + props.date);
+  const titleEl = createElement("h1", { className: "mag-title" }, t.magazine.issueTitle(props.date));
 
   if (state.phase === "loading") {
     return createElement("div", { className: "magazine mx-auto w-full max-w-[560px] px-4 py-6" },
       titleEl,
-      createElement("p", { role: "status", className: "mag-note" }, "正在翻这一期……"),
+      createElement("p", { role: "status", className: "mag-note" }, t.magazine.issueLoading),
     );
   }
 
@@ -99,8 +102,8 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
     return createElement("div", { className: "magazine mx-auto w-full max-w-[560px] px-4 py-16" },
       titleEl,
       createElement("div", { className: "mag-empty" },
-        createElement("div", { className: "e-t" }, MAGAZINE_COPY.signedOut),
-        createElement("a", { href: "/login", className: "e-cta" }, MAGAZINE_COPY.goToLogin),
+        createElement("div", { className: "e-t" }, t.magazine.signedOut),
+        createElement("a", { href: "/login", className: "e-cta" }, t.magazine.goToLogin),
       ),
     );
   }
@@ -109,9 +112,9 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
     return createElement("div", { className: "magazine mx-auto w-full max-w-[560px] px-4 py-16" },
       titleEl,
       createElement("div", { className: "mag-empty" },
-        createElement("div", { className: "e-t" }, "这一天没有你的这一期。"),
-        createElement("div", { className: "e-s" }, "没有内容的一天不出一期；挑旁边有内容的一天再看。"),
-        createElement("a", { href: "/archive", className: "e-cta mt-4" }, "回往期列表"),
+        createElement("div", { className: "e-t" }, t.magazine.notFoundTitle),
+        createElement("div", { className: "e-s" }, t.magazine.notFoundSub),
+        createElement("a", { href: "/archive", className: "e-cta mt-4" }, t.magazine.backToArchive),
       ),
     );
   }
@@ -120,13 +123,13 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
     return createElement("div", { className: "magazine mx-auto w-full max-w-[560px] px-4 py-16" },
       titleEl,
       createElement("div", { className: "mag-empty" },
-        createElement("div", { className: "e-t" }, MAGAZINE_COPY.failed),
-        createElement("a", { href: "/archive", className: "e-cta mt-4" }, "回往期列表"),
+        createElement("div", { className: "e-t" }, t.magazine.failed),
+        createElement("a", { href: "/archive", className: "e-cta mt-4" }, t.magazine.backToArchive),
       ),
     );
   }
 
-  const head = masthead(issue.date);
+  const head = masthead(issue.date, locale);
   const items = issue.items;
   const multiProjects = new Set(items.map((i) => i.project.id)).size > 1;
 
@@ -148,8 +151,8 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
 
   const body: ReactElement = items.length === 0
     ? createElement("div", { className: "mag-empty" },
-        createElement("div", { className: "e-t" }, "这一天没有出这一期"),
-        createElement("div", { className: "e-s" }, "没有内容的一天不占一期。"),
+        createElement("div", { className: "e-t" }, t.magazine.emptyIssueTitle),
+        createElement("div", { className: "e-s" }, t.magazine.emptyIssueSub),
       )
     : createElement("div", { className: "mag-list" },
         rows.map((row, i) => {
@@ -175,28 +178,28 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
                 createElement("div", { className: "m-t" }, row.title),
                 row.core ? createElement("div", { className: "m-why" }, row.core) : null,
                 createElement("div", { className: "m-meta" },
-                  createElement("span", { className: "m-src" }, cardMeta(item, multiProjects)),
-                  createElement("span", { className: "m-tog" }, open ? "收起" : "展开"),
+                  createElement("span", { className: "m-src" }, cardMeta(item, multiProjects, new Date(), locale, timeZone)),
+                  createElement("span", { className: "m-tog" }, open ? t.magazine.collapse : t.magazine.expand),
                 ),
               ),
             ),
             open ? createElement("div", { className: "m-more" },
               createElement("div", { className: "m-more-in" },
                 createElement("div", { className: "m-more-pad" },
-                  createElement("div", { className: "m-lab" }, "讲了什么 · AI 摘要"),
+                  createElement("div", { className: "m-lab" }, t.magazine.summaryLabel),
                   row.summary
                     ? createElement("div", { className: "m-sum" }, row.summary)
-                    : createElement("div", { className: "m-sum muted" }, "摘要还在路上，先看原文出处。"),
+                    : createElement("div", { className: "m-sum muted" }, t.magazine.summaryPending),
                   createElement("div", { className: "m-src-row" },
                     createElement("span", { className: "m-host" }, row.host),
                     createElement("button", {
                       type: "button",
                       className: `m-copy hit ${copiedId === row.id ? "done" : ""}`,
                       onClick: () => void copy(row),
-                    }, copiedId === row.id ? "已复制 ✓" : "复制原文链接"),
+                    }, copiedId === row.id ? t.magazine.copied : t.magazine.copyLink),
                   ),
                   createElement("div", { className: "m-acts" },
-                    createElement("button", { type: "button", className: "m-close hit", onClick: () => setOpenId("") }, "收起"),
+                    createElement("button", { type: "button", className: "m-close hit", onClick: () => setOpenId("") }, t.magazine.collapse),
                   ),
                 ),
               ),
@@ -218,15 +221,14 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
       ),
       createElement("div", { className: "mag-rule" }),
       createElement("div", { className: "mag-sub" },
-        createElement("span", { className: "m-notice" }, MAGAZINE_COPY.noticeFallback),
+        createElement("span", { className: "m-notice" }, t.magazine.noticeFallback),
       ),
     ),
     body,
     createElement("div", { className: "mag-foot" },
       createElement("div", { className: "f-row" },
-        createElement("a", { className: "f-a hit", href: "/archive" }, "回往期列表"),
+        createElement("a", { className: "f-a hit", href: "/archive" }, t.magazine.backToArchive),
       ),
     ),
   );
 };
-

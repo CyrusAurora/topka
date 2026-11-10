@@ -2,6 +2,7 @@ import { SITE } from "@topka/industry/site";
 import { useRef, useState } from "react";
 import type { Route } from "./+types/settings";
 import { adminGet } from "../../lib/admin.server";
+import { messages, localeOf, useT } from "../../lib/i18n";
 import { useAdminAction } from "../../features/admin/action";
 import { bj, num } from "../../features/admin/format";
 import { AdminPage, Badge, Button, Card, DataTable, Input, ReasonDialog } from "../../features/admin/ui";
@@ -17,9 +18,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   return adminGet<Settings>(request, "/api/admin/settings");
 }
 
-export const meta: Route.MetaFunction = () => [{ title: `设置 · ${SITE.name} 后台` }];
+export const meta: Route.MetaFunction = ({ matches }) => [{ title: messages(localeOf(matches)).adminConfig.settings.metaTitle(SITE.name) }];
 
 function QrSlot({ slot, label, src }: { slot: "wechatQr" | "feishuQr"; label: string; src: string }) {
+  const t = useT();
   const { run, pending } = useAdminAction();
   const input = useRef<HTMLInputElement>(null);
   return (
@@ -37,23 +39,24 @@ function QrSlot({ slot, label, src }: { slot: "wechatQr" | "feishuQr"; label: st
             const file = e.target.files?.[0];
             e.target.value = "";
             if (!file) return;
-            if (file.size > 2 * 1024 * 1024) return toast("图片最大 2MB", "error");
+            if (file.size > 2 * 1024 * 1024) return toast(t.adminConfig.settings.imageTooLarge, "error");
             const image = await new Promise<string>((resolve, reject) => {
               const reader = new FileReader();
               reader.onload = () => resolve(String(reader.result));
               reader.onerror = reject;
               reader.readAsDataURL(file);
             });
-            await run("POST", "/api/admin/settings/contact-qr", { slot, image }, { label: `qr-${slot}`, success: `${label}已更换，关于页 5 分钟内更新` });
+            await run("POST", "/api/admin/settings/contact-qr", { slot, image }, { label: `qr-${slot}`, success: t.adminConfig.settings.qrReplaced(label) });
           }}
         />
-        <Button className="mt-2" size="sm" busy={pending === `qr-${slot}`} onClick={() => input.current?.click()}>更换图片</Button>
+        <Button className="mt-2" size="sm" busy={pending === `qr-${slot}`} onClick={() => input.current?.click()}>{t.adminConfig.settings.replaceImage}</Button>
       </div>
     </div>
   );
 }
 
 function BudgetRow({ b }: { b: Settings["budgets"][number] }) {
+  const t = useT();
   const { run, pending } = useAdminAction();
   const [v, setV] = useState({ perMinute: b.per_minute, perHour: b.per_hour, perDay: b.per_day });
   const [open, setOpen] = useState(false);
@@ -68,74 +71,76 @@ function BudgetRow({ b }: { b: Settings["budgets"][number] }) {
       ))}
       <td className="num px-3 py-2 text-right text-ink-3">{num(b.used_hour)} / {num(b.used_day)}</td>
       <td className="px-3 py-2 text-right">
-        <Button size="sm" tone="primary" disabled={!changed} onClick={() => setOpen(true)}>保存</Button>
+        <Button size="sm" tone="primary" disabled={!changed} onClick={() => setOpen(true)}>{t.adminConfig.settings.save}</Button>
         <ReasonDialog
           open={open}
-          title={`调整 ${b.service} 的请求上限`}
-          description="上限是付费请求的熔断：超过后请求暂停并按窗口重试。填 0 表示立即停用这个服务。"
-          confirmLabel="保存"
+          title={t.adminConfig.settings.budgetTitle(b.service)}
+          description={t.adminConfig.settings.budgetDescription}
+          confirmLabel={t.adminConfig.settings.save}
           busy={pending === "budget"}
           onClose={() => setOpen(false)}
-          onSubmit={async (reason) => (await run("PUT", `/api/admin/budgets/${encodeURIComponent(b.service)}`, { ...v, reason }, { label: "budget", success: "上限已更新" })) !== null}
+          onSubmit={async (reason) => (await run("PUT", `/api/admin/budgets/${encodeURIComponent(b.service)}`, { ...v, reason }, { label: "budget", success: t.adminConfig.settings.budgetSaved })) !== null}
         />
       </td>
     </tr>
   );
 }
 
-function TargetToggle({ t }: { t: Settings["targets"][number] }) {
+function TargetToggle({ t: target }: { t: Settings["targets"][number] }) {
+  const t = useT();
   const { run, pending } = useAdminAction();
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button size="sm" tone={t.enabled ? "danger" : "primary"} onClick={() => setOpen(true)}>{t.enabled ? "停用" : "启用"}</Button>
+      <Button size="sm" tone={target.enabled ? "danger" : "primary"} onClick={() => setOpen(true)}>{target.enabled ? t.adminConfig.settings.disable : t.adminConfig.settings.enable}</Button>
       <ReasonDialog
         open={open}
-        title={`${t.enabled ? "停用" : "启用"}：${t.note ?? t.key}`}
-        description={t.enabled ? "停用后新的推送不再发往这个群。" : "启用时间会被记录：启用之前的内容不会补推。开发与彩排环境即使启用也不会真的发出。"}
-        danger={t.enabled}
-        confirmLabel={t.enabled ? "停用" : "启用"}
+        title={t.adminConfig.settings.toggleTitle(target.enabled ? t.adminConfig.settings.disable : t.adminConfig.settings.enable, target.note ?? target.key)}
+        description={target.enabled ? t.adminConfig.settings.disableDescription : t.adminConfig.settings.enableDescription}
+        danger={target.enabled}
+        confirmLabel={target.enabled ? t.adminConfig.settings.disable : t.adminConfig.settings.enable}
         busy={pending === "target"}
         onClose={() => setOpen(false)}
-        onSubmit={async (reason) => (await run("POST", `/api/admin/notify-targets/${encodeURIComponent(t.key)}`, { enabled: !t.enabled, reason }, { label: "target", success: "已更新" })) !== null}
+        onSubmit={async (reason) => (await run("POST", `/api/admin/notify-targets/${encodeURIComponent(target.key)}`, { enabled: !target.enabled, reason }, { label: "target", success: t.adminConfig.settings.updated })) !== null}
       />
     </>
   );
 }
 
 export default function SettingsAdmin({ loaderData: s }: Route.ComponentProps) {
+  const t = useT();
   return (
-    <AdminPage title="设置" subtitle="不改代码即可替换的运营设置。每次修改都写入审计记录。">
+    <AdminPage title={t.adminConfig.settings.title} subtitle={t.adminConfig.settings.subtitle}>
       <div className="grid gap-5 xl:grid-cols-2">
-        <Card title="关于页二维码">
+        <Card title={t.adminConfig.settings.contactCard}>
           <div className="space-y-5">
-            <QrSlot slot="wechatQr" label="微信公众号二维码" src={s.contact.wechatQr} />
-            <QrSlot slot="feishuQr" label="飞书群二维码" src={s.contact.feishuQr} />
+            <QrSlot slot="wechatQr" label={t.adminConfig.settings.wechatQr} src={s.contact.wechatQr} />
+            <QrSlot slot="feishuQr" label={t.adminConfig.settings.feishuQr} src={s.contact.feishuQr} />
           </div>
         </Card>
-        <Card title="通知目的地" pad={false}>
+        <Card title={t.adminConfig.settings.targetsCard} pad={false}>
           <DataTable
             rows={s.targets}
-            rowKey={(t) => t.key}
+            rowKey={(target) => target.key}
             columns={[
-              { key: "k", label: "目的地", render: (t) => <div><div className="font-medium text-ink">{t.note ?? t.key}</div><div className="font-mono text-[11.5px] text-ink-4">{t.key} · {t.config_ref}</div></div> },
-              { key: "e", label: "状态", render: (t) => (t.enabled ? <Badge tone="ok">启用于 {bj(t.enabled_at)}</Badge> : <Badge>停用</Badge>) },
-              { key: "d", label: "7 天投递", align: "right", render: (t) => num(t.deliveries_7d) },
-              { key: "a", label: "", align: "right", render: (t) => <TargetToggle t={t} /> },
+              { key: "k", label: t.adminConfig.settings.colTarget, render: (target) => <div><div className="font-medium text-ink">{target.note ?? target.key}</div><div className="font-mono text-[11.5px] text-ink-4">{target.key} · {target.config_ref}</div></div> },
+              { key: "e", label: t.adminConfig.settings.colStatus, render: (target) => (target.enabled ? <Badge tone="ok">{t.adminConfig.settings.enabledAt(bj(target.enabled_at))}</Badge> : <Badge>{t.adminConfig.settings.disabled}</Badge>) },
+              { key: "d", label: t.adminConfig.settings.colDeliveries7d, align: "right", render: (target) => num(target.deliveries_7d) },
+              { key: "a", label: "", align: "right", render: (target) => <TargetToggle t={target} /> },
             ]}
           />
         </Card>
       </div>
-      <Card className="mt-5" title="付费请求上限" right={<span>已用：近 1 小时 / 近 24 小时</span>} pad={false}>
+      <Card className="mt-5" title={t.adminConfig.settings.budgetsCard} right={<span>{t.adminConfig.settings.usedHint}</span>} pad={false}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-[13px]">
             <thead>
               <tr className="border-b border-line text-left text-[12px] text-ink-3">
-                <th className="px-3 py-2 font-medium">服务</th>
-                <th className="px-3 py-2 font-medium">每分钟</th>
-                <th className="px-3 py-2 font-medium">每小时</th>
-                <th className="px-3 py-2 font-medium">每天</th>
-                <th className="px-3 py-2 text-right font-medium">已用</th>
+                <th className="px-3 py-2 font-medium">{t.adminConfig.settings.colService}</th>
+                <th className="px-3 py-2 font-medium">{t.adminConfig.settings.colPerMinute}</th>
+                <th className="px-3 py-2 font-medium">{t.adminConfig.settings.colPerHour}</th>
+                <th className="px-3 py-2 font-medium">{t.adminConfig.settings.colPerDay}</th>
+                <th className="px-3 py-2 text-right font-medium">{t.adminConfig.settings.colUsed}</th>
                 <th />
               </tr>
             </thead>

@@ -14,20 +14,28 @@ import { RingMark } from "./components/Logo";
 import { buttonClass } from "./components/ui/Controls";
 import { THEME_BOOT_SCRIPT } from "./lib/local-state";
 import { apiGet } from "./lib/api.server";
-import { chromeStrings, normalizeUiLocale, type UiLocale } from "./lib/i18n";
+import { chromeStrings, LocaleProvider, normalizeTimeZone, normalizeUiLocale, type UiLocale } from "./lib/i18n";
 import { useHydratedFlag } from "./lib/hydration";
+
+/** The site's language: SITE_LOCALE when set (server), else the industry pack's SITE.locale. */
+function siteLocale(): UiLocale {
+  const env = typeof process !== "undefined" ? process.env.SITE_LOCALE : undefined;
+  return normalizeUiLocale(env || SITE.locale);
+}
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.ico", sizes: "any" },
   { rel: "icon", type: "image/png", href: "/icon.png" },
   { rel: "apple-touch-icon", href: "/apple-icon.png" },
   { rel: "manifest", href: "/manifest.webmanifest" },
-  { rel: "alternate", type: "application/rss+xml", title: `${SITE.name} — 精选`, href: "/feed.xml" },
+  // The feed is the site's: titled in the site's language, not a reader's.
+  { rel: "alternate", type: "application/rss+xml", title: chromeStrings(siteLocale()).feedTitle(SITE.name), href: "/feed.xml" },
 ];
 
 interface SiteMeta {
   changelogVersion: string | null;
   locale: UiLocale;
+  timeZone: string;
 }
 
 // Reader session cookie; matches @topka/backend/accounts/session.ts (SESSION_COOKIE).
@@ -47,7 +55,10 @@ function readerSessionCookie(cookieHeader: string): string | null {
 
 export async function loader({ request }: Route.LoaderArgs) {
   let meta: { changelogVersion: string | null } = { changelogVersion: null };
-  let locale: UiLocale = normalizeUiLocale(SITE.locale as string);
+  // Signed-out visitors and the admin see the site's language (SITE_LOCALE, default the industry
+  // pack's SITE.locale); a signed-in reader sees their own (Settings → language).
+  let locale: UiLocale = siteLocale();
+  let timeZone = normalizeTimeZone(null);
   try {
     meta = await apiGet<{ changelogVersion: string | null }>("/api/site/meta", { signal: request.signal });
   } catch {
@@ -59,24 +70,28 @@ export async function loader({ request }: Route.LoaderArgs) {
   const sessionCookie = readerSessionCookie(request.headers?.get?.("cookie") ?? "");
   if (sessionCookie) {
     try {
-      const body = await apiGet<{ user?: { locale?: unknown } }>("/api/auth/me", {
+      const body = await apiGet<{ user?: { locale?: unknown; timezone?: unknown } }>("/api/auth/me", {
         signal: request.signal,
         headers: { cookie: sessionCookie, "user-agent": request.headers?.get?.("user-agent") ?? "" },
       });
-      locale = normalizeUiLocale(body.user?.locale);
+      if (body.user) {
+        locale = normalizeUiLocale(body.user.locale);
+        timeZone = normalizeTimeZone(body.user.timezone);
+      }
     } catch {
       // fall back to SITE.locale
     }
   }
-  return { changelogVersion: meta.changelogVersion, locale } satisfies SiteMeta;
+  return { changelogVersion: meta.changelogVersion, locale, timeZone } satisfies SiteMeta;
 }
 
 export const shouldRevalidate: ShouldRevalidateFunction = () => false;
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  // Per-user locale reaches html lang via client draw: root loader may set documentElement in App.
+  // html lang follows the page's locale (the reader's, or the site's for visitors and the admin).
+  const data = useRouteLoaderData<typeof loader>("root");
   return (
-    <html lang={SITE.locale} suppressHydrationWarning>
+    <html lang={data?.locale ?? siteLocale()} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -96,10 +111,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 /** Only a page nobody matched falls back to this; every page names itself. */
-export function meta({ error }: Route.MetaArgs) {
+export function meta({ error, loaderData }: Route.MetaArgs) {
   if (!error) return [];
   const notFound = isRouteErrorResponse(error) && error.status === 404;
-  return [{ title: titled(notFound ? "页面不存在" : "暂时无法加载") }, { name: "robots", content: "noindex" }];
+  const strings = chromeStrings(normalizeUiLocale(loaderData?.locale ?? siteLocale()));
+  return [{ title: titled(notFound ? strings.notFoundMeta : strings.loadErrorMeta) }, { name: "robots", content: "noindex" }];
 }
 
 /** Sidebar, main column and phone tab bar around a page (or an error). */
@@ -132,12 +148,12 @@ export default function App() {
   useEffectLocale(locale);
   const { pathname } = useLocation();
   // The admin has its own chrome.
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) return <Outlet />;
-  return (
+  const page = pathname === "/admin" || pathname.startsWith("/admin/") ? <Outlet /> : (
     <SiteShell changelogVersion={meta.changelogVersion} locale={locale}>
       <Outlet />
     </SiteShell>
   );
+  return <LocaleProvider locale={locale} timeZone={meta.timeZone}>{page}</LocaleProvider>;
 }
 
 function useEffectLocale(locale: UiLocale) {
@@ -178,6 +194,7 @@ export function ErrorBoundary() {
     </div>
   );
   // Admin errors stay inside the admin's own chrome.
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) return body;
-  return <SiteShell changelogVersion={site?.changelogVersion ?? null} locale={locale}>{body}</SiteShell>;
+  const page = pathname === "/admin" || pathname.startsWith("/admin/") ? body
+    : <SiteShell changelogVersion={site?.changelogVersion ?? null} locale={locale}>{body}</SiteShell>;
+  return <LocaleProvider locale={locale} timeZone={(site as { timeZone?: string } | undefined)?.timeZone}>{page}</LocaleProvider>;
 }

@@ -1,6 +1,6 @@
 // The web reminder (P0): a private Atom feed of one reader's daily issue. Zero infrastructure — no
 // email, no push: the reader pastes /feed/issue/<token>.xml into any feed reader and it lights up each
-// morning after 08:00 Asia/Taipei. The token is a 256-bit random capability; only its SHA-256 is kept
+// morning after 08:00 in the reader's time zone. The token is a 256-bit random capability; only its SHA-256 is kept
 // (user_issue_feeds), so the URL is shown once and a new one retires the old. The feed carries only the
 // reader's own fixed issues (user_issues), never anything else of theirs.
 import { randomBytes } from "node:crypto";

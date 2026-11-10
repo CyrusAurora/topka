@@ -5,14 +5,68 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-10
+
+Each reader gets their own time zone and language, the whole UI (admin included) is available in
+English, and sources carry regions. Upgrading runs migrations `0057`–`0060` at start-up; with the
+defaults nothing a reader sees moves (Asia/Shanghai, `zh-CN`).
+
 ### Added
 
-- Sources have `regions` (`text[]`, default `["global"]`); the project wizard can filter by region
-  (`global|cn|us|eu|jp`, default unchanged — unfiltered shows all, `global` always visible).
+- Per-reader time zone: `users.timezone` (IANA name, default `Asia/Shanghai`; migration `0057`).
+  Each reader's daily issue is fixed at 08:00 in their own zone; set it in Settings or with
+  `PATCH /api/auth/me {"timezone": …}`. With the default zone nothing moves: 08:00 Asia/Shanghai is
+  the old 00:00 UTC cutoff.
+- Per-reader language: `users.locale` (`zh-CN` or `en`), set in Settings or with
+  `PATCH /api/auth/me {"locale": …}`. The copy on that reader's daily cards is written in it.
+- English UI: every page, the admin included, draws its text from per-locale dictionaries
+  (`apps/web/app/lib/locales/`); API errors are shown by their `code` in the page's language;
+  English terms and privacy pages (`industry/pages/*.en.md`). `SITE_LOCALE` sets the language for
+  signed-out visitors and the admin (default: the industry pack's `SITE.locale`). Tests hold both
+  dictionaries to the same keys, scan the English render for Chinese, and lock the Chinese copy.
+  The public pool, the Chat assistant's replies and the feeds stay in the site's language.
+- Sources have `regions` (`text[]`, default `["global"]`; migration `0058`); the project wizard can
+  filter by region (`global|cn|us|eu|jp`, default unchanged — unfiltered shows all, `global` always
+  visible).
+- Sign-in lockout per email address (migration `0060`), on top of the per-client limit: after
+  `LOGIN_LOCK_THRESHOLD` attempts within `LOGIN_LOCK_WINDOW_SECONDS` the address is locked for
+  `LOGIN_LOCK_BASE_SECONDS`, doubling up to `LOGIN_LOCK_MAX_SECONDS`; the answer is `429` with
+  `Retry-After`, the same whether or not the address has an account.
+- Prompt-injection sample set (`tests/fixtures/prompt-injection.json`) run against a stub model that
+  obeys it: untrusted text sent to a model loses fences, section labels and hidden characters
+  (`packages/backend/src/lib/untrusted.ts`); out-of-range scores are rejected and nothing is
+  stored; no request offers a tool or carries a secret.
 
 ### Changed
 
-- README (zh / en): cut the tutoring asides and the long upstream paragraph; credit to AIHOT is one short line.
+- An article's source content is append-only (migration `0059`): database triggers refuse a change to
+  where it came from (`url`, `identity_key`, `source_id`), a change to its `title` / `body_text` /
+  `body_html` without a new revision recorded in `article_revisions`, and any update to a stored
+  revision.
+- A disabled account is reported only after the right password (it used to answer `403` before the
+  password was checked, which told an attacker the address existed).
+- Slogan: 「只告诉你变了什么。不够格就少发或空一期，宁少不凑。」 replaces the unmet “evidence is thin,
+  we say so” claim in the README (zh / en) and the `industry/site.ts` description; the issue is
+  shorter or empty when nothing clears the bar, never padded.
+- README (zh / en): cut the tutoring asides and the long upstream paragraph; credit to AIHOT is one
+  short line. README, self-hosting guide and tutorials describe the per-reader cutoff, language and
+  regions.
+- Dependencies: minor and patch updates (fastify, vite, pg-boss, undici, …) and jsdom 31 in the web
+  test harness.
+- `docker-compose.yml`: RSSHub pinned to `2026-11-10` (by digest).
+
+### Fixed
+
+- Release workflow: the arm64 image build hung while building the web bundle under emulation and
+  was cancelled at the job limit. The bundle is now built once on the native platform and copied
+  into each architecture's image; the image step has a 30-minute limit.
+- An unknown path is a 404 drawn in the reader's language, not the site's.
+- A signed-in reader's page (drawn in their language and time zone) is no longer marked cacheable:
+  requests carrying the reader session get `private, no-store`, and public pages send
+  `Vary: Cookie`, so neither a browser nor a shared cache serves one reader's page to another or a
+  visitor's page to a reader.
+- Settings has the time zone picker (the API accepted a time zone since `0057`, the page had no
+  control for it), and changing language or time zone redraws the page in it.
 
 ## [0.1.1] - 2026-11-09
 

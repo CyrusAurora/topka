@@ -6,10 +6,10 @@
 
 <img src="docs/assets/screenshot-today.png" alt="Topka 今日页：No. 003，三张【示例】卡片" width="100%">
 
-> *「只告诉你变了什么。证据不够，就直说不够。」*
+> *「只告诉你变了什么。不够格就少发或空一期，宁少不凑。」*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue)](CHANGELOG.md)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-Docker%20Compose-2496ED?logo=docker&logoColor=white)](#先跑起来不要-api-key)
 [![BYOK](https://img.shields.io/badge/BYOK-%E8%87%AA%E5%B8%A6%E6%A8%A1%E5%9E%8B%20Key-6f42c1)](#接上真实信源和模型)
 
@@ -131,7 +131,7 @@ docker compose up -d
 预筛 → 独立打两次分 → 写标题摘要 → 结构化抽取 → 合并成事件
    │                    （都在 worker 里；打开页面不触发模型）
    ▼
-按项目相关度挑选 → 每天 08:00 UTC+8 定稿一期（默认最多 3 张，同信源最多 2 张）
+按项目相关度挑选 → 每天在读者时区的 08:00 定稿一期（默认最多 3 张，同信源最多 2 张）
    │
    ▼
 网站「今日 / 往期」· RSS · /api/v1 · MCP · llms.txt
@@ -140,6 +140,8 @@ docker compose up -d
 - 六种信源进同一条流水线
 - 预筛 / 打分 / 文风写在 `industry/` 的提示词里，可按行业改
 - 多一个追踪项目不会让每篇文章多调一次模型
+- 信源带地区标签（`global` / `cn` / `us` / `eu` / `jp`），建项目时可以按地区筛
+- 每位读者在「设置」里选界面语言（简体中文 / English）和时区（默认 Asia/Shanghai）；访客和后台的语言由 `SITE_LOCALE` 决定
 - 换行业只改 `industry/`（站名、分类、信源、提示词、门槛、品牌、条款），默认是 AI 行业 → [docs/customize.md](docs/customize.md)
 
 架构图： [docs/architecture.md](docs/architecture.md)。
@@ -148,11 +150,11 @@ docker compose up -d
 
 ## 诚实边界
 
-- 界面和生成内容以中文为主，还没做多语言
+- 界面有简体中文和英文；公共内容池里的标题、摘要和「对话」里助手的回复仍是中文，英文只覆盖界面和读者自己今日卡片的文案
 - 默认不转载全文，只放摘要和原文链接（个别源可开 `site_fulltext`）
 - 单机 + PostgreSQL，没有多节点
 - 卡片质量取决于你接的模型和信源；演示是手写的，真实摘要可能出错，所以页顶写着「AI 生成摘要，以原文为准」
-- 定稿固定 08:00 UTC+8；当天不够格就空一期，过后不补
+- 每天在读者自己时区的 08:00 定稿；当天不够格就空一期，过后不补。worker 的采集和日报等定时任务统一按 Asia/Shanghai 跑
 - 目前一位维护者，尽力而为，无 SLA → [SUPPORT.md](SUPPORT.md)；漏洞报告 → [SECURITY.md](SECURITY.md)
 
 ---

@@ -269,12 +269,13 @@ test("login failures come back per reason and hammering the endpoint is rate lim
   assert.deepEqual([wrong.statusCode, wrong.json().code], [401, "invalid_credentials"], wrong.body);
   assert.ok((wrong.json().detail as string).includes("邮箱或密码不对"));
 
-  for (let i = 0; i < 9; i++) await post("/api/auth/login", { email: address, password: `${PASSWORD}-no` }, "203.0.113.33");
-  const tenth = await post("/api/auth/login", { email: address, password: `${PASSWORD}-no` }, "203.0.113.33");
+  // One client spraying many addresses (each under its own account lockout) hits the per-client limit.
+  for (let i = 0; i < 9; i++) await post("/api/auth/login", { email: `spray${i}-${T}@example.com`, password: `${PASSWORD}-no` }, "203.0.113.33");
+  const tenth = await post("/api/auth/login", { email: `spray-last-${T}@example.com`, password: `${PASSWORD}-no` }, "203.0.113.33");
   assert.equal(tenth.statusCode, 429, "the next attempt inside the same minute is turned away");
   assert.equal(tenth.headers["retry-after"], "60");
   assert.ok((tenth.json().detail as string).includes("一分钟"), tenth.body);
-  // A fresh address on a fresh bucket still works, so the limit is per client, not global.
+  // Another client still gets an answer, so this limit is per client, not global.
   const other = await post("/api/auth/login", { email: address, password: `${PASSWORD}-no` }, "203.0.113.34");
   assert.equal(other.statusCode, 401);
 });

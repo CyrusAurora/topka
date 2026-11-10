@@ -98,6 +98,8 @@ setup-1  | demo: project project:h7e5…, issues written for 2026-11-07, 2026-11
 
 ![今日页，演示数据，第一张卡片已展开](assets/screenshot-demo-today.png)
 
+「设置」里可以把界面换成 English，也可以选时区：每天的一期在你所选时区的 08:00 定稿，默认 Asia/Shanghai。
+
 信源、追踪项目、每天一期的前三条，整个产品的闭环就是这些，只是现在用的是假数据。后台在 <http://localhost:3000/admin>，用 `.env` 里的 `ADMIN_PASSWORD` 登录。
 
 > 这个页面不会自己变：采集和模型都关着，第二天的那一期不会有内容。要它动起来，接着做第二部分，最后接上模型。

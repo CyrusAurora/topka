@@ -40,4 +40,6 @@ export default [
     route("admin/settings", "routes/admin/settings.tsx"),
     route("admin/audit", "routes/admin/audit.tsx"),
   ]),
+  // Last: an unknown path is a 404 drawn after the root loader (reader language, not the site's).
+  route("*", "routes/not-found.tsx"),
 ] satisfies RouteConfig;
