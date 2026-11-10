@@ -14,6 +14,7 @@ import { listUserProjects } from "../projects/user-today.ts";
 import core, { type IntakeMessage, type IntakeSession } from "./intake-core.cjs";
 export type { IntakeSession } from "./intake-core.cjs";
 import { cardOf, dailyTurnLimit, handleTurn, loadCard, newProposal, quotaReply, sourceCatalog, type TurnMeta, type TurnResult } from "./project-assistant.ts";
+import { inert, inertLine } from "../lib/untrusted.ts";
 
 export const INTAKE_PROMPT_VERSION = promptVersion("socratic-intake");
 const MAX_TEXT = 500;
@@ -79,7 +80,8 @@ export async function intakeTurn(userId: string, text: string, opts: { clientId?
   };
   if (!userText) return finish("done", "说说你想跟踪或弄清楚什么。", "reply", null, null, 0, [], before);
 
-  const plan = core.planTurn(before, userText, Date.now());
+  // The reader's words go to the model inert: they cannot forge the prompt's section labels or fences.
+  const plan = core.planTurn(before, inert(userText), Date.now());
   if (plan.mode === "local") return finish("done", plan.reply.text, "intake_note", null, metaOf(plan.reply), 0, [], plan.session);
 
   const [{ n }] = await db<{ n: number }[]>`
@@ -87,8 +89,8 @@ export async function intakeTurn(userId: string, text: string, opts: { clientId?
       AND created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`;
   if (n >= dailyTurnLimit()) return finish("deferred", "今天的对话次数用完了，明早 8 点后再试。", null, null, null, 0, [], before);
 
-  const projects = (await listUserProjects(userId, db)).map((p) => `${p.target}（${p.purpose}）`);
-  const catalog = plan.mode === "card" ? await sourceCatalog(db) : [];
+  const projects = (await listUserProjects(userId, db)).map((p) => `${inertLine(p.target, 80)}（${inertLine(p.purpose, 240)}）`);
+  const catalog = plan.mode === "card" ? (await sourceCatalog(db)).map((c) => ({ ...c, name: inertLine(c.name, 120) })) : [];
   const valid = new Set(catalog.map((c) => c.id));
   const ctx = { projects, catalog, validSource: (id: string) => valid.has(id) };
   const system = promptText("socratic-intake");

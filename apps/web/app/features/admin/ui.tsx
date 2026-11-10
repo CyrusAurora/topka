@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
+import { useLocale, useT, useUiPrefs } from "../../lib/i18n";
 import { ago, bj } from "./format";
 
 export function AdminPage({ title, subtitle, actions, children }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; children: ReactNode }) {
@@ -78,10 +79,12 @@ export function healthTone(h: string | null | undefined): Tone {
 }
 
 export function Time({ at, title }: { at: string | null | undefined; title?: string }) {
+  const locale = useLocale();
+  const { timeZone } = useUiPrefs();
   if (!at) return <span className="text-ink-4">—</span>;
   return (
-    <time dateTime={String(at)} title={title ?? bj(at, true)} className="num whitespace-nowrap" suppressHydrationWarning>
-      {ago(at)}
+    <time dateTime={String(at)} title={title ?? bj(at, true, locale, timeZone)} className="num whitespace-nowrap" suppressHydrationWarning>
+      {ago(at, Date.now(), locale)}
     </time>
   );
 }
@@ -94,8 +97,9 @@ export interface Column<T> {
   align?: "right";
 }
 
-export function DataTable<T>({ rows, columns, rowKey, empty = "暂无数据", onRowClick, dense }: { rows: T[]; columns: Column<T>[]; rowKey: (r: T) => string | number; empty?: ReactNode; onRowClick?: (r: T) => void; dense?: boolean }) {
-  if (!rows.length) return <Empty>{empty}</Empty>;
+export function DataTable<T>({ rows, columns, rowKey, empty, onRowClick, dense }: { rows: T[]; columns: Column<T>[]; rowKey: (r: T) => string | number; empty?: ReactNode; onRowClick?: (r: T) => void; dense?: boolean }) {
+  const t = useT();
+  if (!rows.length) return <Empty>{empty ?? t.adminShell.ui.noData}</Empty>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[640px] border-collapse text-left text-[13px]">
@@ -234,6 +238,7 @@ export function FilterChips({ param, options }: { param: string; options: Array<
 }
 
 export function Pager({ page, hasMore }: { page: number; hasMore: boolean }) {
+  const t = useT();
   const [sp] = useSearchParams();
   const to = (p: number) => {
     const next = new URLSearchParams(sp);
@@ -244,18 +249,19 @@ export function Pager({ page, hasMore }: { page: number; hasMore: boolean }) {
   if (page <= 1 && !hasMore) return null;
   return (
     <div className="mt-4 flex items-center justify-center gap-2 text-[13px]">
-      {page > 1 && <ButtonLink to={to(page - 1)} size="sm">上一页</ButtonLink>}
-      <span className="num px-2 text-ink-3">第 {page} 页</span>
-      {hasMore && <ButtonLink to={to(page + 1)} size="sm">下一页</ButtonLink>}
+      {page > 1 && <ButtonLink to={to(page - 1)} size="sm">{t.adminShell.ui.prevPage}</ButtonLink>}
+      <span className="num px-2 text-ink-3">{t.adminShell.ui.page(page)}</span>
+      {hasMore && <ButtonLink to={to(page + 1)} size="sm">{t.adminShell.ui.nextPage}</ButtonLink>}
     </div>
   );
 }
 
-export function Json({ value, collapsed = true, label = "原始数据" }: { value: unknown; collapsed?: boolean; label?: string }) {
+export function Json({ value, collapsed = true, label }: { value: unknown; collapsed?: boolean; label?: string }) {
+  const t = useT();
   const [open, setOpen] = useState(!collapsed);
   return (
     <details open={open} onToggle={(event) => setOpen(event.currentTarget.open)} className="group rounded-control bg-bg-sunk/70 ring-1 ring-line">
-      <summary className="cursor-pointer select-none px-3 py-1.5 text-[12px] text-ink-3 hover:text-ink-2">{label}</summary>
+      <summary className="cursor-pointer select-none px-3 py-1.5 text-[12px] text-ink-3 hover:text-ink-2">{label ?? t.adminShell.ui.rawData}</summary>
       {open && <pre className="max-h-[420px] overflow-auto px-3 pb-3 font-mono text-[11.5px] leading-relaxed text-ink-2">{JSON.stringify(value, null, 2)}</pre>}
     </details>
   );
@@ -269,7 +275,7 @@ export function ReasonDialog({
   open,
   title,
   description,
-  confirmLabel = "确认",
+  confirmLabel,
   danger,
   requireReason = true,
   children,
@@ -288,6 +294,7 @@ export function ReasonDialog({
   onSubmit: (reason: string) => Promise<boolean | void> | boolean | void;
   busy?: boolean;
 }) {
+  const t = useT();
   const [reason, setReason] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -325,14 +332,14 @@ export function ReasonDialog({
             {description && <div className="mt-1.5 text-[13px] leading-relaxed text-ink-3">{description}</div>}
             {children && <div className="mt-4 space-y-3">{children}</div>}
             <div className="mt-4">
-              <Field label={requireReason ? "原因（写进审计记录）" : "备注（可选）"}>
-                <Textarea ref={ref} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={requireReason ? "为什么做这个改动" : ""} rows={2} />
+              <Field label={requireReason ? t.adminShell.ui.reasonLabel : t.adminShell.ui.noteLabel}>
+                <Textarea ref={ref} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={requireReason ? t.adminShell.ui.reasonPlaceholder : ""} rows={2} />
               </Field>
             </div>
             <div className="mt-5 flex justify-end gap-2">
-              <Button tone="ghost" onClick={onClose}>取消</Button>
+              <Button tone="ghost" onClick={onClose}>{t.adminShell.ui.cancel}</Button>
               <Button type="submit" tone={danger ? "danger" : "primary"} busy={busy} disabled={requireReason && !reason.trim()}>
-                {confirmLabel}
+                {confirmLabel ?? t.adminShell.ui.confirm}
               </Button>
             </div>
           </motion.form>

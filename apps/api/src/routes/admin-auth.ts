@@ -139,5 +139,5 @@ export function registerAdminAuth(app: FastifyInstance) {
   // Sign-out lives in routes/accounts.ts: POST /api/auth/logout ends both session kinds and keeps
   // the form-post redirect this shell expects.
 
-  app.get("/api/admin/me", adminHandler(async (_req, _reply, admin) => ({ name: admin.name, csrf: admin.csrf, dev: admin.dev })));
+  app.get("/api/admin/me", adminHandler(async (_req, _reply, admin) => ({ name: admin.name, csrf: admin.csrf, dev: admin.dev, builtIn: admin.builtIn === true })));
 }

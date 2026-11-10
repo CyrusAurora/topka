@@ -21,6 +21,9 @@ const API_PORT = Number(process.env.E2E_API_PORT ?? 13001);
 const WEB_PORT = Number(process.env.E2E_WEB_PORT ?? 13000);
 const WEB = `http://127.0.0.1:${WEB_PORT}`;
 const RUN = randomBytes(3).toString("hex");
+const ADMIN_PASSWORD = `e2e-admin-${RUN}-password`;
+/** Where the locale tests save their screenshots (evidence for a release); off when unset. */
+const SHOTS = process.env.E2E_SCREENSHOT_DIR ?? "";
 
 if (!process.env.DATABASE_URL) throw new Error("e2e needs DATABASE_URL pointing at a throwaway database");
 // A throwaway database only: its name must say so.
@@ -86,6 +89,7 @@ function env(extra: Record<string, string>): NodeJS.ProcessEnv {
     KEY_ENCRYPTION_SECRET: randomBytes(32).toString("base64"),
     BYOK_ALLOW_PRIVATE_BASE_URL: "true",
     REGISTRATION_MODE: "open",
+    ADMIN_PASSWORD: ADMIN_PASSWORD,
     ...extra,
   };
 }
@@ -165,7 +169,8 @@ test("home is 今日: signed out it offers login and register, no legacy nav", a
     await route.continue();
   });
   await page.goto(`${WEB}/`, { waitUntil: "load" });
-  assert.match(await page.locator("h1").first().innerText(), /今日/);
+  await settle(page);
+  assert.match(await page.locator("nav").first().innerText(), /今日/);
   const signedOut = page.locator(".mag-empty", { hasText: "登录后就能看到你的今日" });
   await signedOut.waitFor({ timeout: 10_000 });
   assert.ok(await signedOut.locator('a[href^="/login"]').count(), "a login link");
@@ -541,4 +546,155 @@ test("about / feedback render without linking terms or privacy, and those two pa
     assert.equal(r?.status(), 404, `${path} is off`);
   }
   await page.context().close();
+});
+
+// --- The English UI (docs/decisions/0004 amendment) ------------------------------------------------
+
+const CJK = /[\u3000-\u303f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef]/;
+
+/** Text that comes from the database (seeded packs and sources, stories): it may be Chinese. */
+async function dataStrings(): Promise<string[]> {
+  const packs = await sql<{ label: string; sources: Array<{ name?: string; publisher?: string }> }[]>`SELECT label, sources FROM source_packs`;
+  const names = (await sql<{ name: string }[]>`SELECT name FROM sources`).map((r) => r.name);
+  const titles = (await sql<{ t: string }[]>`SELECT title AS t FROM articles UNION SELECT title FROM publications UNION SELECT summary FROM publications UNION SELECT title_zh FROM analyses UNION SELECT summary_zh FROM analyses UNION SELECT target FROM tracking_projects UNION SELECT purpose FROM tracking_projects`).map((r) => r.t);
+  const all = [...packs.flatMap((p) => [p.label, ...p.sources.flatMap((x) => [x.name ?? "", x.publisher ?? ""])]), ...names, ...titles];
+  return [...new Set(all.filter((x) => x && CJK.test(x)))].sort((a, b) => b.length - a.length);
+}
+
+/** Chinese on the page outside the allowed data and the language switch: its text and its labels. */
+async function chineseOn(page: Page, allow: string[], scope = "body"): Promise<string[]> {
+  const pieces = await page.evaluate((sel) => {
+    const out: string[] = [];
+    for (const root of document.querySelectorAll(sel)) {
+      out.push((root as HTMLElement).innerText);
+      for (const el of [root, ...root.querySelectorAll("*")]) {
+        for (const a of ["aria-label", "placeholder", "title", "alt"]) {
+          const v = el.getAttribute(a);
+          if (v) out.push(v);
+        }
+      }
+    }
+    out.push(document.title);
+    return out;
+  }, scope);
+  const hits: string[] = [];
+  for (let text of pieces) {
+    for (const a of [...allow, "简体中文"]) text = text.split(a).join("");
+    for (const line of text.split("\n")) if (CJK.test(line)) hits.push(line.trim().slice(0, 120));
+  }
+  return [...new Set(hits)];
+}
+
+async function settle(page: Page): Promise<void> {
+  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.waitForTimeout(300);
+}
+
+async function shot(page: Page, name: string): Promise<void> {
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
+}
+
+test("a reader who picks English sees no Chinese on any page; back to 简体中文 the Chinese UI returns", async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  await register(page, `en-${RUN}@example.com`);
+  const set = async (locale: string) => {
+    const r = await page.request.patch(`${WEB}/api/auth/me`, { data: { locale, timezone: "America/New_York" } });
+    assert.equal(r.status(), 200, `PATCH locale ${locale}`);
+  };
+  await set("en");
+  const allow = await dataStrings();
+  const pages: Array<[string, string]> = [
+    ["today", "/"], ["archive", "/archive"], ["chat", "/chat"], ["settings", "/settings"], ["projects", "/projects"],
+    ["projects-new", "/projects/new"], ["about", "/about"], ["feedback", "/feedback"], ["issue-404", "/issue/2001-01-01"], ["not-found", "/no-such-page"],
+  ];
+  for (const [name, path] of pages) {
+    await page.goto(`${WEB}${path}`, { waitUntil: "load" });
+    await settle(page);
+    assert.equal(await page.evaluate(() => document.documentElement.lang), "en", `${path}: html lang`);
+    assert.deepEqual(await chineseOn(page, allow), [], `${path}: no Chinese in the English UI`);
+    await shot(page, `en-${name}`);
+  }
+  // The reader's own time zone shows in Settings (the issue is fixed at 08:00 there).
+  await page.goto(`${WEB}/settings`, { waitUntil: "load" });
+  await settle(page);
+  assert.equal(await page.locator("[data-testid=timezone-select]").inputValue(), "America/New_York");
+  // Click through the creation wizard: pick a pack, then the sources step and the naming step. A pack
+  // is offered once one of its sources is a real editorial row, so make the first one real.
+  const [pack] = await sql<{ label: string; sources: Array<{ id: string; name: string }> }[]>`SELECT label, sources FROM source_packs ORDER BY id LIMIT 1`;
+  assert.ok(pack?.sources[0], "a seeded pack with a source");
+  await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, enabled, next_fetch_at)
+    VALUES (${pack.sources[0].id}, ${pack.sources[0].name}, 'rss', 'T1', 'editorial', false, '2100-01-01')
+    ON CONFLICT (id) DO UPDATE SET participation_mode = 'editorial'`;
+  const allowed = await dataStrings();
+  await page.goto(`${WEB}/projects/new`, { waitUntil: "load" });
+  await settle(page);
+  await page.locator("main button", { hasText: pack.label }).first().click();
+  await settle(page);
+  assert.deepEqual(await chineseOn(page, allowed), [], "wizard sources step");
+  await shot(page, "en-projects-new-sources");
+  await page.getByRole("button", { name: "That's all, next" }).click();
+  await settle(page);
+  assert.deepEqual(await chineseOn(page, allowed), [], "wizard naming step");
+  await shot(page, "en-projects-new-naming");
+  await page.goto(`${WEB}/settings`, { waitUntil: "load" });
+  await settle(page);
+  await shot(page, "en-settings-full");
+
+  await set("zh-CN");
+  for (const [name, path] of [["today", "/"], ["settings", "/settings"], ["about", "/about"]] as const) {
+    await page.goto(`${WEB}${path}`, { waitUntil: "load" });
+    await settle(page);
+    assert.equal(await page.evaluate(() => document.documentElement.lang), "zh-CN", `${path}: html lang`);
+    await shot(page, `zh-${name}`);
+  }
+  await page.goto(`${WEB}/`, { waitUntil: "load" });
+  await settle(page);
+  assert.match(await page.locator("nav").first().innerText(), /今日/);
+  await ctx.close();
+});
+
+test("SITE_LOCALE=en: visitors and the admin get English (the admin chrome scanned on every page)", async () => {
+  const port = WEB_PORT + 7;
+  const site = `http://127.0.0.1:${port}`;
+  launch(`${ROOT}apps/web`, "server.ts", { ...env({}), SITE_URL: site, SITE_LOCALE: "en", WEB_PORT: String(port), WEB_HOST: "127.0.0.1", API_BASE_URL: `http://127.0.0.1:${API_PORT}` }, "web-en");
+  await waitFor(`${site}/`);
+  const allow = await dataStrings();
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  for (const [name, path] of [["visitor-today", "/"], ["visitor-login", "/login"], ["visitor-register", "/register"], ["visitor-about", "/about"], ["admin-login", "/admin/login"]] as const) {
+    await page.goto(`${site}${path}`, { waitUntil: "load" });
+    await settle(page);
+    assert.equal(await page.evaluate(() => document.documentElement.lang), "en", `${path}: html lang`);
+    assert.deepEqual(await chineseOn(page, allow), [], `${path}: no Chinese for a visitor`);
+    await shot(page, `site-en-${name}`);
+  }
+  // A wrong sign-in: the API's Chinese detail is not what the English page shows.
+  await page.goto(`${site}/login`, { waitUntil: "load" });
+  await page.fill("#email", `nobody-${RUN}@example.com`);
+  await page.fill("#password", "not-the-password-123");
+  await page.click("button[type=submit]");
+  await page.getByText("Wrong email or password.").waitFor({ timeout: 10_000 });
+  assert.deepEqual(await chineseOn(page, allow), [], "login error");
+  await shot(page, "site-en-login-error");
+
+  await page.goto(`${site}/admin/login`, { waitUntil: "load" });
+  await page.fill("input[name=password]", ADMIN_PASSWORD);
+  await page.click("button[type=submit]");
+  await page.waitForURL((u) => u.pathname.startsWith("/admin") && u.pathname !== "/admin/login", { timeout: 15_000 });
+  const adminPages = ["/admin/content", "/admin/sources", "/admin/sources/new", "/admin/runs", "/admin/monitor", "/admin/models", "/admin/selectbench", "/admin/settings", "/admin/feedback", "/admin/audit"];
+  const [firstSource] = await sql<{ id: string }[]>`SELECT id FROM sources ORDER BY id LIMIT 1`;
+  if (firstSource) adminPages.push(`/admin/sources/${encodeURIComponent(firstSource.id)}`);
+  const [firstArticle] = await sql<{ id: string }[]>`SELECT id FROM articles ORDER BY discovered_at DESC LIMIT 1`;
+  if (firstArticle) adminPages.push(`/admin/content/${encodeURIComponent(firstArticle.id)}`);
+  for (const path of adminPages) {
+    await page.goto(`${site}${path}`, { waitUntil: "load" });
+    await settle(page);
+    assert.ok(!page.url().includes("/admin/login"), `${path}: signed in`);
+    // Chrome only: navigation, headings, table headers, labels, buttons and the accessible names. Rows
+    // are data (story titles, source names, model output) and may be in any language.
+    assert.deepEqual(await chineseOn(page, allow, "aside, nav, h1, h2, h3, th, label, button, dt, [role=tab]"), [], `${path}: admin chrome in English`);
+    await shot(page, `site-en-admin-${path.replace(/^\/admin\/?/, "").replace(/[^a-z0-9]+/gi, "-") || "home"}`);
+  }
+  await ctx.close();
 });

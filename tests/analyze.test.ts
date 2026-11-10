@@ -170,7 +170,12 @@ test("a feed summary alone: the article page is fetched first, then the whole ar
   assert.deepEqual(calls("THIN"), [], "no model call before the page");
   assert.equal((await sql`SELECT 1 FROM analyses WHERE article_id = ${id}`).length, 0, "nothing committed");
   // What extraction does: the body lands as a new revision.
-  await sql`UPDATE articles SET body_text = ${`THIN: ${LONG} (${T}) full page`}, body_status = 'ok', revision = revision + 1 WHERE id = ${id}`;
+  const full = `THIN: ${LONG} (${T}) full page`;
+  await sql.begin(async (tx) => {
+    const [r] = await tx<{ revision: number; title: string; content_hash: string | null }[]>`
+      UPDATE articles SET body_text = ${full}, body_status = 'ok', revision = revision + 1 WHERE id = ${id} RETURNING revision, title, content_hash`;
+    await tx`INSERT INTO article_revisions (article_id, revision, content_hash, title, body_text) VALUES (${id}, ${r!.revision}, ${r!.content_hash}, ${r!.title}, ${full})`;
+  });
   const second = await analyzeArticle(id);
   assert.deepEqual([second!.needsBody ?? false, second!.output!.selected], [false, true]);
 });

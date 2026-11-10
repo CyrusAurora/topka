@@ -5,11 +5,15 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import type { Route } from "./+types/login";
 import { pageMeta } from "../lib/seo";
-import { chromeStrings } from "../lib/i18n";
+import { localeOf, messages, problemMessage, useLocale, useT } from "../lib/i18n";
 import { Wordmark } from "../components/Logo";
 import { buttonClass } from "../components/ui/Controls";
 
-export const meta: Route.MetaFunction = () => pageMeta({ title: "登录", description: `登录 ${SITE.name}，回到你的追踪项目和有出处的更新。`, path: "/login", noindex: true });
+export const meta: Route.MetaFunction = ({ matches }) => {
+  const locale = localeOf(matches);
+  const t = messages(locale);
+  return pageMeta({ title: t.account.login.metaTitle, description: t.account.login.metaDescription(SITE.name), path: "/login", noindex: true, locale });
+};
 
 export function headers() {
   return { "Cache-Control": "no-store" };
@@ -21,7 +25,9 @@ function safeNext(target: string | null): string {
 }
 
 export default function LoginPage() {
-  const strings = chromeStrings("zh-CN");
+  const t = useT();
+  const locale = useLocale();
+  const strings = t.chrome;
   const [params] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +37,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (state.kind === "sending") return;
     setState({ kind: "sending" });
-    if (!navigator.onLine) return setState({ kind: "error", message: OFFLINE });
+    if (!navigator.onLine) return setState({ kind: "error", message: t.account.offline });
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -39,12 +45,12 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       if (!res.ok) {
-        const problem = (await res.json().catch(() => ({}))) as { detail?: string };
-        return setState({ kind: "error", message: problem.detail ?? "登录失败，请稍后再试。" });
+        const problem = (await res.json().catch(() => ({}))) as { code?: string; detail?: string; status?: number; retryAfter?: number };
+        return setState({ kind: "error", message: problemMessage(locale, problem, t.account.login.failed) });
       }
       window.location.assign(safeNext(params.get("next")));
     } catch {
-      setState({ kind: "error", message: OFFLINE });
+      setState({ kind: "error", message: t.account.offline });
     }
   };
 
@@ -56,7 +62,7 @@ export default function LoginPage() {
         <div className="flex items-center justify-center gap-2">
           <Wordmark size={26} className="text-ink" />
         </div>
-        <h1 className="mt-6 text-center text-[17px] font-semibold text-ink">先选项目和要看的页面，再回到有出处的更新。</h1>
+        <h1 className="mt-6 text-center text-[17px] font-semibold text-ink">{t.account.login.heading}</h1>
         <form onSubmit={submit} className="card mt-6 p-6">
           <div>
             <label htmlFor="email" className="block text-[13px] font-medium text-ink-2">
@@ -98,20 +104,18 @@ export default function LoginPage() {
             {state.kind === "sending" ? strings.loggingIn : strings.loginButton}
           </button>
           <p className="mt-4 text-center text-[12.5px] text-ink-3">
-            还没有账号？
+            {t.account.login.noAccount}
             <Link to="/register" className="text-accent hover:underline">
-              注册
+              {t.account.login.registerLink}
             </Link>
           </p>
         </form>
         <p className="mt-6 text-center text-[12px] text-ink-4">
           <Link to="/" className="hover:text-ink-2">
-            回到 {SITE.name}
+            {t.account.backTo(SITE.name)}
           </Link>
         </p>
       </div>
     </div>
   );
 }
-
-const OFFLINE = "没网，稍后再试。";

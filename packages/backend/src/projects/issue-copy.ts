@@ -15,6 +15,7 @@ import { BudgetExceededError, completeReceipt } from "../providers/receipts.ts";
 import { BUDGET, budgetProblems, type BudgetProblem, type CopyField, type CopyFields } from "./copy-budget.ts";
 import { issueItemsWithoutCopy } from "./issues.ts";
 import { outputLanguageFor } from "../accounts/locale.ts";
+import { inert, inertLine } from "../lib/untrusted.ts";
 
 export const ISSUE_COPY_PROMPT_VERSION = promptVersion("issue-card");
 export const MAX_REWRITES = 2;
@@ -99,10 +100,10 @@ const day = (v: Date | string | null) => {
 function materialUser(list: Item[], body: Map<string, string>, heroFor: (i: Item) => boolean) {
   return list.map((i) => [
     `【内容 id=${i.articleId}】`,
-    `来源：${i.source}${day(i.publishedAt) ? `｜发布：${day(i.publishedAt)}` : ""}`,
-    `现有标题：${i.title}${i.originalTitle ? `｜原标题：${i.originalTitle}` : ""}`,
-    i.summary ? `现有摘要：${i.summary}` : "",
-    body.get(i.articleId) ? `正文节选：${body.get(i.articleId)}` : "",
+    `来源：${inertLine(i.source, 120)}${day(i.publishedAt) ? `｜发布：${day(i.publishedAt)}` : ""}`,
+    `现有标题：${inert(i.title)}${i.originalTitle ? `｜原标题：${inert(i.originalTitle)}` : ""}`,
+    i.summary ? `现有摘要：${inert(i.summary)}` : "",
+    body.get(i.articleId) ? `正文节选：${inert(body.get(i.articleId)!)}` : "",
     `预算：title_a ≤ ${BUDGET.titleA}｜标题合计 ≤ ${heroFor(i) ? BUDGET.heroTitle : BUDGET.itemTitle}｜core 每半 ≤ ${heroFor(i) ? BUDGET.heroCore : BUDGET.itemCore}｜summary ${BUDGET.summaryMin}–${BUDGET.summaryMax}｜tag ≤ ${BUDGET.tagChars} 字符｜source ≤ ${BUDGET.source}`,
   ].filter(Boolean).join("\n")).join("\n\n");
 }

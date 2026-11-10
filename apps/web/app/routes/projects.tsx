@@ -3,9 +3,14 @@
 import { SITE } from "@topka/industry/site";
 import type { Route } from "./+types/projects";
 import { pageMeta } from "../lib/seo";
+import { localeOf, messages } from "../lib/i18n";
 import { ProjectsOverview } from "../features/projects/overview";
 
-export const meta: Route.MetaFunction = () => pageMeta({ title: "项目", description: `你的追踪项目总览：${SITE.name} 里你正在盯的方向和它们的更新。`, path: "/projects", noindex: true });
+export const meta: Route.MetaFunction = ({ matches }) => {
+  const locale = localeOf(matches);
+  const t = messages(locale);
+  return pageMeta({ title: t.projects.meta.overviewTitle, description: t.projects.meta.overviewDescription(SITE.name), path: "/projects", noindex: true, locale });
+};
 
 export function headers() {
   return { "Cache-Control": "no-store" };

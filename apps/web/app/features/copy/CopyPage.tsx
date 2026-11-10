@@ -2,28 +2,45 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import type { CopyDocument, RenderedCopy } from "../../lib/markdown";
 import { ArticleLayout, RailSection } from "../../components/ui/Page";
+import { useT } from "../../lib/i18n";
+
+/** The document facts the rail shows, by the key each copy file uses in its table (Chinese or English). */
+const FACT_KEYS = [
+  ["version", ["版本", "Version"]], // i18n-data: keys as written in industry/pages/*.md
+  ["effective", ["生效日期", "Effective date"]], // i18n-data
+  ["operator", ["运营主体", "Operator"]], // i18n-data
+  ["icp", ["备案号", "ICP filing"]], // i18n-data
+] as const;
+
+/** A fact from the document's table, whichever language the file is written in. */
+export function docFact(doc: CopyDocument, fact: (typeof FACT_KEYS)[number][0]): string | null {
+  const keys = FACT_KEYS.find(([k]) => k === fact)![1];
+  for (const k of keys) if (doc.meta[k]) return doc.meta[k]!;
+  return null;
+}
 
 /**
  * Legal and policy pages, read like articles: the document on the page in one column, its facts in the
  * left rail and its outline in the right (phones get the facts above the text and no outline).
  */
 export function CopyPage({ doc, rendered, eyebrow, footer, aside }: { doc: CopyDocument; rendered: RenderedCopy; eyebrow?: ReactNode; footer?: ReactNode; aside?: ReactNode }) {
-  const facts = (["版本", "生效日期", "运营主体", "备案号"] as const).filter((k) => doc.meta[k]);
+  const t = useT().legal;
+  const facts = FACT_KEYS.map(([k]) => ({ k, label: t.facts[k], value: docFact(doc, k) })).filter((f) => f.value);
   const info = facts.length > 0 && (
-    <RailSection title="文档信息">
+    <RailSection title={t.docInfo}>
       <dl className="space-y-2 text-[12.5px]">
-        {facts.map((k) => (
-          <div key={k}>
-            <dt className="text-ink-4">{k}</dt>
-            <dd className="mt-0.5 text-ink-2">{doc.meta[k]}</dd>
+        {facts.map((f) => (
+          <div key={f.k}>
+            <dt className="text-ink-4">{f.label}</dt>
+            <dd className="mt-0.5 text-ink-2">{f.value}</dd>
           </div>
         ))}
       </dl>
     </RailSection>
   );
   const outline = rendered.outline.length > 2 && (
-    <RailSection title="目录">
-      <nav aria-label="目录">
+    <RailSection title={t.outline}>
+      <nav aria-label={t.outline}>
         <ol className="-ml-px space-y-0.5 border-l border-line">
           {rendered.outline.map((o) => (
             <li key={o.id}>
@@ -57,10 +74,10 @@ export function CopyPage({ doc, rendered, eyebrow, footer, aside }: { doc: CopyD
         {doc.intro && <p className="mt-4 text-[15px] leading-[1.8] text-ink-3 xl:text-[16px]">{doc.intro}</p>}
         {facts.length > 0 && (
           <dl className="mt-5 grid grid-cols-1 border-y border-line text-[12.5px] sm:grid-cols-2 lg:hidden">
-            {facts.map((k) => (
-              <div key={k} className="flex gap-4 border-b border-line-soft py-2.5 last:border-b-0 sm:[&:nth-last-child(-n+2)]:border-b-0">
-                <dt className="w-16 shrink-0 text-ink-4">{k}</dt>
-                <dd className="min-w-0 text-ink-2">{doc.meta[k]}</dd>
+            {facts.map((f) => (
+              <div key={f.k} className="flex gap-4 border-b border-line-soft py-2.5 last:border-b-0 sm:[&:nth-last-child(-n+2)]:border-b-0">
+                <dt className="w-16 shrink-0 text-ink-4">{f.label}</dt>
+                <dd className="min-w-0 text-ink-2">{f.value}</dd>
               </div>
             ))}
           </dl>

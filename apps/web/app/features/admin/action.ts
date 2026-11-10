@@ -2,12 +2,15 @@
 // stable Idempotency-Key per submitted command, and a revalidation of the page's loaders on success.
 import { useCallback, useRef, useState } from "react";
 import { useRevalidator, useRouteLoaderData } from "react-router";
+import { problemMessage, useLocale, useT } from "../../lib/i18n.ts";
 import { toast } from "./toast";
 
 export interface AdminMe {
   name: string;
   csrf: string;
   dev: boolean;
+  /** The built-in password admin: shown by its role in the page's language, not the stored name. */
+  builtIn?: boolean;
 }
 
 export class AdminError extends Error {
@@ -28,6 +31,8 @@ function newKey() {
 
 export function useAdminAction() {
   const me = useAdminMe();
+  const t = useT();
+  const locale = useLocale();
   const revalidator = useRevalidator();
   const [pending, setPending] = useState<string | null>(null);
   const keys = useRef(new Map<string, string>());
@@ -57,21 +62,21 @@ export function useAdminAction() {
         }
         const text = await res.text();
         const json = text ? JSON.parse(text) : null;
-        if (!res.ok) throw new AdminError(res.status, json?.detail ?? `请求失败（${res.status}）`);
+        if (!res.ok) throw new AdminError(res.status, problemMessage(locale, { ...json, status: res.status }, t.adminShell.action.requestFailed(res.status)));
         keys.current.delete(label);
         if (opts.success) toast(opts.success, "ok");
         if (opts.revalidate !== false) revalidator.revalidate();
         // null means failure to callers; an empty success (204) is an empty object.
         return (json ?? {}) as T;
       } catch (error) {
-        const message = error instanceof AdminError ? error.message : "网络错误，请稍后再试";
+        const message = error instanceof AdminError ? error.message : t.adminShell.action.networkError;
         toast(error instanceof AdminError && error.status === 409 ? `${message}` : message, "error");
         return null;
       } finally {
         setPending(null);
       }
     },
-    [me.csrf, revalidator],
+    [me.csrf, revalidator, t, locale],
   );
 
   return { run, pending, busy: pending !== null || revalidator.state === "loading" };

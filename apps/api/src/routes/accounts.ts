@@ -84,6 +84,8 @@ const REGISTER_PROBLEMS = {
 const LOGIN_PROBLEMS = {
   "invalid-credentials": { status: 401, code: "invalid_credentials", detail: "邮箱或密码不对。" },
   "account-disabled": { status: 403, code: "account_disabled", detail: "这个账号已停用，请联系管理员。" },
+  // The same answer whether or not the address has an account (the lock is per address, not per user).
+  locked: { status: 429, code: "rate_limited", detail: "尝试太频繁了，请稍后再试。" },
 } as const;
 
 function bodyOf(req: FastifyRequest): Record<string, unknown> {
@@ -151,7 +153,7 @@ export function registerAccounts(app: FastifyInstance) {
     } catch (error) {
       if (!(error instanceof LoginRejected)) throw error;
       const p = LOGIN_PROBLEMS[error.reason];
-      return sendProblem(req, reply, { ...p, title: "Sign-in failed" });
+      return sendProblem(req, reply, { ...p, title: "Sign-in failed", ...(error.reason === "locked" ? { retryAfter: error.retryAfter ?? 60 } : {}) });
     }
   });
 

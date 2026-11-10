@@ -2,7 +2,8 @@
 // GET /api/me/issues — one line per day with the day's issue number and its titles, tapping a
 // row reads that day (GET /api/me/issues/:date). Same page shell as 今日, a thin card list.
 import { createElement, useEffect, useState, type FC, type ReactElement } from "react";
-import { archiveRows, MAGAZINE_COPY } from "./view.ts";
+import { useT, useUiPrefs } from "../../lib/i18n.ts";
+import { archiveRows } from "./view.ts";
 
 export interface ArchiveEntryRow {
   date: string;
@@ -21,6 +22,8 @@ export interface MagazineArchiveProps {
 }
 
 export const ArchivePage: FC<MagazineArchiveProps> = (props) => {
+  const t = useT();
+  const { locale } = useUiPrefs();
   const doFetch = props.fetchImpl ?? fetch.bind(globalThis);
   const [view, setView] = useState<ArchiveView>({ phase: "loading", archive: [], issueCount: 0 });
 
@@ -56,24 +59,24 @@ export const ArchivePage: FC<MagazineArchiveProps> = (props) => {
 
   let body: ReactElement;
   if (view.phase === "loading") {
-    body = createElement("p", { role: "status", className: "mag-note" }, "正在翻往期……");
+    body = createElement("p", { role: "status", className: "mag-note" }, t.magazine.archiveLoading);
   } else if (view.phase === "signed-out") {
     body = createElement("div", { className: "mag-empty" },
-      createElement("div", { className: "e-t" }, MAGAZINE_COPY.signedOut),
-      createElement("a", { href: "/login", className: "e-cta" }, MAGAZINE_COPY.goToLogin),
+      createElement("div", { className: "e-t" }, t.magazine.signedOut),
+      createElement("a", { href: "/login", className: "e-cta" }, t.magazine.goToLogin),
     );
   } else if (view.phase === "failed") {
     body = createElement("div", { className: "mag-empty" },
-      createElement("div", { className: "e-t" }, MAGAZINE_COPY.failed),
+      createElement("div", { className: "e-t" }, t.magazine.failed),
     );
   } else if (!view.archive.length) {
     body = createElement("div", { className: "mag-empty" },
-      createElement("div", { className: "e-t" }, "还没有往期"),
-      createElement("div", { className: "e-s" }, "每天出一期，过几天这里就会有一张一张的回看。"),
-      createElement("a", { href: "/", className: "e-cta mt-4" }, "看今天的"),
+      createElement("div", { className: "e-t" }, t.magazine.archiveEmptyTitle),
+      createElement("div", { className: "e-s" }, t.magazine.archiveEmptySub),
+      createElement("a", { href: "/", className: "e-cta mt-4" }, t.magazine.archiveEmptyCta),
     );
   } else {
-    const rows = archiveRows(view.archive);
+    const rows = archiveRows(view.archive, locale);
     body = createElement("div", { className: "arch-list" },
       rows.map((row) =>
         createElement("a", { key: row.date, href: `/issue/${row.date}`, className: "arch-item" },
@@ -88,10 +91,10 @@ export const ArchivePage: FC<MagazineArchiveProps> = (props) => {
   return createElement("div", { className: "magazine mx-auto w-full max-w-[560px] px-4 py-6" },
     createElement("div", { className: "mag-masthead" },
       createElement("div", { className: "mag-masthead-row" },
-        createElement("div", { className: "mag-date" }, "往期"),
+        createElement("div", { className: "mag-date" }, t.magazine.archive),
         createElement("div", { className: "mag-issue" },
           view.phase === "ready" && view.issueCount > 0
-            ? createElement("div", { className: "mag-proj" }, `共 ${view.issueCount} 期`)
+            ? createElement("div", { className: "mag-proj" }, t.magazine.archiveCount(view.issueCount))
             : null,
         ),
       ),
@@ -100,7 +103,7 @@ export const ArchivePage: FC<MagazineArchiveProps> = (props) => {
     body,
     createElement("div", { className: "mag-foot" },
       createElement("div", { className: "f-row" },
-        createElement("a", { className: "f-a hit", href: "/" }, "回今日"),
+        createElement("a", { className: "f-a hit", href: "/" }, t.magazine.backToday),
       ),
     ),
   );

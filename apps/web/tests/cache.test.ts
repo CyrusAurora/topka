@@ -29,6 +29,10 @@ const api = createServer((req, res) => {
     res.setHeader("Cache-Control", "public, max-age=30, s-maxage=30");
     return res.end(JSON.stringify({ filters, cards: [], nextCursor: null, refreshAt, dayCounts: [], hot: null, generatedAt: "2026-09-28T00:00:00Z" }));
   }
+  if (url.pathname === "/api/auth/me") {
+    if (!/topka_session=/.test(req.headers.cookie ?? "")) { res.statusCode = 401; return res.end("{}"); }
+    return res.end(JSON.stringify({ user: { locale: "en", timezone: "Europe/London" } }));
+  }
   if (url.pathname === "/api/site/hot") return res.end(JSON.stringify({ entries: [] }));
   if (url.pathname === "/api/site/echo-client") return res.end(JSON.stringify({ forwarded: req.headers["x-forwarded-for"], real: req.headers["x-real-ip"] }));
   if (url.pathname === "/api/site/items/long-lived") return res.end(JSON.stringify({ id: "long-lived", title: "t", originalUrl: "https://example.com/original" }));
@@ -100,6 +104,20 @@ test("HTML and navigation share freshness; cookies do not personalize public res
   assert.equal(signedIn.headers.get("Set-Cookie"), null);
   assert.equal(await signedIn.text(), await plain.text());
   assert.ok(apiCookies.every((cookie) => !cookie));
+});
+
+test("a signed-in reader's page is theirs (language, time zone): never cached, and public pages vary on Cookie", async () => {
+  const visitor = await fetch(`${origin}/about`);
+  assert.match(visitor.headers.get("Cache-Control")!, /^public,/);
+  assert.match(visitor.headers.get("Vary") ?? "", /\bCookie\b/);
+  assert.match(await visitor.text(), /<html lang="zh-CN"/);
+  for (const path of ["/about", "/about.data", "/terms", "/feedback"]) {
+    const reader = await fetch(`${origin}${path}`, { headers: { cookie: "topka_session=reader-token" } });
+    assert.equal(reader.headers.get("Cache-Control"), "private, no-store", path);
+    assert.equal(reader.headers.get("X-Accel-Expires"), "0", path);
+    const body = await reader.text();
+    if (path === "/about") assert.match(body, /<html lang="en"/);
+  }
 });
 
 test("missing routes cannot be hidden by a root-only request; errors and redirects stay uncached", async () => {

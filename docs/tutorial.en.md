@@ -119,6 +119,10 @@ Open <http://localhost:3000/login> and sign in as `demo@example.com` with that p
 
 ![Today with the demo data, first card expanded](assets/screenshot-demo-today.png)
 
+To read the interface in English, open 设置 (Settings) and pick English; the demo's card titles stay
+Chinese, since that is the language they were written in. The time zone picked there sets when your
+issue is fixed: 08:00 in that zone, default Asia/Shanghai.
+
 That is the whole product loop (sources, a tracking project, a daily issue of the top three stories)
 on synthetic data. The admin UI is at <http://localhost:3000/admin> with the `ADMIN_PASSWORD` from
 `.env`.

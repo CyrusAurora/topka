@@ -1,11 +1,14 @@
 import { SITE } from "@topka/industry/site";
 import { data } from "react-router";
+import type { Route } from "./+types/privacy";
 import { pageMeta } from "../lib/seo";
 import { prepareCopy } from "../lib/site-copy";
-import copy from "@topka/industry/pages/privacy.md?raw";
-import { CopyPage, LegalFooterLinks } from "../features/copy/CopyPage";
+import { localeOf, messages, useLocale } from "../lib/i18n";
+import zhCopy from "@topka/industry/pages/privacy.md?raw";
+import enCopy from "@topka/industry/pages/privacy.en.md?raw";
+import { CopyPage, docFact, LegalFooterLinks } from "../features/copy/CopyPage";
 
-const PRIVACY = prepareCopy(copy);
+const COPY = { "zh-CN": prepareCopy(zhCopy), en: prepareCopy(enCopy) };
 
 /** Off (SITE.legalPages false): the page is a 404 and nothing links to it; the copy stays for later. */
 export function loader() {
@@ -18,17 +21,22 @@ export function headers() {
   return { "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=600" };
 }
 
-export function meta() {
-  return pageMeta({ title: "隐私说明", description: `本站如何处理浏览器本地数据、反馈资料与访问日志。`, path: "/privacy", image: "/og/pages/privacy.png" });
-}
+export const meta: Route.MetaFunction = ({ matches }) => {
+  const locale = localeOf(matches);
+  const t = messages(locale).legal;
+  return pageMeta({ title: t.privacy, description: t.privacyDescription, path: "/privacy", image: "/og/pages/privacy.png", locale });
+};
 
 export default function PrivacyPage() {
+  const locale = useLocale();
+  const t = messages(locale).legal;
+  const page = COPY[locale];
   return (
     <CopyPage
-      doc={PRIVACY.doc}
-      rendered={PRIVACY.rendered}
+      doc={page.doc}
+      rendered={page.rendered}
       eyebrow={SITE.name}
-      footer={<LegalFooterLinks links={[{ to: "/terms", label: "使用规则" }, { to: "/feedback", label: "反馈页" }]} note={`隐私说明 ${PRIVACY.doc.meta["版本"] ?? ""} · ${PRIVACY.doc.meta["生效日期"] ?? ""}`} />}
+      footer={<LegalFooterLinks links={[{ to: "/terms", label: t.terms }, { to: "/feedback", label: t.feedback }]} note={`${t.privacy} ${docFact(page.doc, "version") ?? ""} · ${docFact(page.doc, "effective") ?? ""}`} />}
     />
   );
 }

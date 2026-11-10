@@ -1,11 +1,14 @@
 import { SITE } from "@topka/industry/site";
 import { data } from "react-router";
+import type { Route } from "./+types/terms";
 import { pageMeta } from "../lib/seo";
 import { prepareCopy } from "../lib/site-copy";
-import copy from "@topka/industry/pages/terms.md?raw";
-import { CopyPage, LegalFooterLinks } from "../features/copy/CopyPage";
+import { localeOf, messages, useLocale } from "../lib/i18n";
+import zhCopy from "@topka/industry/pages/terms.md?raw";
+import enCopy from "@topka/industry/pages/terms.en.md?raw";
+import { CopyPage, docFact, LegalFooterLinks } from "../features/copy/CopyPage";
 
-const TERMS = prepareCopy(copy);
+const COPY = { "zh-CN": prepareCopy(zhCopy), en: prepareCopy(enCopy) };
 
 /** Off (SITE.legalPages false): the page is a 404 and nothing links to it; the copy stays for later. */
 export function loader() {
@@ -18,17 +21,22 @@ export function headers() {
   return { "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=600" };
 }
 
-export function meta() {
-  return pageMeta({ title: "使用规则", description: `本站网站、RSS、公开 API 与 MCP 的使用规则。`, path: "/terms", image: "/og/pages/terms.png" });
-}
+export const meta: Route.MetaFunction = ({ matches }) => {
+  const locale = localeOf(matches);
+  const t = messages(locale).legal;
+  return pageMeta({ title: t.terms, description: t.termsDescription, path: "/terms", image: "/og/pages/terms.png", locale });
+};
 
 export default function TermsPage() {
+  const locale = useLocale();
+  const t = messages(locale).legal;
+  const page = COPY[locale];
   return (
     <CopyPage
-      doc={TERMS.doc}
-      rendered={TERMS.rendered}
+      doc={page.doc}
+      rendered={page.rendered}
       eyebrow={SITE.name}
-      footer={<LegalFooterLinks links={[{ to: "/privacy", label: "隐私说明" }, { to: "/agent", label: "Agent 接入页" }]} note={`使用规则 ${TERMS.doc.meta["版本"] ?? ""} · ${TERMS.doc.meta["生效日期"] ?? ""}`} />}
+      footer={<LegalFooterLinks links={[{ to: "/privacy", label: t.privacy }, { to: "/agent", label: t.agent }]} note={`${t.terms} ${docFact(page.doc, "version") ?? ""} · ${docFact(page.doc, "effective") ?? ""}`} />}
     />
   );
 }

@@ -13,6 +13,7 @@ import { promptText, promptVersion } from "../editorial/prompts.ts";
 import { createProject, ProjectRejected } from "../projects/create-project.ts";
 import { listUserProjects } from "../projects/user-today.ts";
 import type { IntakeBrief } from "./intake-core.cjs";
+import { inert, inertLine } from "../lib/untrusted.ts";
 
 export const ASSISTANT_PROMPT_VERSION = promptVersion("project-assistant");
 export const MAX_TURN_CALLS = 2;
@@ -94,7 +95,7 @@ const projectKey = (i: number) => `#${i + 1}`;
 
 function renderProjects(projects: Awaited<ReturnType<typeof listUserProjects>>) {
   if (!projects.length) return "（还没有项目）";
-  return projects.map((p, i) => `${projectKey(i)} 对象：${p.target}｜目标：${p.purpose}｜关注重点：${p.focus || "无"}｜排除：${p.exclusions || "无"}｜信源 ${p.sources} 个`).join("\n");
+  return projects.map((p, i) => `${projectKey(i)} 对象：${inertLine(p.target, 80)}｜目标：${inertLine(p.purpose, 240)}｜关注重点：${inertLine(p.focus, 240) || "无"}｜排除：${inertLine(p.exclusions, 240) || "无"}｜信源 ${p.sources} 个`).join("\n");
 }
 
 async function projectSources(projectId: string, db: Db = sql): Promise<string[]> {
@@ -180,11 +181,13 @@ export async function handleTurn(userId: string, text: string, opts: { clientId?
     ORDER BY id DESC LIMIT ${HISTORY_TURNS}`).reverse();
   const system = promptText("project-assistant", {
     projects: renderProjects(projects),
-    catalog: catalog.map((s) => `${s.id}｜${s.name}｜${s.enabled ? "采集中" : "可用"}`).join("\n"),
+    // Source names come from feeds: one inert line each, so a name cannot add instructions here.
+    catalog: catalog.map((s) => `${s.id}｜${inertLine(s.name, 120)}｜${s.enabled ? "采集中" : "可用"}`).join("\n"),
   });
   const user = [
-    history.length ? `【最近对话】\n${history.map((h) => `用户：${h.user_text}\n助手：${h.reply_text ?? ""}`).join("\n")}` : "",
-    `【用户这次说】\n${userText}`,
+    // What the reader typed cannot forge these section labels or end a fence.
+    history.length ? `【最近对话】\n${history.map((h) => `用户：${inert(h.user_text)}\n助手：${inert(h.reply_text ?? "")}`).join("\n")}` : "",
+    `【用户这次说】\n${inert(userText)}`,
   ].filter(Boolean).join("\n\n");
 
   let answer: z.infer<typeof AnswerSchema> | null = null;

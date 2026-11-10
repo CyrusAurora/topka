@@ -4,6 +4,7 @@ import { sql } from "../db.ts";
 import { collapseWhitespace, truncate } from "../lib/text.ts";
 import { produceImage } from "../media/images.ts";
 import type { ContentPart } from "../providers/llm.ts";
+import { inert, inertDeep, inertLine, inertTags } from "../lib/untrusted.ts";
 
 export interface AnalyzeInputArticle {
   id: string;
@@ -62,15 +63,16 @@ export async function loadAnalyzeInput(articleId: string): Promise<AnalyzeInputA
     LEFT JOIN translations tr ON tr.article_id = a.id AND tr.lang = 'zh' AND tr.revision >= a.revision
     WHERE a.id = ${articleId}`;
   if (!row) return null;
+  // Everything the source wrote is untrusted and goes to the models only as inert text (lib/untrusted.ts).
   return {
-    id: row.id, revision: row.revision, title: row.title, url: row.url, author: row.author, publishedAt: row.published_at, discoveredAt: row.discovered_at,
-    bodyText: row.body_text, excerpt: row.excerpt, bodyStatus: row.body_status, xPost: withXArticle(row.x_post, row.x_article), media: row.media,
+    id: row.id, revision: row.revision, title: inert(row.title), url: inertTags(row.url), author: inert(row.author), publishedAt: row.published_at, discoveredAt: row.discovered_at,
+    bodyText: inert(row.body_text), excerpt: inert(row.excerpt), bodyStatus: row.body_status, xPost: withXArticle(inertDeep(row.x_post), inertDeep(row.x_article)), media: row.media,
     source: {
-      id: row.source_id, name: row.source_name, kind: row.source_kind, tier: row.tier, firstParty: row.first_party, tags: row.source_tags, ownerEntityId: row.owner_entity_id,
+      id: row.source_id, name: inertLine(row.source_name, 200), kind: row.source_kind, tier: row.tier, firstParty: row.first_party, tags: row.source_tags, ownerEntityId: row.owner_entity_id,
       fetchesBody: row.config?.fetchPublicContent === true || !!row.config?.detail || row.source_kind === "web_list",
       scope: typeof row.config?.scope === "string" ? row.config.scope : null,
     },
-    translationZh: row.translation_zh,
+    translationZh: inert(row.translation_zh),
   };
 }
 

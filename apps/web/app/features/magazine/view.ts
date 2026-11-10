@@ -5,6 +5,8 @@
 // Backend: GET /api/me/today (UserIssuePayload) and GET /api/me/issues (archive). No model call here —
 // everything the reader sees was fixed at 08:00 UTC+8.
 
+import { messages, type UiLocale } from "../../lib/i18n.ts";
+
 /** The card shape every issue carries (UserIssuePayload.issue). */
 export interface IssueCardItem {
   id: string;
@@ -58,29 +60,39 @@ export interface MagazineIssuePayload {
 export const issueDayOf = (payload: Pick<MagazineIssuePayload, "issue">): string =>
   payload.issue?.date ?? new Date().toISOString().slice(0, 10);
 
-const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+/** Calendar parts of an instant in a time zone. */
+function partsIn(ms: number, timeZone: string): { y: number; m: number; d: number } {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date(ms));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? "0");
+  return { y: get("year"), m: get("month"), d: get("day") };
+}
+const dayIndex = (ms: number, timeZone: string) => {
+  const { y, m, d } = partsIn(ms, timeZone);
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400e3);
+};
 
 /** "2026.10.27" + "周一", masthead style. */
-export function masthead(date: string): { date: string; weekday: string } {
+export function masthead(date: string, locale: UiLocale = "zh-CN"): { date: string; weekday: string } {
   const d = new Date(`${date}T00:00:00Z`);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return { date: `${pad(d.getUTCMonth() + 1)}.${pad(d.getUTCDate())}`, weekday: WEEKDAYS[d.getUTCDay()] ?? "周一" };
+  const weekdays = messages(locale).magazine.weekdayShort;
+  return { date: `${pad(d.getUTCMonth() + 1)}.${pad(d.getUTCDate())}`, weekday: weekdays[d.getUTCDay()] ?? weekdays[1]! };
 }
 
 /** "No. 007"; an empty day (no issue_no) gets no number at all. */
 export const issueNo = (no: number | null | undefined): string => (no ? `No. ${String(no).padStart(3, "0")}` : "");
 
 /** The projects the masthead's right column names: one project → its name, several → the count. */
-export function projectLabelOf(projects: MagazineProject[]): string {
+export function projectLabelOf(projects: MagazineProject[], locale: UiLocale = "zh-CN"): string {
   if (projects.length === 1) return projects[0]!.target;
-  if (projects.length > 1) return `${projects.length} 个项目`;
+  if (projects.length > 1) return messages(locale).magazine.projectsCount(projects.length);
   return "";
 }
 
 /** An item's line under the card: source · time, and the project when several are tracked. */
-export function cardMeta(item: Pick<IssueCardItem, "source" | "publishedAt" | "listedAt" | "project">, multi: boolean, now: Date = new Date()): string {
-  const source = item.source || "来源未知";
-  const when = relTime(item.publishedAt ?? item.listedAt, now);
+export function cardMeta(item: Pick<IssueCardItem, "source" | "publishedAt" | "listedAt" | "project">, multi: boolean, now: Date = new Date(), locale: UiLocale = "zh-CN", timeZone: string = "Asia/Shanghai"): string {
+  const source = item.source || messages(locale).magazine.unknownSource;
+  const when = relTime(item.publishedAt ?? item.listedAt, now, locale, timeZone);
   const parts = [`${source} · ${when}`];
   if (multi) parts.push(item.project.target);
   return parts.join(" · ");
@@ -92,16 +104,16 @@ export function hostOf(url: string): string {
   return m ? m[1].replace(/^www\./i, "").toLowerCase() : "";
 }
 
-/** "今天 / 昨天 / N 天前 / M月D日" relative to now. */
-export function relTime(iso: string | null, now: Date = new Date()): string {
+/** "今天 / 昨天 / N 天前 / M月D日" (or the English equivalent) relative to now, in the given time zone. */
+export function relTime(iso: string | null, now: Date = new Date(), locale: UiLocale = "zh-CN", timeZone: string = "Asia/Shanghai"): string {
   if (!iso) return "";
-  const dayOf = (ms: number) => Math.floor((ms + 8 * 3600 * 1000) / 86400e3);
-  const diff = dayOf(now.getTime()) - dayOf(Date.parse(iso));
-  if (diff <= 0) return "今天";
-  if (diff === 1) return "昨天";
-  if (diff <= 6) return `${diff} 天前`;
-  const d = new Date(Date.parse(iso) + 8 * 3600 * 1000);
-  return `${d.getUTCMonth() + 1}月${d.getUTCDate()}日`;
+  const t = messages(locale);
+  const diff = dayIndex(now.getTime(), timeZone) - dayIndex(Date.parse(iso), timeZone);
+  if (diff <= 0) return t.magazine.relToday;
+  if (diff === 1) return t.magazine.relYesterday;
+  if (diff <= 6) return t.magazine.daysAgo(diff);
+  const { m, d } = partsIn(Date.parse(iso), timeZone);
+  return t.common.monthDay(m, d);
 }
 
 export type MagazinePhase = "loading" | "signed-out" | "first" | "preparing" | "zero" | "ready" | "failed";
@@ -118,26 +130,6 @@ export interface TodayView {
   archive: Array<{ date: string; no: number; titles: string[] }>;
   notice: string;
 }
-
-/** 今日's copy, one place (handover tone: short, plain, no exclamation marks). */
-export const MAGAZINE_COPY = {
-  loading: "正在翻今天的这一期……",
-  signedOut: "每天 08:00，从你关心的方向里挑出最该知道的 3 件事。登录后就能看到你的今日。",
-  goToLogin: "去登录",
-  goToRegister: "注册新账号",
-  failed: "这一期暂时打不开，请稍后再试。",
-  firstTitle: "你想跟踪什么？",
-  firstSub: "说一个方向，每天早上 8:00 给你 3 件最该知道的事。",
-  goChat: "去对话里说",
-  goCreate: "先建一个项目",
-  preparingTitle: "第一期正在准备",
-  preparingSub: "之后每天早上 8:00 更新。",
-  zeroTitle: "今天没有值得打扰你的",
-  zeroSub: "关注的来源里没有达到重要更新条件的新内容。",
-  noticeFallback: "AI 生成摘要，以原文为准。",
-  archive: "往期",
-  updateEveryMorning: "明早 8:00 更新",
-} as const;
 
 /** The card the page renders. Scores are deliberately absent from this shape: the rule is enforced
  *  at the view-model, not by remembering not to print them. */
@@ -159,7 +151,7 @@ export interface CardRow {
   read: boolean;
 }
 
-export function cardRows(view: TodayView, now: Date = new Date()): CardRow[] {
+export function cardRows(view: TodayView, now: Date = new Date(), locale: UiLocale = "zh-CN", timeZone: string = "Asia/Shanghai"): CardRow[] {
   const issue = view.issue;
   if (!issue || !issue.items.length) return [];
   const multi = view.projects.length > 1;
@@ -169,7 +161,7 @@ export function cardRows(view: TodayView, now: Date = new Date()): CardRow[] {
     title: [item.title_a, item.title_b].filter(Boolean).join(" "),
     core: [item.core_a, item.core_b].filter(Boolean).join(" "),
     source: item.source,
-    when: relTime(item.publishedAt ?? item.listedAt, now),
+    when: relTime(item.publishedAt ?? item.listedAt, now, locale, timeZone),
     project: multi ? item.project.target : "",
     multi,
     url: item.url,
@@ -187,9 +179,10 @@ export interface ArchiveEntryRow {
 }
 
 /** 往期's rows: one line per past day, with the day's titles as the preview. */
-export function archiveRows(archive: ArchiveEntryRow[]): Array<{ date: string; label: string; sub: string; titles: string[] }> {
+export function archiveRows(archive: ArchiveEntryRow[], locale: UiLocale = "zh-CN"): Array<{ date: string; label: string; sub: string; titles: string[] }> {
+  const t = messages(locale);
   return archive.map((a) => {
-    const { weekday } = masthead(a.date);
+    const { weekday } = masthead(a.date, locale);
     // The label comes from the ISO day itself. (`masthead` returns the dotted "11.04" form, which is a
     // masthead, not a parseable "month.day" pair: reading it with /^(\d+)\.(\d+)$/ yields one match,
     // and mapping the match array gives "11.04月11日".)
@@ -197,7 +190,7 @@ export function archiveRows(archive: ArchiveEntryRow[]): Array<{ date: string; l
     const no = issueNo(a.no);
     return {
       date: a.date,
-      label: `${Number(m)}月${Number(d)}日`,
+      label: t.common.monthDay(Number(m), Number(d)),
       sub: no ? `${weekday} · ${no}` : weekday,
       titles: a.titles,
     };

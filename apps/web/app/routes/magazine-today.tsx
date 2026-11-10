@@ -2,10 +2,14 @@
 import { SITE } from "@topka/industry/site";
 import type { Route } from "./+types/magazine-today";
 import { pageMeta } from "../lib/seo";
+import { messages, localeOf } from "../lib/i18n";
 import { MagazineToday } from "../features/magazine/today";
 
-export const meta: Route.MetaFunction = () =>
-  pageMeta({ title: "今日", description: `每天 3 件最该知道的事：${SITE.name} 杂志风今日。`, path: "/" });
+export const meta: Route.MetaFunction = ({ matches }) => {
+  const locale = localeOf(matches);
+  const t = messages(locale);
+  return pageMeta({ title: t.magazine.today, description: t.magazine.todayMetaDescription(SITE.name), path: "/", locale });
+};
 
 export function headers() {
   return { "Cache-Control": "no-store" };

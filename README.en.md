@@ -6,10 +6,10 @@
 
 <img src="docs/assets/screenshot-today.png" alt="Topka Today page: No. 003, three 【示例】 cards" width="100%">
 
-> *"Only what changed. When the evidence is thin, it says so."*
+> *"Only what changed. If nothing clears the bar, that day's issue is shorter, or empty — never padded."*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue)](CHANGELOG.md)
 [![Self-hosted](https://img.shields.io/badge/self--hosted-Docker%20Compose-2496ED?logo=docker&logoColor=white)](#quick-start-no-api-key)
 [![BYOK](https://img.shields.io/badge/BYOK-bring%20your%20own%20key-6f42c1)](#real-sources-and-a-model)
 
@@ -131,7 +131,7 @@ Sources (RSS / web list / JSON / X / WeChat / push)
 Pre-filter → score twice → title & summary → extract → merge into events
    │                    (all in the worker; opening a page never calls a model)
    ▼
-Pick by project relevance → freeze one issue at 08:00 UTC+8 (≤3 cards, ≤2 per source)
+Pick by project relevance → freeze one issue at 08:00 in the reader's time zone (≤3 cards, ≤2 per source)
    │
    ▼
 Site (Today / Archive) · RSS · /api/v1 · MCP · llms.txt
@@ -140,6 +140,8 @@ Site (Today / Archive) · RSS · /api/v1 · MCP · llms.txt
 - Six source kinds, one pipeline
 - Pre-filter / scoring / tone live in `industry/` prompts and can be retargeted
 - Adding a project does not multiply model calls per article
+- Sources carry region tags (`global` / `cn` / `us` / `eu` / `jp`); the project wizard can filter by region
+- Each reader picks the UI language (简体中文 / English) and time zone (default Asia/Shanghai) in Settings; visitors and the admin get `SITE_LOCALE`
 - Retarget an industry by editing only `industry/` → [docs/customize.md](docs/customize.md)
 
 Diagrams: [docs/architecture.md](docs/architecture.md).
@@ -148,11 +150,11 @@ Diagrams: [docs/architecture.md](docs/architecture.md).
 
 ## Honest limits
 
-- UI and generated copy are Chinese-first; no i18n yet
+- The UI is in Chinese and English; titles and summaries in the public pool and the Chat assistant's replies stay Chinese — English covers the UI and the copy on a reader's own daily cards
 - No full-text republication by default — summary + original link (`site_fulltext` is opt-in per source)
 - Single-node PostgreSQL; no horizontal scale-out
 - Card quality follows your model and sources; the demo is hand-written, live summaries can be wrong — the page says so
-- Freeze time is fixed at 08:00 UTC+8; a thin day stays empty, no backfill after the cutoff
+- Each issue is fixed at 08:00 in the reader's own time zone; a thin day stays empty, no backfill after the cutoff. Worker schedules (fetching, reports) all run on Asia/Shanghai time
 - One maintainer, best-effort, no SLA → [SUPPORT.md](SUPPORT.md); vulnerability reports → [SECURITY.md](SECURITY.md)
 
 ---

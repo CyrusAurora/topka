@@ -11,6 +11,7 @@ import { promptText, promptVersion } from "../editorial/prompts.ts";
 import { chatJson, ModelOutputError } from "../providers/llm.ts";
 import { BudgetExceededError, completeReceipt } from "../providers/receipts.ts";
 import { outputLanguageFor } from "../accounts/locale.ts";
+import { inert, inertLine } from "../lib/untrusted.ts";
 
 export const CARD_PROMPT_VERSION = promptVersion("mobile-card");
 export const CARD_LIMITS = { title: 20, lead: 75, why: 40 } as const;
@@ -94,10 +95,10 @@ export async function writeCardCopy(items: Material[], opts: { db?: Db; subject?
     for (let attempt = 0; attempt < MAX_CALLS && pending.length; attempt++) {
       const user = pending.map((i) => [
         `【内容 id=${i.id}】`,
-        `来源：${i.source}${i.publishedAt ? `｜发布：${i.publishedAt.slice(0, 10)}` : ""}`,
-        `现有标题：${i.title}${i.originalTitle ? `｜原标题：${i.originalTitle}` : ""}`,
-        i.summary ? `现有摘要：${i.summary}` : "",
-        body.get(i.id) ? `正文节选：${body.get(i.id)}` : "",
+        `来源：${inertLine(i.source, 120)}${i.publishedAt ? `｜发布：${i.publishedAt.slice(0, 10)}` : ""}`,
+        `现有标题：${inert(i.title)}${i.originalTitle ? `｜原标题：${inert(i.originalTitle)}` : ""}`,
+        i.summary ? `现有摘要：${inert(i.summary)}` : "",
+        body.get(i.id) ? `正文节选：${inert(body.get(i.id)!)}` : "",
       ].filter(Boolean).join("\n")).join("\n\n") + feedback;
       calls++;
       let cards: z.infer<typeof Schema>["cards"];

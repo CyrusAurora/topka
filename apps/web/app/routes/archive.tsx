@@ -2,10 +2,14 @@
 import { SITE } from "@topka/industry/site";
 import type { Route } from "./+types/archive";
 import { pageMeta } from "../lib/seo";
+import { messages, localeOf } from "../lib/i18n";
 import { ArchivePage } from "../features/magazine/archive";
 
-export const meta: Route.MetaFunction = () =>
-  pageMeta({ title: "往期", description: `翻看往日的今日三卡：${SITE.name}。`, path: "/archive", noindex: true });
+export const meta: Route.MetaFunction = ({ matches }) => {
+  const locale = localeOf(matches);
+  const t = messages(locale);
+  return pageMeta({ title: t.magazine.archive, description: t.magazine.archiveMetaDescription(SITE.name), path: "/archive", noindex: true, locale });
+};
 
 export function headers() {
   return { "Cache-Control": "no-store" };

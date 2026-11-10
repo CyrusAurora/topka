@@ -6,12 +6,7 @@ import { SITE } from "@topka/industry/site";
 import { apiGet } from "../lib/api.server";
 import { Wordmark } from "../components/Logo";
 import { buttonClass } from "../components/ui/Controls";
-
-const ERRORS: Record<string, string> = {
-  wrong: "密码不对，再试一次。",
-  unset: "还没有设置管理员密码：在 .env 里设置 ADMIN_PASSWORD（至少 12 位），重启后再登录。",
-  "too-many": "尝试次数太多，请 15 分钟后再试。",
-};
+import { localeOf, messages, useT } from "../lib/i18n";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -20,24 +15,29 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { returnTo: returnTo.startsWith("/admin") ? returnTo : "/admin", error: url.searchParams.get("error"), ...options };
 }
 
-export const meta: Route.MetaFunction = () => [{ title: `登录 · ${SITE.name} 后台` }, { name: "robots", content: "noindex, nofollow" }];
+export const meta: Route.MetaFunction = ({ matches }) => {
+  const t = messages(localeOf(matches));
+  return [{ title: t.adminShell.login.metaTitle(SITE.name) }, { name: "robots", content: "noindex, nofollow" }];
+};
 
 export const headers: Route.HeadersFunction = () => ({ "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" });
 
 export default function AdminLogin() {
   const { returnTo, error, password, feishu } = useLoaderData<typeof loader>();
-  const message = error ? (ERRORS[error] ?? ERRORS.wrong) : !password ? ERRORS.unset : null;
+  const t = useT();
+  const errors = t.adminShell.login.errors as Record<string, string>;
+  const message = error ? (errors[error] ?? errors.wrong) : !password ? errors.unset : null;
   return (
     <div className="flex min-h-dvh items-center justify-center bg-bg px-4">
       <div className="w-full max-w-[360px]">
         <div className="flex items-center justify-center gap-2">
           <Wordmark size={26} className="text-ink" />
-          <span className="text-[15px] font-semibold text-ink-3">后台</span>
+          <span className="text-[15px] font-semibold text-ink-3">{t.adminShell.backstage}</span>
         </div>
         <form method="post" action="/api/auth/password" className="card mt-8 p-6">
           <input type="hidden" name="return" value={returnTo} />
           <label htmlFor="password" className="block text-[13px] font-medium text-ink-2">
-            管理员密码
+            {t.adminShell.login.passwordLabel}
           </label>
           <input
             id="password"
@@ -54,17 +54,17 @@ export default function AdminLogin() {
             </p>
           )}
           <button type="submit" className={`${buttonClass("primary", "lg")} mt-5 w-full`}>
-            登录
+            {t.adminShell.login.signIn}
           </button>
           {feishu && (
             <a href={`/api/auth/feishu?${new URLSearchParams({ return: returnTo })}`} className={`${buttonClass("secondary", "lg")} mt-3 w-full`}>
-              用飞书登录
+              {t.adminShell.login.feishu}
             </a>
           )}
         </form>
         <p className="mt-6 text-center text-[12px] text-ink-4">
           <a href="/" className="hover:text-ink-2">
-            回到 {SITE.name}
+            {t.adminShell.login.backHome(SITE.name)}
           </a>
         </p>
       </div>

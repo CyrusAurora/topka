@@ -6,6 +6,8 @@ Column strategy (step 2): no new `*_en` columns; per-user card tables (`issue_ca
 
 Date: 2026-11-09 (Asia/Taipei).
 
+Amended 2026-11-10: the whole web UI is localized, admin included (see "Amendment: full UI catalog" at the end).
+
 ## Decision
 
 Ship a **thin** globalization v1 that makes Topka usable for a reader outside UTC+8 / Chinese, without dual-running the whole editorial pipeline or rewriting the public content pool.
@@ -179,3 +181,24 @@ Do not combine with unrelated refactors. Do not open the public `topka` mirror u
 - **Full i18n framework + dual publication columns now.** Rejected: doubles editorial cost before there are English readers of the public pool.
 - **Reuse `in_scope` for geography.** Rejected: overloads industry scope; breaks 今日 candidate gate semantics.
 - **Store cutoff hour per user.** Deferred: 08:00 local is enough for v1; hour adds product and test surface.
+
+## Amendment: full UI catalog (2026-11-10)
+
+Leaving the admin and the remaining reader pages in Chinese made the English UI show Chinese on every
+page that was not part of the reader shell. The web app now has one catalog for everything it renders:
+
+- Every user-visible string lives in `apps/web/app/lib/locales/*.ts` (`zh` and `en`, same keys and
+  shapes). `apps/web/tests/i18n.test.ts` fails on a Chinese literal anywhere else in the web source, on a
+  key or shape mismatch, on Chinese in an English string, and on any change to the existing Chinese copy.
+  `apps/web/tests/en-render.test.ts` renders each page component in English and scans the output.
+- Signed-in readers see their own `users.locale`. Visitors and the admin see the site language:
+  `SITE_LOCALE` (`zh-CN` or `en`), default `SITE.locale`. There is still no site-wide timezone.
+- The API keeps writing Chinese `detail` in its problem responses; an English page shows the message for
+  the problem `code` instead. Fixed notices the API sends (the issue notice, the empty-state text) are
+  replaced by the page's own copy on an English page.
+- Operator copy has English versions next to the Chinese: `SITE_EN` / `ABOUT_EN` in `industry/site.ts`,
+  `industry/pages/*.en.md` for the terms and privacy pages.
+
+Still Chinese for an English reader (unchanged from v1): the public content pool (titles, summaries,
+reasons), and the chat assistant's replies, which the model and the intake state machine write in Chinese.
+

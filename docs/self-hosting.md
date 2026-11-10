@@ -213,11 +213,18 @@ trim noisy sources — unmatched items fetch no full text and cost no model mone
   「换一个地址」; the feed carries only that reader's own issues, is `noindex`, and is cached
   `private, max-age=300`. Nothing to run or configure on the instance side.
 - **Daily issue**: one fixed issue per user per day, at most 3 items across all their projects,
-  cut off at 08:00 Asia/Taipei (= 00:00 UTC) and not changed for the rest of the day; articles
-  and their events already shown never return. The cut-off time is fixed in code
-  (`packages/backend/src/projects/issue-rules.ts`), independent of server timezone. There is no
-  scheduled job for it on the web side: when a logged-in user opens `GET /api/me/today` for the
-  first time after 08:00, the day's issue is generated. UI: `/today` and `/archive`; API:
+  cut off at 08:00 in that reader's own time zone and not changed for the rest of their day;
+  articles and their events already shown never return. The time zone is an IANA name stored per
+  account (`users.timezone`, default `Asia/Shanghai`, where 08:00 = 00:00 UTC), chosen in Settings
+  or with `PATCH /api/auth/me {"timezone": "Europe/London"}`; the server's own timezone plays no
+  part (`packages/backend/src/projects/issue-rules.ts`). There is no scheduled job for it on the
+  web side: when a logged-in user opens `GET /api/me/today` for the first time after their 08:00,
+  the day's issue is generated.
+- **Language**: each reader picks 简体中文 or English in Settings (`users.locale`, `zh-CN` or
+  `en`, also `PATCH /api/auth/me {"locale": "en"}`). The whole web UI follows it, admin included,
+  and the copy on that reader's daily cards is written in it. Signed-out visitors and the admin
+  get `SITE_LOCALE` (default: the industry pack's `SITE.locale`, `zh-CN` here). The public pool
+  (titles, summaries), the Chat assistant's replies and the feeds stay in the site's language. UI: `/today` and `/archive`; API:
   `GET /api/me/issues`, `GET /api/me/issues/<date>`.
 - Project "Today" pages: `/today/<project slug>` with a fixed number of project-scored cards
   (`TODAY_CARD_COUNT`, 3–5, default 3); export a snapshot with

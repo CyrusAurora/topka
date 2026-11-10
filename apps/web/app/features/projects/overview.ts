@@ -3,6 +3,8 @@
 // with the visitor's session; the component is a plain .ts factory for the node --test component
 // tests, and the route file is a thin shell around it.
 import { createElement, useEffect, useState, type FC, type ReactElement } from "react";
+import { useT } from "../../lib/i18n.ts";
+import { zh } from "../../lib/locales/projects.ts";
 
 export interface ProjectListItem {
   id: string;
@@ -14,11 +16,8 @@ export interface ProjectListItem {
   currentRevision: number;
 }
 
-export const OVERVIEW_EMPTY = "从左侧创建或选择一个追踪项目。";
-export const CREATE_FIRST = "创建第一个项目";
-export const SIGNED_OUT_COPY = "请先登录。";
-export const LOAD_FAILED_COPY = "暂时打不开项目列表，请稍后再试。";
-export const LOADING_COPY = "正在读项目……";
+export const OVERVIEW_EMPTY = zh.overview.empty;
+export const CREATE_FIRST = zh.overview.createFirst;
 
 export interface ProjectsOverviewProps {
   fetchImpl?: typeof fetch;
@@ -26,6 +25,7 @@ export interface ProjectsOverviewProps {
 
 export const ProjectsOverview: FC<ProjectsOverviewProps> = (props) => {
   const doFetch = props.fetchImpl ?? fetch.bind(globalThis);
+  const t = useT().projects.overview;
   const [state, setState] = useState<{ phase: "loading" | "ready" | "signed-out" | "failed"; projects: ProjectListItem[] }>({
     phase: "loading",
     projects: [],
@@ -59,18 +59,18 @@ export const ProjectsOverview: FC<ProjectsOverviewProps> = (props) => {
 
   let body: ReactElement;
   if (state.phase === "loading") {
-    body = createElement("p", { role: "status", className: "text-[14px] text-ink-3" }, LOADING_COPY);
+    body = createElement("p", { role: "status", className: "text-[14px] text-ink-3" }, t.loading);
   } else if (state.phase === "signed-out") {
     body = createElement("div", null,
-      createElement("p", { role: "status", className: "text-[14px] text-ink-2" }, SIGNED_OUT_COPY),
-      createElement("a", { href: "/login", className: "mt-4 inline-flex h-11 items-center rounded-full border border-line-strong bg-surface px-5 text-[14px] font-medium text-ink-2 hover:border-ink-4 hover:text-ink" }, "去登录"),
+      createElement("p", { role: "status", className: "text-[14px] text-ink-2" }, t.signedOut),
+      createElement("a", { href: "/login", className: "mt-4 inline-flex h-11 items-center rounded-full border border-line-strong bg-surface px-5 text-[14px] font-medium text-ink-2 hover:border-ink-4 hover:text-ink" }, t.signIn),
     );
   } else if (state.phase === "failed") {
-    body = createElement("p", { role: "alert", className: "text-[14px] text-hot" }, LOAD_FAILED_COPY);
+    body = createElement("p", { role: "alert", className: "text-[14px] text-hot" }, t.loadFailed);
   } else if (state.projects.length === 0) {
     body = createElement("div", null,
-      createElement("p", { className: "text-[14.5px] leading-relaxed text-ink-2" }, OVERVIEW_EMPTY),
-      createElement("a", { href: "/projects/new", className: "mt-4 inline-flex h-11 items-center rounded-full bg-accent px-5 text-[14px] font-medium text-accent-contrast hover:bg-accent-ink" }, CREATE_FIRST),
+      createElement("p", { className: "text-[14.5px] leading-relaxed text-ink-2" }, t.empty),
+      createElement("a", { href: "/projects/new", className: "mt-4 inline-flex h-11 items-center rounded-full bg-accent px-5 text-[14px] font-medium text-accent-contrast hover:bg-accent-ink" }, t.createFirst),
     );
   } else {
     body = createElement("ul", { className: "flex flex-col gap-3" },
@@ -84,7 +84,7 @@ export const ProjectsOverview: FC<ProjectsOverviewProps> = (props) => {
   }
 
   return createElement("div", { className: "mx-auto w-full max-w-[560px] px-4 py-10" },
-    createElement("h1", { className: "text-[17px] font-semibold text-ink" }, "项目"),
+    createElement("h1", { className: "text-[17px] font-semibold text-ink" }, t.title),
     createElement("div", { className: "card mt-6 p-6" }, body),
   );
 }

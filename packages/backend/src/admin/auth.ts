@@ -22,6 +22,8 @@ export interface AdminPrincipal {
   name: string;
   csrf: string;
   dev: boolean;
+  /** The built-in password admin (ADMIN_PASSWORD), whose stored display name is only a default. */
+  builtIn?: boolean;
 }
 
 function secret(): string {
@@ -169,7 +171,7 @@ export async function sessionPrincipal(cookieHeader: string | undefined): Promis
     const [row] = await sql<{ user_id: number; csrf_token: string; name: string | null; email: string | null }[]>`
       SELECT s.user_id, s.csrf_token, u.display_name AS name, u.email FROM admin_sessions s JOIN admin_users u ON u.id = s.user_id
       WHERE s.id_hash = ${sha256(token)} AND s.expires_at > now()`;
-    if (row) return { userId: row.user_id, name: row.name ?? row.email ?? `admin:${row.user_id}`, csrf: row.csrf_token, dev: false };
+    if (row) return { userId: row.user_id, name: row.name ?? row.email ?? `admin:${row.user_id}`, csrf: row.csrf_token, dev: false, builtIn: row.email === PASSWORD_ADMIN };
   }
   if (config.devAdmin && config.environmentName !== "production") return { userId: null, name: config.devAdmin.displayName, csrf: "dev", dev: true };
   return null;
