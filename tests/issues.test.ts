@@ -376,3 +376,32 @@ test("per-source cap: the fill from earlier days counts the fresh cards' sources
   assert.deepEqual(ids, [fresh[0], fresh[1], oldNews], "the 89/88 older papers are skipped for the other source's 55");
   assert.ok(!ids.includes(oldPaper));
 });
+
+// A host suspended through several 08:00 fix points (prod: 11-05..11-09): a late wake recovers the
+// day without inventing issues for the days it slept through.
+test("a box asleep through several fix points: one late issue on wake, cut at 08:00 of the wake day; skipped days get no row; later items roll on", async () => {
+  const u = await reader("asleep", "203.0.113.91");
+  // Issue A is fixed normally on 2026-11-05 (08:00 Taipei = 00:00 UTC).
+  const issueA = await item(u.source, u.project, 70, new Date("2026-11-04T20:00:00Z"), "issue A item");
+  assert.deepEqual(await ensureIssue(u.userId, { now: new Date("2026-11-05T00:00:00Z") }), { date: "2026-11-05", created: true });
+  // While asleep only items collected before it slept exist.
+  const beforeSleep = await item(u.source, u.project, 72, new Date("2026-11-05T00:10:00Z"), "before sleep");
+  // Wake at 2026-11-09T06:54:00Z (14:54 Taipei); the "after wake" item listed at 06:55:00Z is after the 08:00 cutoff.
+  const afterWake = await item(u.source, u.project, 90, new Date("2026-11-09T06:55:00Z"), "after wake");
+  assert.deepEqual(await ensureIssue(u.userId, { now: new Date("2026-11-09T06:54:30Z") }), { date: "2026-11-09", created: true });
+  const dates = await sql<{ d: string }[]>`SELECT to_char(issue_date,'YYYY-MM-DD') d FROM user_issues WHERE user_id=${u.userId} ORDER BY 1`;
+  assert.deepEqual(dates.map((r) => r.d), ["2026-11-05", "2026-11-09"]);
+  const [row] = await sql<{ issue_no: number | null; cutoff: Date; window_since: Date }[]>`SELECT issue_no, cutoff, window_since FROM user_issues WHERE user_id=${u.userId} AND issue_date='2026-11-09'::date`;
+  assert.equal(row!.issue_no, 2);
+  assert.equal(row!.cutoff.toISOString(), "2026-11-09T00:00:00.000Z");
+  assert.equal(row!.window_since.toISOString(), "2026-11-05T00:00:00.000Z");
+  const ids1109 = (await readIssue(u.userId, "2026-11-09"))!.items.map((i) => i.id);
+  assert.ok(ids1109.includes(beforeSleep), "the before-sleep item is in the 11-09 issue");
+  assert.ok(!ids1109.includes(afterWake), "the after-wake item (listed after the 00:00Z cutoff) waits for 11-10");
+  assert.ok(!ids1109.includes(issueA), "issue A's item never comes back");
+  // Roll the clock to the next fix point so the after-wake item (listed after 11-09's 00:00Z cutoff) waits for 11-10.
+  assert.deepEqual(await ensureIssue(u.userId, { now: new Date("2026-11-10T00:00:00Z") }), { date: "2026-11-10", created: true });
+  const ids1110 = (await readIssue(u.userId, "2026-11-10"))!.items.map((i) => i.id);
+  assert.ok(ids1110.includes(afterWake), "the after-wake item rolled on to 11-10, not lost");
+  assert.deepEqual(await ensureIssue(u.userId, { now: new Date("2026-11-09T07:30:00Z") }), { date: "2026-11-09", created: false });
+});
