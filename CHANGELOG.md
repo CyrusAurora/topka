@@ -5,6 +5,29 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+The daily issue now leaves out candidates without enough evidence, and the quality of each part of the
+product is measured on its own (docs/quality.md). Upgrading runs migration `0061`.
+
+### Added
+
+- Quality evals: `npm run eval` measures coverage, relevance, dedup/grouping, citation completeness,
+  source independence, freshness, abstention and time saved, each against its own labelled set or
+  snapshot in `eval/` and its own thresholds (`eval/thresholds.json`); no combined score. CI runs
+  `npm run eval -- --check`. Report: `docs/quality/report.md`. `--import` stores the results as
+  SelectBench runs; `--live --model <id>:free` re-scores the relevance set with a free model.
+- Evidence check for the daily issue (`projects/evidence.ts`): a candidate with no source, only a title,
+  too little text, an unsourced rumour in its lead, or a denial from another report is left out (宁少不凑,
+  no weaker filler), and the reason is stored in `issue_abstentions` (migration `0061`).
+- `scripts/eval-candidates.ts` exports candidate cases and the runtime snapshot read-only;
+  `scripts/eval-selection.ts --purpose` picks the cases of one purpose from a mixed gold set (default `site`).
+
+### Changed
+
+- Source independence: a trailing attribution ("…, Wired reported", "彭博社记者…爆料") counts as a relay;
+  a background mention ("此前据…报道") does not; links on shared hosts (e.g. sogou) keep their query so
+  different articles are not merged; reports from one signal group count as one voice.
+- `/api/health` reports `release` as the package version plus the git commit.
+
 ## [0.2.0] - 2026-11-10
 
 Each reader gets their own time zone and language, the whole UI (admin included) is available in
@@ -194,6 +217,7 @@ developed during a private trial. This repository starts from a single commit; t
 AIHOT framework this fork is based on lives in the upstream repository
 (https://github.com/KKKKhazix/AIHOT); see `NOTICE` for attribution.
 
-[Unreleased]: https://github.com/CyrusAurora/topka/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/CyrusAurora/topka/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/CyrusAurora/topka/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/CyrusAurora/topka/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/CyrusAurora/topka/releases/tag/v0.1.0

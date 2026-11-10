@@ -4,6 +4,7 @@
 // decision. A threshold sweep shows what another threshold would have done. The format of the gold file
 // is in docs/selection.md (industry/gold.example.jsonl has two made-up cases).
 // Usage: node --env-file=.env scripts/eval-selection.ts --gold .data/gold.jsonl [--models default,deepseek-flash] [--n 200] [--label "..."]
+// eval/gold/gold-relevance.jsonl works as is (its site cases; --purpose project is replayed by `npm run eval`).
 // Receipts make re-runs free; "either" cases are excluded from decisive metrics. Each run is also
 // imported into SelectBench (admin → SelectBench) with every case, unless --no-import is given.
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -23,6 +24,8 @@ const { values } = parseArgs({
     models: { type: "string", default: "default" },
     n: { type: "string", default: "200" },
     split: { type: "string", default: "all" },
+    /** Gold sets that mix purposes (eval/gold/gold-relevance.jsonl): only these cases run. */
+    purpose: { type: "string", default: "site" },
     concurrency: { type: "string", default: "6" },
     seed: { type: "string", default: "7" },
     label: { type: "string" },
@@ -37,10 +40,13 @@ interface GoldRow {
   /** Optional: a split (e.g. development / holdout) and a stratum for reading the mistakes. */
   samplingContext?: { benchmarkSplit?: string; samplingStratum?: string };
   gold: { decision: "select" | "reject" | "either" };
+  /** site (default) or project: a project case is decided by the daily issue's gate, not by this script. */
+  purpose?: "site" | "project";
 }
 
 const rows: GoldRow[] = readFileSync(path.resolve(REPO_ROOT, values.gold!), "utf8")
-  .split("\n").filter((l) => l.trim() && !l.trim().startsWith("//")).map((l) => JSON.parse(l));
+  .split("\n").filter((l) => l.trim() && !l.trim().startsWith("//")).map((l) => JSON.parse(l) as GoldRow)
+  .filter((r) => (r.purpose ?? "site") === values.purpose);
 
 // Deterministic stratified sample.
 function rng(seed: number) {

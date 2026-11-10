@@ -3,7 +3,7 @@ import Fastify, { LogController, type FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
 import { OAUTH_PROBE_PATHS, resolveRedirect } from "@topka/contracts/http-policy";
 import { sql } from "@topka/backend/db";
-import { projectEnv } from "@topka/backend/config";
+import { releaseName } from "@topka/backend/config";
 import { registerSite } from "./routes/site.ts";
 import { registerLeaderboard } from "./routes/leaderboard.ts";
 import { registerOg } from "./routes/og.ts";
@@ -70,7 +70,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.get("/api/health", async (_req, reply) => {
     const started = Date.now();
     await sql`SELECT 1`;
-    return reply.header("Cache-Control", "no-store").send({ ok: true, db: "ok", ms: Date.now() - started, release: projectEnv("RELEASE") ?? "dev" });
+    return reply.header("Cache-Control", "no-store").send({ ok: true, db: "ok", ms: Date.now() - started, release: releaseName() });
   });
 
   registerSite(app);

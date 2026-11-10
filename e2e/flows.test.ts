@@ -317,6 +317,8 @@ async function seedIssue(ownerId: string, target: string): Promise<{ projectId: 
   await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, enabled, next_fetch_at) VALUES
     (${src}, ${`具身智能前沿 ${t}`}, 'rss', 'T1', 'editorial', true, '2100-01-01'), (${src2}, ${`机器人日报 ${t}`}, 'rss', 'T1', 'editorial', true, '2100-01-01'), (${car}, ${`汽车周刊 ${t}`}, 'rss', 'T1', 'editorial', true, '2100-01-01')`;
   const projectId = (await createProject({ ownerId, target, purpose: `跟踪${target}`, sources: [{ sourceId: src, required: false }, { sourceId: src2, required: false }] })).project.id;
+  // Enough text for the issue's evidence check (projects/evidence.ts).
+  const E2E_BODY = "公司今天在发布会上公布了这项进展，并给出了技术报告、演示视频和第一批客户名单，报告列出了每项测试的数据和对比方法，产品将在下个季度开始交付。";
   const pubs = [
     { src, title: `Figure 03 量产线投产 ${t}`, score: 95 },
     { src, title: `开源 VLA 模型刷新基准 ${t}`, score: 90 },
@@ -330,7 +332,7 @@ async function seedIssue(ownerId: string, target: string): Promise<{ projectId: 
     // A reader's first issue takes the last 24 hours up to now.
     const at = new Date(Date.now() - (10 + i) * 60_000);
     const url = `https://example.org/e2e-${t}-${i}`;
-    const id = (await upsertMaterial({ sourceId: p.src, url, title: p.title, bodyText: p.title, bodyStatus: "ok", via: "fetch", publishedAt: at })).articleId;
+    const id = (await upsertMaterial({ sourceId: p.src, url, title: p.title, bodyText: `${p.title}。${E2E_BODY}`, bodyStatus: "ok", via: "fetch", publishedAt: at })).articleId;
     await sql`INSERT INTO publications (article_id, title, original_title, summary, source_id, channel, url, published_at, discovered_at, timeline_at, sort_at, eligible, score, visible_after, listed_at)
       VALUES (${id}, ${p.title}, ${p.title}, ${`摘要：${p.title}`}, ${p.src}, 'news', ${url}, ${at}, ${at}, ${at}, ${at}, true, ${p.score}, ${at}, ${at})`;
     await sql`UPDATE articles SET processing_state = 'analyzed' WHERE id = ${id}`;

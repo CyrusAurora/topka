@@ -77,6 +77,11 @@ export function projectScoreSchema(count: number) {
   return z.object({ projectScores: z.object(shape) }).transform((d) => Array.from({ length: count }, (_, i) => d.projectScores[keyOf(i)] as number));
 }
 
+/** A project's score for an article: the mean of the calls, floored (what the daily issue ranks by). */
+export function projectScore(values: number[]): number | null {
+  return values.length ? Math.floor(values.reduce((t, v) => t + v, 0) / values.length) : null;
+}
+
 export interface ProjectScoreRun {
   project: ProjectBrief;
   values: number[];
@@ -91,7 +96,7 @@ export async function storeProjectScores(
 ) {
   for (const r of runs) {
     if (!r.values.length) continue;
-    const score = Math.floor(r.values.reduce((t, v) => t + v, 0) / r.values.length);
+    const score = projectScore(r.values)!;
     await db`
       INSERT INTO project_scores (project_id, article_id, source_id, input_revision, project_revision, scores, score, model, prompt_version, receipt_ids)
       VALUES (${r.project.id}, ${a.id}, ${a.sourceId}, ${a.revision}, ${r.project.revision}, ${r.values}, ${score}, ${meta.model}, ${PROJECT_SCORE_VERSION}, ${meta.receiptIds})

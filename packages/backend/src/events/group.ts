@@ -24,9 +24,10 @@ import { isHistorical, STALE_ON_DISCOVERY_MS } from "../content/materials.ts";
 import { enqueue, QUEUES } from "../jobs/queue.ts";
 import { publishArticle } from "../publication/publish.ts";
 import { mergeStoryInto } from "./merge.ts";
+import { assignParticipant, fingerprint, isAggregator, type UpstreamItem } from "./independence.ts";
 import {
   BATCH_SYSTEM, BatchSchema, PAIR_SYSTEM, PairSchema, RELATE_PROMPT_VERSION, SIGNAL_SYSTEM, STORY_REVIEW_MIN_CONFIDENCE, SignalSchema, TIE_MIN_CONFIDENCE,
-  batchUser, firmlyTied, lexicalSimilarity, looksLikeRoundup, pairUser, reportText, sameOccurrence, signalTarget, storyForDevelopment, verdictsByFact,
+  batchUser, firmlyTied, lexicalSimilarity, pairUser, reportText, resolveGroup, signalTarget, verdictsByFact,
   type CandidateView, type Relation, type ReportView, type Verdict,
 } from "./relate.ts";
 
@@ -35,8 +36,6 @@ export const GROUP_PROMPT_VERSION = RELATE_PROMPT_VERSION;
 const RECALL_DAYS = 14;
 const RECALL_MIN_COSINE = 0.6;
 const RECALL_TOP_FACTS = 10;
-/** A merge with a candidate less similar than this is confirmed by the review model before it is written. */
-const CONFIRM_BELOW_COSINE = 0.85;
 /** Discussion posts are judged only against clear candidates, and attach without a call when nearly identical. */
 const SIGNAL_MIN_COSINE = 0.72;
 const SIGNAL_AUTO_COSINE = 0.92;
@@ -321,10 +320,51 @@ async function createFact(db: Db, storyId: number, title: string, frame: Record<
   return row!.id;
 }
 
+/** Whether a source posts links to other publishers (events/independence.ts), from its last 200 URLs; kept an hour. */
+const aggregatorCache = new Map<string, { flag: boolean; at: number }>();
+async function aggregatorSource(db: Db, sourceId: string): Promise<boolean> {
+  const hit = aggregatorCache.get(sourceId);
+  if (hit && Date.now() - hit.at < 3_600_000) return hit.flag;
+  const urls = (await db<{ url: string }[]>`SELECT url FROM articles WHERE source_id = ${sourceId} ORDER BY discovered_at DESC LIMIT 200`).map((r) => r.url);
+  const flag = isAggregator(urls);
+  aggregatorCache.set(sourceId, { flag, at: Date.now() });
+  return flag;
+}
+
+/**
+ * The participant a report counts as in its story: its source (or signal group), unless it copies a
+ * report already counted there — the same text, a link post of that article, a brief of it, or a lead
+ * that says it relays that outlet (events/independence.ts) — whose participant it then shares, so a
+ * story told once and copied five times is one independent participant, not six.
+ */
+async function participantFor(db: Db, storyId: number, articleId: string, source: { id: string; signal_group_id: string | null }): Promise<string> {
+  const own = participantKey(source);
+  const rows = await db<{
+    id: string; source_id: string; source_name: string; signal_group_id: string | null; url: string; title: string; at: Date | null; head: string; tail: string; chars: number; participant_key: string | null;
+  }[]>`
+    SELECT a.id, a.source_id, s.name AS source_name, s.signal_group_id, a.url, a.title, coalesce(a.published_at, a.discovered_at) AS at,
+           left(coalesce(nullif(a.body_text, ''), a.excerpt, ''), 4000) AS head, right(coalesce(a.body_text, ''), 400) AS tail,
+           length(coalesce(nullif(a.body_text, ''), a.excerpt, ''))::int AS chars, ss.participant_key
+    FROM articles a JOIN sources s ON s.id = a.source_id
+    LEFT JOIN story_signals ss ON ss.story_id = ${storyId} AND ss.article_id = a.id
+    WHERE a.id = ${articleId}
+       OR a.id IN (SELECT x.article_id FROM story_signals x WHERE x.story_id = ${storyId} ORDER BY x.observed_at DESC LIMIT 50)`;
+  if (rows.length < 2) return own;
+  const items: UpstreamItem[] = [];
+  for (const r of rows) {
+    items.push({
+      id: r.id, sourceId: r.source_id, sourceName: r.source_name, aggregator: await aggregatorSource(db, r.source_id), url: r.url, title: r.title,
+      publishedAt: r.at, lead: r.head.slice(0, 400), tail: r.tail, bodyChars: Number(r.chars), signature: fingerprint(r.head), signalGroupId: r.signal_group_id,
+    });
+  }
+  const existing = new Map(rows.filter((r) => r.id !== articleId && r.participant_key).map((r) => [r.id, r.participant_key!]));
+  return assignParticipant(items, articleId, existing, own);
+}
+
 async function recordSignal(db: Db, storyId: number, articleId: string, source: { id: string; signal_group_id: string | null }, kind: "editorial" | "signal", observedAt: Date) {
   await db`
     INSERT INTO story_signals (story_id, article_id, participant_key, source_id, kind, observed_at)
-    VALUES (${storyId}, ${articleId}, ${participantKey(source)}, ${source.id}, ${kind}, ${observedAt})
+    VALUES (${storyId}, ${articleId}, ${await participantFor(db, storyId, articleId, source)}, ${source.id}, ${kind}, ${observedAt})
     ON CONFLICT (story_id, article_id) DO NOTHING`;
   await db`UPDATE stories SET latest_at = GREATEST(coalesce(latest_at, ${observedAt}), ${observedAt}),
               first_report_at = LEAST(coalesce(first_report_at, ${observedAt}), ${observedAt}), updated_at = now()
@@ -671,34 +711,14 @@ async function decide(articleId: string, opts: GroupOptions): Promise<GroupResul
         const judged = await judgeBatch(articleId, query, cands);
         verdicts = judged.verdicts;
         receipts.push(judged.receiptId);
-        for (const pick of sameOccurrence(cands, verdicts)) {
-          if (pick.score >= CONFIRM_BELOW_COSINE) {
-            factId = pick.factId;
-            break;
-          }
+        const resolved = await resolveGroup(cands, verdicts, async (pick) => {
           const review = await confirmMerge(articleId, query, pick);
           receipts.push(review.receiptId);
-          if (review.relation === "SAME_OCCURRENCE") {
-            factId = pick.factId;
-            break;
-          }
-          if (review.relation === "SAME_STORY" && pick.storyRoot) {
-            storyId = pick.storyId;
-            break;
-          }
-        }
-        if (factId) {
-          verdict = "same-fact";
-          storyId = cands.find((c) => c.factId === factId)!.storyId;
-        } else if (storyId) {
-          verdict = "new-fact-in-story";
-        } else {
-          const dev = storyForDevelopment(cands, verdicts);
-          if (dev) {
-            verdict = "new-fact-in-story";
-            storyId = dev.storyId;
-          } else if (looksLikeRoundup(cands, verdicts)) verdict = "roundup";
-        }
+          return review.relation;
+        });
+        verdict = resolved.verdict;
+        factId = resolved.factId;
+        storyId = resolved.storyId;
       }
     } catch (error) {
       // A failed identity call must not block publication: the report stays standalone for now.
