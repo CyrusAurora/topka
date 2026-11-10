@@ -98,4 +98,5 @@ test("capPerSource: at most MAX_PER_SOURCE per source, order kept, taken counted
   assert.deepEqual(ids(capPerSource([c("a1", "A"), c("a2", "A"), c("a3", "A")], 3, (x) => x.src)), ["a1", "a2"], "one source: two cards");
   assert.deepEqual(ids(capPerSource(ranked, 3, (x) => x.src, [c("x", "A")])), ["a1", "b1"], "taken cards count toward the cap and the size");
   assert.deepEqual(capPerSource([], 3, (x: { src: string }) => x.src), []);
+  assert.deepEqual(ids(capPerSource(ranked, 3, (x) => x.src, [], (x) => x.id !== "a1")), ["a2", "a3", "b1"], "a rejected card takes no place under the cap");
 });

@@ -51,8 +51,11 @@ async function item(source: string, project: string, score: number | null, liste
   return itemFrom([source, `${source}-b`, `${source}-c`][seq % 3]!, project, score, listed, title);
 }
 
-async function itemFrom(sourceId: string, project: string, score: number | null, listed: Date, title: string) {
-  const { articleId } = await upsertMaterial({ sourceId, url: `https://example.org/is-${T}/${++seq}`, title: `en ${title} ${T}`, bodyText: "Body.", bodyStatus: "ok", via: "fetch", publishedAt: listed });
+/** Enough text for the evidence check (projects/evidence.ts): a card is never written from a title alone. */
+const BODY = "The team released the system today with a technical report, open weights and a public demo. It was trained on two thousand hours of data and tested on three robots in real homes, with the numbers for each task listed in the report.";
+
+async function itemFrom(sourceId: string, project: string, score: number | null, listed: Date, title: string, body = BODY) {
+  const { articleId } = await upsertMaterial({ sourceId, url: `https://example.org/is-${T}/${++seq}`, title: `en ${title} ${T}`, bodyText: body, bodyStatus: "ok", via: "fetch", publishedAt: listed });
   await sql`
     INSERT INTO publications (article_id, title, original_title, summary, source_id, channel, url, published_at, discovered_at, timeline_at, sort_at, eligible, score, visible_after, listed_at)
     VALUES (${articleId}, ${`中文：${title} ${T}`}, null, ${`摘要：${title} ${T}`}, ${sourceId}, 'news', ${`https://example.org/is-${T}/${seq}`}, ${listed}, ${listed}, ${listed}, ${listed}, true, ${score}, ${listed}, ${listed})`;
@@ -404,4 +407,29 @@ test("a box asleep through several fix points: one late issue on wake, cut at 08
   const ids1110 = (await readIssue(u.userId, "2026-11-10"))!.items.map((i) => i.id);
   assert.ok(ids1110.includes(afterWake), "the after-wake item rolled on to 11-10, not lost");
   assert.deepEqual(await ensureIssue(u.userId, { now: new Date("2026-11-09T07:30:00Z") }), { date: "2026-11-09", created: false });
+});
+
+test("evidence: a top candidate with too little evidence is left out and logged; the issue is not padded with a weaker one", async () => {
+  const u = await reader("evidence", "203.0.113.91");
+  const [a, b, c] = u.all as [string, string, string];
+  const thin = await itemFrom(a, u.project, 95, new Date(N1.getTime() - 10 * 60_000), "evidence thin", "One line only.");
+  const rumour = await itemFrom(b, u.project, 92, new Date(N1.getTime() - 20 * 60_000), "evidence rumour", `People familiar with the matter say the deal is close. ${BODY}`);
+  const good = await itemFrom(c, u.project, 90, new Date(N1.getTime() - 30 * 60_000), "evidence good");
+  assert.deepEqual(await ensureIssue(u.userId, { now: N1 }), { date: DAY1, created: true });
+  const issue = await readIssue(u.userId, DAY1);
+  assert.deepEqual(issue!.items.map((i) => i.id), [good], "only the item with enough evidence; fewer cards, no filler");
+  const logged = await sql<{ article_id: string; reason: string }[]>`SELECT article_id, reason FROM issue_abstentions WHERE user_id = ${u.userId} ORDER BY reason`;
+  assert.deepEqual(logged.map((r) => [r.article_id, r.reason]), [[thin, "thin"], [rumour, "unsourced-claim"]]);
+});
+
+test("evidence: candidates are checked in batches until the issue is full", async () => {
+  const u = await reader("evidence-batch", "203.0.113.92");
+  // 22 thin items above two good ones: the second batch has to be read.
+  for (let i = 0; i < 22; i++) await itemFrom(u.all[i % 3]!, u.project, 99 - i, new Date(N1.getTime() - (i + 1) * 60_000), `batch thin ${i}`, "Short.");
+  const good = [];
+  for (let i = 0; i < 2; i++) good.push(await itemFrom(u.all[i]!, u.project, 60 - i, new Date(N1.getTime() - (30 + i) * 60_000), `batch good ${i}`));
+  await ensureIssue(u.userId, { now: N1 });
+  assert.deepEqual((await readIssue(u.userId, DAY1))!.items.map((i) => i.id), good);
+  const [n] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM issue_abstentions WHERE user_id = ${u.userId}`;
+  assert.equal(n!.n, 22);
 });

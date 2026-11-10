@@ -109,7 +109,7 @@ agents in [AGENTS.md](../AGENTS.md)):
 | `packages/backend/src/content/` | Ingest, dedupe, full-text extraction and cleaning |
 | `packages/backend/src/editorial/` | Judging and writing: `analyze.ts` (flow), `prompts.ts` (loads prompts), `models.ts` (per-step model routing) |
 | `packages/backend/src/events/` | Event grouping, heat, story digests |
-| `packages/backend/src/projects/` | Tracking projects: baselines, per-project scoring, checkpoint revisit, today views, per-user issues |
+| `packages/backend/src/projects/` | Tracking projects: baselines, per-project scoring, checkpoint revisit, today views, per-user issues; the evidence check that leaves weak candidates out (`evidence.ts`, logged in `issue_abstentions`) |
 | `packages/backend/src/accounts/` | Invites, sessions, per-user keys (BYOK) |
 | `packages/backend/src/jobs/` | pg-boss queue, job registrations |
 | `packages/backend/src/publication/` | The publication read layer |
@@ -118,10 +118,12 @@ agents in [AGENTS.md](../AGENTS.md)):
 | `packages/backend/src/notify/` | Feishu push |
 | `packages/backend/src/operations/` | Alerts, backups, retention, IndexNow |
 | `packages/backend/src/admin/` | Admin endpoints |
+| `packages/backend/src/quality/` | Quality evals: metrics, replays and the report `npm run eval` prints ([quality.md](quality.md)) |
 | `packages/backend/src/providers/` | Model, embedding, X, WeChat official accounts (via third-party API), Jina clients; receipts and budgets |
 | `apps/web/app/routes/` | One file per page; `routes.ts` is the route table |
 | `database/migrations/` | Append-only SQL migrations |
 | `scripts/` | Init, migration, seed, evaluation, checks |
+| `eval/` | Labelled sets, runtime snapshot and thresholds for the quality evals |
 | `tests/` | Backend tests (need an empty database named `…_test` or `…_ci`) |
 | `database/seeds/` | Seed data the migrations and `scripts/seed.ts` load |
 | `deploy/` | Reverse-proxy example (Caddy); `docker-compose.yml` at the root is the supported stack |
@@ -150,6 +152,7 @@ npm run typecheck
 createdb topka_test
 DATABASE_URL=postgres://127.0.0.1:5432/topka_test node scripts/migrate.ts
 DATABASE_URL=postgres://127.0.0.1:5432/topka_test npm test
+npm run eval -- --check                     # quality evals, offline (docs/quality.md)
 npm run build -w @topka/web && node --test apps/web/tests/*.test.ts
 docker compose exec web node scripts/smoke.ts --base http://localhost:3000   # with the Docker stack running
 ```

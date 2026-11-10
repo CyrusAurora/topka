@@ -129,16 +129,17 @@ export const MAX_PER_SOURCE = 2;
  * Picks up to `size` cards from `ranked` (already in score order, already above the floor), skipping
  * any candidate whose source already has MAX_PER_SOURCE cards among `taken` plus the picks so far.
  * Order is kept, so the leading card is always the best candidate and ties stay as the SQL broke them.
- * Fewer than `size` when there are not enough sources: fewer cards, never filler.
+ * Fewer than `size` when there are not enough sources: fewer cards, never filler. A candidate `accept`
+ * turns down (projects/evidence.ts: too little evidence) is skipped the same way.
  */
-export function capPerSource<T>(ranked: readonly T[], size: number, sourceOf: (t: T) => string, taken: readonly T[] = []): T[] {
+export function capPerSource<T>(ranked: readonly T[], size: number, sourceOf: (t: T) => string, taken: readonly T[] = [], accept: (t: T) => boolean = () => true): T[] {
   const count = new Map<string, number>();
   for (const t of taken) count.set(sourceOf(t), (count.get(sourceOf(t)) ?? 0) + 1);
   const picked: T[] = [];
   for (const c of ranked) {
     if (taken.length + picked.length >= size) break;
     const n = count.get(sourceOf(c)) ?? 0;
-    if (n >= MAX_PER_SOURCE) continue;
+    if (n >= MAX_PER_SOURCE || !accept(c)) continue;
     count.set(sourceOf(c), n + 1);
     picked.push(c);
   }

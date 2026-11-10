@@ -37,6 +37,8 @@ Customization:
 - [Adapt it to a different industry](customize.md) — the `industry/` pack, step by step.
 - [Sources](sources.md) — the six source kinds, filters, caps, external push endpoint.
 - [Selection & calibration](selection.md) — the editorial rubric and how to recalibrate it.
+- [Quality evals](quality.md) — the eight quality dimensions, their labelled sets, baselines and
+  thresholds; `npm run eval`. Latest numbers: [quality/report.md](quality/report.md).
 - [Model leaderboard](leaderboard.md) — `/leaderboard` and the Codex reset monitor.
 
 Extension:

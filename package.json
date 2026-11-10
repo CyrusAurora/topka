@@ -36,6 +36,7 @@
     "dev:worker": "npm run dev -w @topka/worker",
     "dev:web": "npm run dev -w @topka/web",
     "typecheck": "tsc -p packages/contracts && tsc -p packages/backend && tsc -p apps/api && tsc -p apps/worker && tsc -p tests && tsc -p examples && npm run typecheck -w @topka/web",
+    "eval": "node scripts/eval.ts",
     "test": "node --import ./tests/hermetic-env.ts --test --test-concurrency=1 --test-timeout=120000 \"tests/*.test.ts\"",
     "test:coverage": "node --import ./tests/hermetic-env.ts --test --test-concurrency=1 --test-timeout=120000 --experimental-test-coverage --test-coverage-include='packages/backend/src/**' --test-coverage-lines=85 \"tests/*.test.ts\"",
     "models:free": "node --env-file-if-exists=.env scripts/free-models.ts",

@@ -77,6 +77,8 @@ jobs:
       # After the smoke check, which reads an empty database: these write their own rows.
       - name: Backend tests (85% line coverage of packages/backend/src)
         run: npm run test:coverage
+      - name: Quality evals (offline, each dimension against eval/thresholds.json)
+        run: npm run eval -- --check
       - name: Browser E2E (playwright-core, fake model, Chrome on the runner)
         env:
           CHROME_PATH: /usr/bin/google-chrome

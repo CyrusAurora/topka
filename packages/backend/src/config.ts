@@ -1,5 +1,6 @@
 // Runtime configuration. Secrets are loaded per group (models, collectors, integrations, auth)
 // from dotenv files, and only by the backend processes that need them.
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parseEnv } from "node:util";
@@ -34,6 +35,28 @@ export function projectEnv(name: string): string | undefined {
     console.log(JSON.stringify({ level: "warn", msg: `AIHOT_${name} is deprecated; rename it to TOPKA_${name}` }));
   }
   return legacy;
+}
+
+let release: string | undefined;
+
+/**
+ * What /api/health and the process heartbeats report as the running release: TOPKA_RELEASE when the
+ * deployment sets it (an image tag), otherwise the root package.json version plus the short commit
+ * when the code runs from a git checkout ("0.2.0+53ba674"), the version alone in an image without git.
+ */
+export function releaseName(): string {
+  const set = projectEnv("RELEASE");
+  if (set) return set;
+  if (release !== undefined) return release;
+  let version = "unknown";
+  try {
+    version = String(JSON.parse(readFileSync(path.join(REPO_ROOT, "package.json"), "utf8")).version || "unknown");
+  } catch {}
+  let sha = "";
+  try {
+    sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: REPO_ROOT, encoding: "utf8", timeout: 2000, stdio: ["ignore", "pipe", "ignore"] }).trim();
+  } catch {}
+  return (release = /^[0-9a-f]{7,40}$/.test(sha) ? `${version}+${sha}` : version);
 }
 
 function int(name: string, fallback: number): number {

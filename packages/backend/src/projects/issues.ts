@@ -3,13 +3,15 @@
 // anything shown in an earlier issue — an article or its whole event never comes back). When the issue
 // is fixed it stops changing for that day; a later, better article waits for the next issue. A day
 // with fewer than 3 fresh candidates is filled with the best never-shown candidates of the previous
-// 72 hours (same gate), and an empty row only remains when even those are missing. The card copy
-// (issue_card_copy) is written separately by the budgeted copy writer; until then the item falls back
-// to the publication's own title and summary (v4.4 今日 / 往期).
+// 72 hours (same gate), and an empty row only remains when even those are missing. A candidate whose
+// evidence is too thin (evidence.ts) is skipped and logged in issue_abstentions: fewer items, never a
+// weaker one in its place. The card copy (issue_card_copy) is written separately by the budgeted copy
+// writer; until then the item falls back to the publication's own title and summary (v4.4 今日 / 往期).
 import { sql, one, type Db } from "../db.ts";
 import { SELECTION } from "@topka/industry/selection";
 import { RECENT_IMPORT_HOURS } from "./today.ts";
 import { listUserProjects } from "./user-today.ts";
+import { assessEvidence, type EvidenceVerdict } from "./evidence.ts";
 import { capPerSource, isHero, isValidTimeZone, issueCutoffInTz, currentIssueDateInTz, nextIssueAtInTz, DEFAULT_TIMEZONE } from "./issue-rules.ts";
 
 /** The user's IANA zone from the users row, falling back to the default (Shanghai). */
@@ -140,6 +142,54 @@ export async function issueCandidates(userId: string, since: Date, until: Date, 
 
 const bySource = (c: IssueCandidate) => c.source_id;
 
+/**
+ * The evidence verdict (projects/evidence.ts) for each article: its link, text, source and the story's
+ * other independent reports (story_signals participants, events/independence.ts).
+ */
+export async function evidenceVerdicts(articleIds: string[], db: Db = sql): Promise<Map<string, EvidenceVerdict>> {
+  if (!articleIds.length) return new Map();
+  const rows = await db<{ id: string; url: string | null; title: string; body: string; excerpt: string; post: string; first_party: boolean; upstreams: number; others: string[] }[]>`
+    SELECT a.id, a.url, a.title, coalesce(a.body_text, '') AS body, coalesce(a.excerpt, '') AS excerpt,
+           coalesce(a.x_post->>'text', '') AS post, s.first_party,
+           greatest(1, (SELECT count(DISTINCT g.participant_key) FROM story_signals g WHERE g.story_id = own.story_id))::int AS upstreams,
+           coalesce((SELECT array_agg(o.title) FROM story_signals g JOIN articles o ON o.id = g.article_id
+                     WHERE g.story_id = own.story_id AND g.participant_key IS DISTINCT FROM own.participant_key), '{}') AS others
+    FROM articles a JOIN sources s ON s.id = a.source_id
+    LEFT JOIN LATERAL (SELECT story_id, participant_key FROM story_signals WHERE article_id = a.id ORDER BY observed_at DESC LIMIT 1) own ON true
+    WHERE a.id = ANY(${articleIds})`;
+  return new Map(rows.map((r) => [r.id, assessEvidence({
+    url: r.url, title: r.title, body: r.body, excerpt: r.excerpt, postText: r.post, firstParty: r.first_party, upstreams: r.upstreams, otherReports: r.others,
+  })]));
+}
+
+/** Candidates are checked for evidence in batches of this many, best first. */
+const EVIDENCE_BATCH = 20;
+
+export interface Abstention { article_id: string; reason: string; detail: string }
+
+/**
+ * capPerSource with the evidence check: candidates whose evidence is insufficient are skipped, and those
+ * that ranked above the last pick (or anywhere checked, when the issue stays short) are returned as
+ * abstentions — the issue gets fewer items, never a weaker one in their place.
+ */
+export async function pickWithEvidence(ranked: IssueCandidate[], taken: IssueCandidate[], db: Db): Promise<{ picked: IssueCandidate[]; abstained: Abstention[] }> {
+  const verdicts = new Map<string, EvidenceVerdict>();
+  for (let checked = 0; ; checked += EVIDENCE_BATCH) {
+    const batch = ranked.slice(checked, checked + EVIDENCE_BATCH).map((c) => c.article_id);
+    for (const [id, v] of await evidenceVerdicts(batch, db)) verdicts.set(id, v);
+    const seen = ranked.slice(0, checked + EVIDENCE_BATCH);
+    const picked = capPerSource(seen, ISSUE_SIZE, bySource, taken, (c) => verdicts.get(c.article_id)?.sufficient ?? false);
+    const full = taken.length + picked.length >= ISSUE_SIZE;
+    if (!full && seen.length < ranked.length) continue;
+    const last = full ? seen.indexOf(picked[picked.length - 1]!) : seen.length - 1;
+    const abstained = seen.slice(0, last + 1).flatMap((c) => {
+      const v = verdicts.get(c.article_id);
+      return v && !v.sufficient ? [{ article_id: c.article_id, reason: v.reason, detail: v.detail }] : [];
+    });
+    return { picked, abstained };
+  }
+}
+
 /** True when the issue's date already has a row (fixed, or kept empty for the day). */
 async function issueExists(userId: string, date: string, db: Db): Promise<boolean> {
   return Boolean((await db`SELECT 1 FROM user_issues WHERE user_id = ${userId} AND issue_date = ${date} LIMIT 1`).length);
@@ -171,7 +221,9 @@ export async function ensureIssue(userId: string, opts: { now?: Date; db?: Db } 
   const write = async (tx: Db): Promise<"exists" | "empty" | "written"> => {
     await tx`SELECT pg_advisory_xact_lock(hashtext(${`issue:${userId}`}))`;
     if (await issueExists(userId, date, tx)) return "exists";
-    const items = capPerSource(await issueCandidates(userId, since, cutoff, tx), ISSUE_SIZE, bySource);
+    const fresh0 = await pickWithEvidence(await issueCandidates(userId, since, cutoff, tx), [], tx);
+    const items = fresh0.picked;
+    const abstained = [...fresh0.abstained];
     const fresh = items.length;
     // A short day is filled from the days before this window that were never shown: the same gate
     // over the previous 72 hours, best first, until the issue is full. The first issue has no
@@ -184,11 +236,14 @@ export async function ensureIssue(userId: string, opts: { now?: Date; db?: Db } 
         const seenStories = new Set(items.map((i) => i.story).filter((s): s is string => s !== null));
         const earlier = (await issueCandidates(userId, fillSince, since, tx))
           .filter((c) => !seenArticles.has(c.article_id) && (c.story === null || !seenStories.has(c.story)));
-        items.push(...capPerSource(earlier, ISSUE_SIZE, bySource, items));
+        const fill = await pickWithEvidence(earlier, items, tx);
+        items.push(...fill.picked);
+        abstained.push(...fill.abstained);
       }
     }
     const filled = items.length - fresh;
     if (filled > 0) console.log(JSON.stringify({ level: "info", msg: "issue filled from earlier days", userId, date, fresh, filled }));
+    if (abstained.length) console.log(JSON.stringify({ level: "info", msg: "issue abstained", userId, date, abstained: abstained.map((a) => `${a.article_id}:${a.reason}`) }));
     if (items.length < ISSUE_SIZE) console.warn(JSON.stringify({ level: "warn", msg: "issue short", userId, date, items: items.length }));
     // The first ever issue needs candidates; nothing shows otherwise and nothing is written — the
     // client's 第一期正在准备. Every later day keeps a row, an empty day's issue_no stays NULL.
@@ -200,6 +255,10 @@ export async function ensureIssue(userId: string, opts: { now?: Date; db?: Db } 
       await tx`INSERT INTO user_issue_items (user_id, issue_date, position, article_id, project_id, story_id, score, listed_at)
                VALUES (${userId}, ${date}, ${index + 1}, ${item.article_id}, ${item.project_id}, ${item.story}, ${item.score}, ${item.listed_at})
                ON CONFLICT DO NOTHING`;
+    }
+    for (const a of abstained) {
+      await tx`INSERT INTO issue_abstentions (user_id, issue_date, article_id, reason, detail)
+               VALUES (${userId}, ${date}, ${a.article_id}, ${a.reason}, ${a.detail}) ON CONFLICT DO NOTHING`;
     }
     return "written";
   };

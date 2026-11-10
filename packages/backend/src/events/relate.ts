@@ -131,6 +131,35 @@ export function looksLikeRoundup(cands: CandidateView[], verdicts: Map<number, V
   return cands.length > 0 && cands.every((c) => verdicts.get(c.factId)?.relation === "ROUNDUP");
 }
 
+/** A merge with a candidate less similar than this is confirmed by the review model before it is written. */
+export const CONFIRM_BELOW_COSINE = 0.85;
+
+export interface GroupResolution {
+  verdict: "same-fact" | "new-fact-in-story" | "roundup" | "new-story";
+  factId: number | null;
+  storyId: number | null;
+}
+
+/**
+ * Where a report goes once the judge has answered for every candidate: the most confident
+ * same-occurrence candidate (confirmed by `review` when its similarity is below CONFIRM_BELOW_COSINE;
+ * a review that sees the same story attaches to a root's story instead), else the story a development
+ * joins, else a roundup or a new story. Pure apart from `review` (the pair model in production, the
+ * recorded answers in the grouping eval).
+ */
+export async function resolveGroup(cands: CandidateView[], verdicts: Map<number, Verdict>, review: (pick: CandidateView) => Promise<Relation>): Promise<GroupResolution> {
+  for (const pick of sameOccurrence(cands, verdicts)) {
+    if (pick.score >= CONFIRM_BELOW_COSINE) return { verdict: "same-fact", factId: pick.factId, storyId: pick.storyId };
+    const relation = await review(pick);
+    if (relation === "SAME_OCCURRENCE") return { verdict: "same-fact", factId: pick.factId, storyId: pick.storyId };
+    if (relation === "SAME_STORY" && pick.storyRoot) return { verdict: "new-fact-in-story", factId: null, storyId: pick.storyId };
+  }
+  const dev = storyForDevelopment(cands, verdicts);
+  if (dev) return { verdict: "new-fact-in-story", factId: null, storyId: dev.storyId };
+  if (looksLikeRoundup(cands, verdicts)) return { verdict: "roundup", factId: null, storyId: null };
+  return { verdict: "new-story", factId: null, storyId: null };
+}
+
 /** A discussion post counts for a fact it reports, or one it clearly reacts to. */
 export function signalTarget(cands: CandidateView[], verdicts: Map<number, Verdict>, minReactionConfidence = 0.8): CandidateView | null {
   return (
