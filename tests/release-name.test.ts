@@ -7,13 +7,15 @@ import path from "node:path";
 import { REPO_ROOT, releaseName } from "@topka/backend/config";
 
 const version = JSON.parse(readFileSync(path.join(REPO_ROOT, "package.json"), "utf8")).version as string;
+/** The version, optionally followed by "+<short commit>". */
+const isRelease = (r: string) => r === version || (r.startsWith(`${version}+`) && /^[0-9a-f]{7,40}$/.test(r.slice(version.length + 1)));
 
 test("release is the package.json version, with the short commit when git is there", () => {
   delete process.env.TOPKA_RELEASE;
   delete process.env.TOPKA_RELEASE;
   const r = releaseName();
   assert.notEqual(r, "dev");
-  assert.match(r, new RegExp(`^${version.replace(/\./g, "\\.")}(\\+[0-9a-f]{7,40})?$`));
+  assert.ok(isRelease(r), r);
   assert.equal(releaseName(), r, "stable across calls");
 });
 
@@ -24,7 +26,7 @@ test("TOPKA_RELEASE wins when set", () => {
   } finally {
     delete process.env.TOPKA_RELEASE;
   }
-  assert.match(releaseName(), new RegExp(`^${version.replace(/\./g, "\\.")}`));
+  assert.ok(isRelease(releaseName()));
 });
 
 test("/api/health reports that release", async () => {
@@ -38,7 +40,7 @@ test("/api/health reports that release", async () => {
     const body = res.json() as { ok: boolean; release: string };
     assert.equal(body.ok, true);
     assert.equal(body.release, releaseName());
-    assert.match(body.release, new RegExp(`^${version.replace(/\./g, "\\.")}`));
+    assert.ok(isRelease(body.release), body.release);
   } finally {
     await app.close();
     await closeDb();
