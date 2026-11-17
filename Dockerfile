@@ -1,6 +1,6 @@
 # One image for every role: setup (migrations and seed), api, worker and web.
 # Build arg NPM_REGISTRY switches the npm registry (e.g. https://registry.npmmirror.com in mainland China).
-FROM node:24-trixie-slim AS base
+FROM node:25-trixie-slim AS base
 WORKDIR /app
 # pg_dump for the optional database backups (Debian's client matches the PostgreSQL 17 server in compose).
 RUN apt-get update \
@@ -10,7 +10,7 @@ RUN apt-get update \
 # The web bundle is plain JavaScript, the same for every architecture: build it once, natively on the
 # build machine. Building it inside an emulated arm64 stage (QEMU) could hang in the bundler for the
 # whole job (release runs cancelled at the 60-minute limit).
-FROM --platform=$BUILDPLATFORM node:24-trixie-slim AS web
+FROM --platform=$BUILDPLATFORM node:25-trixie-slim AS web
 WORKDIR /app
 ARG NPM_REGISTRY=
 COPY package.json package-lock.json ./
