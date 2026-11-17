@@ -9,6 +9,7 @@
 // free chain.
 import { createElement, useCallback, useEffect, useRef, useState, type FC, type ReactElement } from "react";
 import { messages, problemMessage, useLocale, useT, type UiLocale } from "../../lib/i18n.ts";
+import { MODEL_DOC_URL } from "../../lib/docs-links.ts";
 import { zh } from "../../lib/locales/chat.ts";
 
 /** The free-answer chip the intake always appends (intake-core.cjs OTHER); shown in the page's language. */
@@ -53,7 +54,7 @@ export interface ProposalCard {
 const CARD_TTL_MS = 24 * 3600 * 1000;
 
 // i18n-data: the server's quota / busy replies, matched as sent; not display text.
-const BUSY_REPLY = /免费额度用完了|没有可用的免费模型|模型这会儿.*忙|对话次数用完了|没想明白/;
+const BUSY_REPLY = /免费额度用完了|没有可用的免费模型|模型这会儿.*忙|对话次数用完了|没想明白|free quota is used up|No free model is available|The model is (very|a bit) busy|used today's chat turns|could not work that out/;
 const busy = (m: ChatMsg) => m.role === "assistant" && (m.turnStatus === "deferred" || BUSY_REPLY.test(m.text ?? ""));
 
 export const CHAT_COPY = zh;
@@ -62,7 +63,10 @@ export const CHAT_COPY = zh;
 export type ChatGate = { kind: "signed-out" } | { kind: "no-model"; text: string; settings: boolean };
 
 /** The /api/me/model-status answer, as far as the chat page reads it. */
-export interface ModelStatusView { chat?: "user-key" | "instance" | "none"; reason?: string | null; byokAvailable?: boolean }
+export interface ModelStatusView { chat?: "user-key" | "instance" | "none"; reason?: string | null; byokAvailable?: boolean; instance?: { via?: string | null } | null }
+
+/** The instance's built-in demo model answers this reader (canned answers, labelled as such). */
+export const demoAnswers = (status: ModelStatusView) => status.chat === "instance" && status.instance?.via === "demo";
 
 export function gateForStatus(status: ModelStatusView, locale: UiLocale = "zh-CN"): ChatGate | null {
   const t = messages(locale).chat;
@@ -181,7 +185,19 @@ function gateBanner(gate: ChatGate, locale: UiLocale = "zh-CN"): ReactElement {
   }
   return createElement("div", { role: "alert", className: "chat-gate" },
     createElement("p", null, gate.text),
-    gate.settings ? createElement("span", { className: "btns" }, createElement("a", { href: "/settings#model-key", className: "btn dark" }, t.toSettings)) : null,
+    createElement("span", { className: "btns" },
+      gate.settings ? createElement("a", { href: "/settings#model-key", className: "btn dark" }, t.toSettings) : null,
+      createElement("a", { href: MODEL_DOC_URL, target: "_blank", rel: "noopener noreferrer", className: "btn", "data-model-docs": "" }, t.modelDocs),
+    ),
+  );
+}
+
+/** Shown above the thread while the demo model answers: what it is and how to connect a real one. */
+function demoBanner(locale: UiLocale = "zh-CN"): ReactElement {
+  const t = messages(locale).chat;
+  return createElement("div", { role: "note", className: "chat-gate", "data-demo-model": "" },
+    createElement("p", null, t.demoModel),
+    createElement("span", { className: "btns" }, createElement("a", { href: MODEL_DOC_URL, target: "_blank", rel: "noopener noreferrer", className: "btn" }, t.modelDocs)),
   );
 }
 
@@ -197,6 +213,7 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
   const [note, setNote] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [gate, setGate] = useState<ChatGate | null>(null);
+  const [demo, setDemo] = useState(false);
   const [retry, setRetry] = useState<{ clientId: string; text: string } | null>(null);
   const postTimeoutMs = props.postTimeoutMs ?? 45_000;
   const pollWindowMs = props.pollWindowMs ?? 90_000;
@@ -263,7 +280,9 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
       const res = await doFetch("/api/me/model-status");
       if (res.status === 401) return setGate({ kind: "signed-out" });
       if (!res.ok) return;
-      const g = gateForStatus((await res.json()) as ModelStatusView, locale);
+      const status = (await res.json()) as ModelStatusView;
+      setDemo(demoAnswers(status));
+      const g = gateForStatus(status, locale);
       if (g) setGate((cur) => cur ?? g);
     } catch {
       // Unknown: let the reader try; the send itself answers honestly.
@@ -496,6 +515,7 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
     createElement("div", { className: "chat-title" }, t.title),
     createElement("button", { type: "button", className: "chat-projbar", onClick: () => setShowProjects((s) => !s) }, t.projectsButton(projects.length)),
     createElement("div", { className: "chat-list" },
+      demo && !gate ? demoBanner(locale) : null,
       !messages.length && !waiting ? createElement("p", { className: "chat-hint" }, t.hint) : null,
       ...body,
       waiting ? createElement("p", { className: "chat-msg" }, createElement("span", { className: "a thinking" }, t.thinking)) : null,

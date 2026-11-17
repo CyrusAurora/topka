@@ -17,11 +17,11 @@
 
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
-docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts
-DEMO_SEED=true docker compose up -d --build
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
+docker compose up -d --build
 ```
 
-<sub>Three commands. After login you get the screenshot above — invented demo data, no API key, no crawling, no model calls.</sub>
+<sub>Three commands to install, then `docker compose logs setup | grep demo:` for the demo password; after login you get the screenshot above. Invented demo data and a built-in demo model: no API key, no crawling, no cost.</sub>
 
 [See it](#see-it) · [Quick start](#quick-start-no-api-key) · [Real sources and a model](#real-sources-and-a-model) · [How it works](#how-it-works) · [Honest limits](#honest-limits) · [Troubleshooting](#troubleshooting)
 
@@ -45,24 +45,32 @@ Past issues stay under Archive:
 
 ## Quick start (no API key)
 
-**Need:** Docker Compose v2 (`docker compose version` prints a version), `git`, ~3 GB disk, port 3000 free. 2 cores / 4 GB is enough. No Node, PostgreSQL, API key, or GPU. If 3000 is taken, prefix commands with `PORT=127.0.0.1:3300`. Loopback-only by default; for other machines see [HTTPS](docs/self-hosting.md#https-caddy-profile).
+**Need:** Docker Compose v2 (`docker compose version` prints a version), `git`, ~3 GB disk. 2 cores / 4 GB is enough. No Node, PostgreSQL, API key, or GPU. It uses port 3000 on this machine only by default; for other machines see [HTTPS](docs/self-hosting.md#https-caddy-profile).
+
+**The port is set in one place:** `PORT` in `.env`. If 3000 is taken, add `--port 127.0.0.1:3300` to the `init-env.ts` command in step 1 (already have a `.env`? edit its `PORT=` line). Every later `docker compose up` uses it, and the site's links, RSS and feed addresses follow it; nothing else to change.
 
 **1. Clone and generate `.env`**
 
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
-docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
 ```
 
-It prints the admin password, and a line about filling `LLM_API_KEY` — ignore that for the demo.
+It prints the site address and the admin password. `--demo` writes `DEMO_SEED=true` to `.env`: startup loads the demo content, and until a model is connected the built-in demo model answers in Chat. The `LLM_API_KEY is empty` line can wait. Running it again never overwrites an existing `.env` (passwords and secrets stay). Add `--locale en` for an English site with English demo stories (the screenshots show the default Chinese demo).
 
-**2. Start with demo data**
+**2. Start**
 
 ```bash
-DEMO_SEED=true docker compose up -d --build
+docker compose up -d --build
 ```
 
-First build takes about 5–15 minutes. It brings up the database, runs migrations, and seeds a demo reader, the project “人形机器人量产（示例）”, and three days of invented cards.
+The first build takes from half a minute to a quarter of an hour, depending on the network. It brings up the database, runs migrations, imports the sources and the four project packs (all switched off), and seeds a demo reader, the project “人形机器人量产（示例）”, and three days of invented cards.
+
+Check it is up (this asks this stack's own port, so it stays right after a `PORT` change; give it a few seconds after start):
+
+```bash
+curl -s "http://$(docker compose port web 3000)/api/health"   # {"ok":true,"db":"ok",…}
+```
 
 **3. Get the demo password and sign in**
 
@@ -72,18 +80,20 @@ docker compose logs setup | grep demo:
 
 ```text
 setup-1  | demo: ready. Log in at /login as demo@example.com
-setup-1  | demo: password demo-1be4ef872d6d  (shown once; set DEMO_PASSWORD and re-run to reset it)
+setup-1  | demo: password demo-1be4ef872d6d  (shown once; to reset it: add DEMO_PASSWORD=<10+ characters> to .env, run `docker compose up -d`, then `docker compose exec api npm run demo:seed`)
 ```
 
-The password is shown once. Open <http://localhost:3000/login> as `demo@example.com`.
+The password is shown once. Open <http://localhost:3000/login> (or the address init-env printed) as `demo@example.com`.
 
 **You are done when**
 
 - Today shows **No. 003** with three 【示例】 cards, matching the hero screenshot
 - Expanding a card shows a summary; Archive has the two earlier days
-- Admin is at <http://localhost:3000/admin> with `ADMIN_PASSWORD` from `.env`
+- Chat answers, with a "Demo model" banner: a few canned questions, a tracking card, and Confirm creates the project
+- Settings → New project offers all four packs
+- Admin is at `/admin` with `ADMIN_PASSWORD` from `.env`
 
-Stuck? [Troubleshooting](#troubleshooting). Real articles without a model: [tutorial part 2](docs/tutorial.en.md#part-2-two-real-sources-still-no-model-key).
+Stuck? [Troubleshooting](#troubleshooting). Real articles without a model: [tutorial part 2](docs/tutorial.en.md#part-2-real-articles-still-no-model-key).
 
 ```bash
 docker compose down -v   # wipe including the database
@@ -95,7 +105,7 @@ docker compose down -v   # wipe including the database
 
 Demo data does not refresh. A new daily issue needs **sources on** and **a model**. Both are off by default.
 
-**Sources.** ~400 ship with the repo, imported but disabled. Enable them in `/admin/sources`, or:
+**Sources.** ~400 ship with the repo, all in the database but switched off (most come from migrations, so the setup log's "added" count is far below the total; the log prints the total too). Enable them in `/admin/sources`, or:
 
 ```bash
 docker compose exec api npm run sources:only -- --id rss-hugging-face --id rss-github-ai
@@ -109,7 +119,10 @@ LLM_API_KEY=sk-...
 LLM_MODEL=deepseek-flash
 ```
 
-Free-only: point at OpenRouter and list `:free` models in `LLM_FREE_MODELS`. Non-zero prices are refused; if none are free it waits — it never silently upgrades to a paid model. See [model connection](docs/self-hosting.md#model-connection).
+Two ways at no cost (exact lines in [Without a paid key](docs/self-hosting.md#without-a-paid-key)):
+
+- **Local Ollama**, no account: in `.env` `COMPOSE_PROFILES=ollama`, `LLM_BASE_URL=http://ollama:11434/v1`, `LLM_API_KEY=ollama`, `LLM_MODEL=qwen2.5:7b`, then `docker compose exec ollama ollama pull qwen2.5:7b`. Needs a GPU to be useful: on a CPU a 7B model breaks the required format in about half its answers, smaller ones barely work (measurements behind the link).
+- **OpenRouter `:free` models** with a free account's key, listed in `LLM_FREE_MODELS`. Non-zero prices are refused; if none are free it waits and never switches to a paid model.
 
 ```bash
 sed -i 's/^COLLECT_ENABLED=false/COLLECT_ENABLED=true/; s/^MODEL_CALLS_ENABLED=false/MODEL_CALLS_ENABLED=true/' .env
@@ -150,7 +163,8 @@ Diagrams: [docs/architecture.md](docs/architecture.md).
 
 ## Honest limits
 
-- The UI is in Chinese and English; titles and summaries in the public pool and the Chat assistant's replies stay Chinese — English covers the UI and the copy on a reader's own daily cards
+- The UI is in Chinese and English; Chat answers in the reader's language, and so does the copy on a reader's own daily cards. Titles and summaries in the public pool follow the site language (`SITE_LOCALE`); source names are the sources' own (mostly English)
+- The built-in demo model is fixed rules, not a model: it walks Chat → card → project end to end and never analyses articles
 - No full-text republication by default — summary + original link (`site_fulltext` is opt-in per source)
 - Single-node PostgreSQL; no horizontal scale-out
 - Card quality follows your model and sources; the demo is hand-written, live summaries can be wrong — the page says so
@@ -164,12 +178,16 @@ Diagrams: [docs/architecture.md](docs/architecture.md).
 | Symptom | Cause | Fix |
 |---|---|---|
 | `required variable POSTGRES_PASSWORD is missing a value` | No `.env` yet | Run `init-env` (step 1) |
-| `Bind for …:3000 failed: port is already allocated` | Port 3000 in use | Prefix with `PORT=127.0.0.1:3300` |
-| No `demo:` lines in `logs setup` | Started without `DEMO_SEED=true` | `docker compose exec api npm run demo:seed` |
-| Lost the demo password | Printed once; restarting after editing `.env` clears setup logs | Set `DEMO_PASSWORD=at-least-10-chars` in `.env`, re-run `demo:seed` |
+| `Bind for …:3000 failed: port is already allocated` | Port 3000 in use | Set `PORT=127.0.0.1:3300` in `.env`, then `docker compose up -d` |
+| `curl …/api/health` gives 200 but the page is not Topka | Another service holds that port | Use `curl -s "http://$(docker compose port web 3000)/api/health"` |
+| No `demo:` lines in `logs setup` | `.env` does not have `DEMO_SEED=true` | Set it and `docker compose up -d`, or run `docker compose exec api npm run demo:seed` |
+| Lost the demo password | Printed once; restarting after editing `.env` clears setup logs | Add `DEMO_PASSWORD=at-least-10-chars` to `.env` → `docker compose up -d` (containers read `.env` only when recreated) → `docker compose exec api npm run demo:seed` |
+| A pack shows "unavailable" in New project | An upgraded database has not restarted yet, so the pack's sources are not imported | The page names the reason and the command: `docker compose exec api npm run sources:seed -- --pack <name>` |
+| Chat input is greyed out | No model and no demo model | The page links the docs; set `DEMO_SEED=true` to try it, or connect Ollama / a free model |
 | `demo:seed` refuses | Other users or real articles already in the DB | Add `-- --force`, or `docker compose down -v` and start over |
 | `.env not found. Continuing without it.` inside a container | Containers take env from Compose, not the file | Harmless |
 | Sources on, still no new articles after a few minutes | `COLLECT_ENABLED=false`, or no restart after the change | Set `true`, `docker compose up -d`; failures show in `/admin/sources` |
+| `docker compose logs` lines start with `ESC[2K` | Docker Compose's own line-clear code in non-terminal output, not printed by Topka | Harmless for grep. On Compose 2.26 neither `--ansi never` nor `--no-log-prefix` removes it; for clean text read the container log directly: `docker logs $(docker compose ps -aq setup)` |
 | Articles exist, no new cards | No model, or `MODEL_CALLS_ENABLED=false` | See [Real sources and a model](#real-sources-and-a-model); search logs for `is not configured` |
 
 More (`NO_FREE_MODEL`, reaching overseas sources from China): [troubleshooting](docs/self-hosting.md#troubleshooting).

@@ -57,7 +57,7 @@ export const ABOUT = {
   lead: `${SITE.name} 替你盯着 {sources} 个信源：抓取、归并成事件、按项目整理；每天早上 8 点出一份日报。`,
   /** 信源河动画下面的四个环节。 */
   steps: {
-    collect: "官方博客、媒体、X 账号、公众号和各类订阅源都在看；活跃的源 15 分钟就看一次。",
+    collect: "官方博客、媒体、X 账号、公众号和各类订阅源都在看；每个开着的源按各自的间隔检查：最勤的 15 分钟一次，最慢的几个小时一次。",
     store: "抓到的都存下来，同一件事的报道归到一起；只计入热度的账号也算在内，热点榜就是从这里算出来的。",
     select: "模型先看是不是这个行业的事、有没有实际信息，再写中文标题、摘要和推荐理由；营销稿和重复转发进不来。",
     publish: "每天 08:00 出日报，周一出周报，每月 1 日出月报；最精选的几条可以推到飞书群。",
@@ -95,7 +95,7 @@ export const ABOUT_EN = {
   headline: ["You name what to watch.", "It comes to you only when something moves."] as [string, string],
   lead: `${SITE.name} watches {sources} sources for you: it collects, merges coverage into events and sorts them by project, and puts out a daily issue every morning at 08:00.`,
   steps: {
-    collect: "Official blogs, media, X accounts, WeChat official accounts and all kinds of feeds; active sources are checked every 15 minutes.",
+    collect: "Official blogs, media, X accounts, WeChat official accounts and all kinds of feeds; each switched-on source is checked on its own interval: every 15 minutes for the busiest, every few hours for the quietest.",
     store: "Everything collected is kept, and coverage of the same story is grouped; accounts that only count toward heat are included, which is where the trending list comes from.",
     select: "A model first checks that it belongs to this field and carries real information, then writes the title, summary and reason; marketing copy and reposts stay out.",
     publish: "A daily issue at 08:00, a weekly on Mondays and a monthly on the 1st; the very best items can be pushed to a Feishu group.",

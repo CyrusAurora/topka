@@ -27,7 +27,8 @@ export async function collectFindings(now = Date.now()): Promise<Finding[]> {
   const settled = !hb?.value.startedAt || now - Date.parse(hb.value.startedAt) > 20 * 60_000;
   if (settled && collecting()) {
     const [last] = await sql<{ at: Date | null }[]>`SELECT max(discovered_at) AS at FROM articles WHERE discovered_at > ${new Date(now - 4 * QUIET_MS)}`;
-    const [anySource] = await sql`SELECT 1 FROM sources WHERE enabled LIMIT 1`;
+    // Scheduled sources only: an `external` row (pushed items, the offline demo) is never fetched.
+    const [anySource] = await sql`SELECT 1 FROM sources WHERE enabled AND kind <> 'external' LIMIT 1`;
     if (anySource && (!last?.at || now - last.at.getTime() > QUIET_MS)) {
       out.push({
         key: "content.collect",

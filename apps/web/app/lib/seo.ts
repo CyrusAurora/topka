@@ -2,15 +2,16 @@
 // and wording come from the industry pack (industry/site.ts); its address from SITE_URL.
 import type { MetaDescriptor } from "react-router";
 import { SITE, siteCopy } from "@topka/industry/site";
+import { siteAddress } from "@topka/contracts/address";
 import type { UiLocale } from "./i18n.ts";
 
 /**
- * The site's address: SITE_URL while rendering on the server (what crawlers and share previews read),
+ * The site's address: SITE_URL (or the address PORT implies) while rendering on the server (what crawlers and share previews read),
  * the page's own origin in the browser.
  */
 export function siteUrl(): string {
   if (typeof window !== "undefined") return window.location.origin;
-  return (process.env.SITE_URL || SITE.defaultUrl).replace(/\/+$/, "");
+  return siteAddress(process.env, SITE.defaultUrl);
 }
 
 export const HOME_TITLE = SITE.homeTitle;

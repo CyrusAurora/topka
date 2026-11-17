@@ -623,7 +623,7 @@ test("a reader who picks English sees no Chinese on any page; back to 简体中�
   assert.equal(await page.locator("[data-testid=timezone-select]").inputValue(), "America/New_York");
   // Click through the creation wizard: pick a pack, then the sources step and the naming step. A pack
   // is offered once one of its sources is a real editorial row, so make the first one real.
-  const [pack] = await sql<{ label: string; sources: Array<{ id: string; name: string }> }[]>`SELECT label, sources FROM source_packs ORDER BY id LIMIT 1`;
+  const [pack] = await sql<{ label: string; label_en: string | null; sources: Array<{ id: string; name: string }> }[]>`SELECT label, label_en, sources FROM source_packs ORDER BY id LIMIT 1`;
   assert.ok(pack?.sources[0], "a seeded pack with a source");
   await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, enabled, next_fetch_at)
     VALUES (${pack.sources[0].id}, ${pack.sources[0].name}, 'rss', 'T1', 'editorial', false, '2100-01-01')
@@ -631,7 +631,10 @@ test("a reader who picks English sees no Chinese on any page; back to 简体中�
   const allowed = await dataStrings();
   await page.goto(`${WEB}/projects/new`, { waitUntil: "load" });
   await settle(page);
-  await page.locator("main button", { hasText: pack.label }).first().click();
+  // English readers see the pack's English name (migration 0062), never the Chinese one.
+  assert.ok(pack.label_en, "the pack has an English name");
+  assert.equal(await page.locator("main button", { hasText: pack.label }).count(), 0, "no Chinese pack name in the English wizard");
+  await page.locator("main button", { hasText: pack.label_en }).first().click();
   await settle(page);
   assert.deepEqual(await chineseOn(page, allowed), [], "wizard sources step");
   await shot(page, "en-projects-new-sources");

@@ -15,6 +15,7 @@ import core, { type IntakeMessage, type IntakeSession } from "./intake-core.cjs"
 export type { IntakeSession } from "./intake-core.cjs";
 import { cardOf, dailyTurnLimit, handleTurn, loadCard, newProposal, quotaReply, sourceCatalog, type TurnMeta, type TurnResult } from "./project-assistant.ts";
 import { inert, inertLine } from "../lib/untrusted.ts";
+import { readerLang, REPLIES } from "./replies.ts";
 
 export const INTAKE_PROMPT_VERSION = promptVersion("socratic-intake");
 const MAX_TEXT = 500;
@@ -78,16 +79,18 @@ export async function intakeTurn(userId: string, text: string, opts: { clientId?
     if (!external && session !== before) await saveIntake(userId, session, db);
     return { turnId, status, reply, card, meta, session };
   };
-  if (!userText) return finish("done", "说说你想跟踪或弄清楚什么。", "reply", null, null, 0, [], before);
+  const lang = await readerLang(userId, db);
+  const say = REPLIES[lang];
+  if (!userText) return finish("done", say.emptyIntake, "reply", null, null, 0, [], before);
 
   // The reader's words go to the model inert: they cannot forge the prompt's section labels or fences.
-  const plan = core.planTurn(before, inert(userText), Date.now());
+  const plan = core.planTurn(before, inert(userText), Date.now(), lang);
   if (plan.mode === "local") return finish("done", plan.reply.text, "intake_note", null, metaOf(plan.reply), 0, [], plan.session);
 
   const [{ n }] = await db<{ n: number }[]>`
     SELECT count(*)::int AS n FROM assistant_turns WHERE user_id = ${userId} AND calls > 0
       AND created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`;
-  if (n >= dailyTurnLimit()) return finish("deferred", "今天的对话次数用完了，明早 8 点后再试。", null, null, null, 0, [], before);
+  if (n >= dailyTurnLimit()) return finish("deferred", say.turnsUsed, null, null, null, 0, [], before);
 
   const projects = (await listUserProjects(userId, db)).map((p) => `${inertLine(p.target, 80)}（${inertLine(p.purpose, 240)}）`);
   const catalog = plan.mode === "card" ? (await sourceCatalog(db)).map((c) => ({ ...c, name: inertLine(c.name, 120) })) : [];
@@ -114,8 +117,8 @@ export async function intakeTurn(userId: string, text: string, opts: { clientId?
       data = res.data;
     } catch (error) {
       if (error instanceof ModelOutputError) continue;
-      if (error instanceof BudgetExceededError) return finish("deferred", quotaReply(error), null, null, null, calls - 1, receiptIds, before);
-      return finish("failed", core.UNAVAILABLE, null, null, null, calls, receiptIds, before);
+      if (error instanceof BudgetExceededError) return finish("deferred", quotaReply(error, lang), null, null, null, calls - 1, receiptIds, before);
+      return finish("failed", core.unavailableIn(lang), null, null, null, calls, receiptIds, before);
     }
     const applied = core.applyAnswer(plan.mode, plan.session, data, ctx);
     if (!applied) continue;
@@ -135,7 +138,7 @@ export async function intakeTurn(userId: string, text: string, opts: { clientId?
     }
     return finish("done", message.text, `intake_${message.kind}`, card, metaOf(message), calls, receiptIds, session);
   }
-  return finish("failed", core.UNAVAILABLE, null, null, null, calls, receiptIds, before);
+  return finish("failed", core.unavailableIn(lang), null, null, null, calls, receiptIds, before);
 }
 
 /** The 对话 entry point: change/delete sentences go to the one-shot assistant, everything else to the intake. */

@@ -2,9 +2,10 @@
 // deploy, and CI's check of the built site on an empty database.
 //   node scripts/smoke.ts [--base http://localhost:3000]
 import { SITE } from "@topka/industry/site";
+import { siteAddress } from "@topka/contracts/address";
 
 const at = process.argv.indexOf("--base");
-const base = (at > 0 ? process.argv[at + 1] : process.env.SITE_URL) ?? "http://localhost:3000";
+const base = at > 0 && process.argv[at + 1] ? process.argv[at + 1]! : siteAddress(process.env, "http://localhost:3000");
 
 // The site is 今日 (/) and what serves it; the retired Topka pages answer with a redirect (below).
 const PAGES = ["/", "/today", "/archive", "/chat", "/settings", "/login", "/register", "/about", "/feedback", "/admin/login"];

@@ -10,6 +10,7 @@ import { encryptionConfigured, listKeys, resolveUserLlmKey } from "../accounts/u
 import { interactiveChatRoutes } from "./chat-routes.ts";
 import { chainOn } from "./free-chain.ts";
 import { freeGuardOn } from "./free-models.ts";
+import { demoModelOn } from "./demo-model.ts";
 
 export type InstanceModelReason = "model-calls-off" | "not-configured";
 
@@ -17,11 +18,13 @@ export interface InstanceModelStatus {
   available: boolean;
   /** Why not, when not available. */
   reason: InstanceModelReason | null;
-  /** Which kind of route answers ("plugin", "free-chain", "free-guard", "configured"); never a key. */
-  via: "plugin" | "free-chain" | "free-guard" | "configured" | null;
+  /** Which kind of route answers ("plugin", "free-chain", "free-guard", "configured", or the built-in "demo"); never a key. */
+  via: "plugin" | "free-chain" | "free-guard" | "configured" | "demo" | null;
 }
 
 export function instanceModelStatus(): InstanceModelStatus {
+  // demoModelOn() is only true while no real route below is usable, so it never hides one.
+  if (demoModelOn()) return { available: true, reason: null, via: "demo" };
   if (!config.modelCallsEnabled) return { available: false, reason: "model-calls-off", via: null };
   if (interactiveChatRoutes().some((r) => r.enabled() && !!r.model())) return { available: true, reason: null, via: "plugin" };
   if (chainOn()) return { available: true, reason: null, via: "free-chain" };
@@ -61,7 +64,11 @@ export async function modelStatus(userId: string): Promise<ModelStatus> {
   const problem = usable || !keys.length ? null : !keys.some((k) => k.baseUrl) || !resolved ? "missing-base-url" : "missing-model";
   const shown = resolved ? keys.find((k) => k.provider === resolved.provider) : keys[0];
   const userKey = { stored: keys.length > 0, usable, problem, last4: shown?.last4 ?? null } as ModelStatus["userKey"];
-  if (!config.modelCallsEnabled) return { chat: "none", reason: "model-calls-off", instance, byokAvailable, userKey };
+  if (!config.modelCallsEnabled) {
+    return instance.via === "demo"
+      ? { chat: "instance", reason: null, instance, byokAvailable, userKey }
+      : { chat: "none", reason: "model-calls-off", instance, byokAvailable, userKey };
+  }
   if (usable) return { chat: "user-key", reason: null, instance, byokAvailable, userKey };
   if (instance.available) return { chat: "instance", reason: null, instance, byokAvailable, userKey };
   return { chat: "none", reason: instance.reason, instance, byokAvailable, userKey };

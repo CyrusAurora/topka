@@ -6,10 +6,24 @@ All notable changes to this project are documented here. Format follows
 ## [Unreleased]
 
 The daily issue now leaves out candidates without enough evidence, and the quality of each part of the
-product is measured on its own (docs/quality.md). Upgrading runs migration `0061`.
+product is measured on its own (docs/quality.md). A fresh install works end to end with no paid key:
+every project pack is there, a labelled demo model answers 对话, and the port is set once in `.env`.
+Upgrading runs migrations `0061` and `0062`.
 
 ### Added
 
+- Built-in demo model (`DEMO_SEED=true`, or `LLM_DEMO=true`): answers 对话 and writes card copy offline
+  with fixed rules, labelled 「演示模型」 / "Demo model" in the UI; it never analyses articles and steps
+  aside once a real model is configured. `init-env.ts --demo` turns it on.
+- `init-env.ts --port <host:port>` and `--locale en`; `PORT` in `.env` is the one place for the address:
+  the site URL, the web server, the smoke check and the docs' health check follow it (`SITE_URL` /
+  `SITE_DOMAIN` still override).
+- Setup imports every shipped project pack (insert-only; English names in migration `0062`). An
+  unavailable pack says why and gives the command; the wizard and project pages say when collection or a
+  model is off and link the docs. `sources:seed` without `--pack` lists the packs.
+- Docs: 「Without a paid key」 (demo model, Ollama with measured results, OpenRouter `:free`),
+  「Project packs」, 「Switching sources on」, and a tutorial part on building your own project.
+- `docs:links` checks `#anchors` as well as files.
 - Quality evals: `npm run eval` measures coverage, relevance, dedup/grouping, citation completeness,
   source independence, freshness, abstention and time saved, each against its own labelled set or
   snapshot in `eval/` and its own thresholds (`eval/thresholds.json`); no combined score. CI runs
@@ -23,6 +37,17 @@ product is measured on its own (docs/quality.md). Upgrading runs migration `0061
 
 ### Changed
 
+- 对话 replies, quota and error lines follow the reader's language; English readers get English
+  questions and cards.
+- Project page: 「关联 N 个信源 · 开着 M 个」 and which time window it shows (last 24 hours, since your last
+  visit, or up to 7 days back); the reminder names the reader's own time zone; one collection-frequency
+  description everywhere.
+- `sources list` prints times with their zone (`+08:00`); the setup log says where the source count comes
+  from; a pack feed already in the catalogue is kept once.
+- Demo seed never blocks setup when `DEMO_SEED` stays in `.env`; the password reset is
+  `DEMO_PASSWORD` in `.env` → `docker compose up -d` → `demo:seed`.
+- The image sets `NPM_CONFIG_UPDATE_NOTIFIER=false` and ships an empty `.env`, so `docker compose exec api
+  npm run …` prints neither the npm update notice nor ".env not found".
 - Source independence: a trailing attribution ("…, Wired reported", "彭博社记者…爆料") counts as a relay;
   a background mention ("此前据…报道") does not; links on shared hosts (e.g. sogou) keep their query so
   different articles are not merged; reports from one signal group count as one voice.

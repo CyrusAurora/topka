@@ -6,6 +6,7 @@
 // flagged quiet, so a reader can be told the day was quiet. Reading never moves the checkpoint; only acknowledgeToday does,
 // and only forward. Nothing qualifying is a first-class result ("无重要变化"), never an error.
 // The same payload is what the snapshot export writes.
+import { instanceSetup } from "./instance-setup.ts";
 import { sql, type Db } from "../db.ts";
 import type { OwnedProject } from "../publication/project-owner.ts";
 
@@ -27,6 +28,11 @@ export function todayCardCount(env = process.env.TODAY_CARD_COUNT): number {
 
 export const NO_CHANGE_TITLE = "无重要变化";
 export const NO_CHANGE_DETAIL = "自上次阅读以来，关注的来源里没有达到重要更新条件的新内容。这不表示什么都没发生。";
+/** The empty state names the same window as the page's source line (trial 2026-11-10: 「最近 24 小时」 above 「自上次阅读以来」). */
+export function noChangeDetail(basis: "checkpoint" | "default" | "capped"): string {
+  if (basis === "checkpoint") return NO_CHANGE_DETAIL;
+  return `${basis === "capped" ? "最近 7 天里" : "最近 24 小时里"}，关注的来源没有达到重要更新条件的新内容。这不表示什么都没发生。`;
+}
 export const TODAY_NOTICE = "全部内容仅为发布方声明、未独立核验；中文标题和摘要由模型生成，是分析，不是证据，以原文为准。";
 
 export type TodayResult = "updates-available" | "no-important-change";
@@ -61,7 +67,12 @@ export interface TodayPayload {
   /** Left-open, right-closed: listedAt > since and <= until. `until` is what an acknowledgement sends back. */
   window: { since: string; until: string; basis: "checkpoint" | "default" | "capped" };
   checkpoint: { readThrough: string | null };
-  sources: { linked: number; active: number };
+  /**
+   * linked: bound to the project; active: switched on and not paused; scheduled: the active ones the
+   * worker fetches (not `external`); collectionOn: COLLECT_ENABLED; analysisOn: a real model analyses
+   * new articles. The page explains a gap between them.
+   */
+  sources: { linked: number; active: number; scheduled: number; collectionOn: boolean; analysisOn: boolean };
   result: TodayResult;
   emptyState: { title: string; detail: string } | null;
   items: TodayItem[];
@@ -105,8 +116,9 @@ export async function buildToday(project: OwnedProject, userId: string, opts: { 
   else if (checkpoint < floor) [since, basis] = [floor, "capped"];
   else [since, basis] = [checkpoint, "checkpoint"];
 
-  const [counts] = await db<{ linked: number; active: number }[]>`
-    SELECT count(*)::int AS linked, count(*) FILTER (WHERE s.enabled AND NOT ps.paused)::int AS active
+  const [counts] = await db<{ linked: number; active: number; scheduled: number }[]>`
+    SELECT count(*)::int AS linked, count(*) FILTER (WHERE s.enabled AND NOT ps.paused)::int AS active,
+           count(*) FILTER (WHERE s.enabled AND NOT ps.paused AND s.kind <> 'external')::int AS scheduled
     FROM project_sources ps JOIN sources s ON s.id = ps.source_id WHERE ps.project_id = ${project.id}`;
 
   // Listed like the public pool (eligible, public, a selected item only after its release gate);
@@ -183,9 +195,9 @@ export async function buildToday(project: OwnedProject, userId: string, opts: { 
     generatedAt: now.toISOString(),
     window: { since: since.toISOString(), until: now.toISOString(), basis },
     checkpoint: { readThrough: iso(checkpoint) },
-    sources: { linked: counts?.linked ?? 0, active: counts?.active ?? 0 },
+    sources: { linked: counts?.linked ?? 0, active: counts?.active ?? 0, scheduled: counts?.scheduled ?? 0, ...instanceSetup() },
     result,
-    emptyState: result === "no-important-change" ? { title: NO_CHANGE_TITLE, detail: NO_CHANGE_DETAIL } : null,
+    emptyState: result === "no-important-change" ? { title: NO_CHANGE_TITLE, detail: noChangeDetail(basis) } : null,
     items,
     cardCount: limit,
     candidates,

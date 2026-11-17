@@ -30,6 +30,7 @@ export interface SettingsKeyStatus {
 
 export interface SettingsModelStatus {
   chat: "user-key" | "instance" | "none";
+  instance?: { via?: string | null } | null;
   reason: "model-calls-off" | "not-configured" | null;
   byokAvailable: boolean;
   userKey: { stored: boolean; usable: boolean; problem: "missing-base-url" | "missing-model" | null; last4: string | null };
@@ -40,7 +41,7 @@ export function chatModelLine(status: SettingsModelStatus | null | undefined, lo
   const t = messages(locale).settings;
   if (!status) return { text: t.modelUnknown, tone: "warn" };
   if (status.chat === "user-key") return { text: `${t.modelUser}${status.userKey.last4 ? t.modelUserLast4(status.userKey.last4) : ""}`, tone: "ok" };
-  if (status.chat === "instance") return { text: t.modelInstance, tone: "ok" };
+  if (status.chat === "instance") return status.instance?.via === "demo" ? { text: t.modelDemo, tone: "warn" } : { text: t.modelInstance, tone: "ok" };
   if (status.reason === "model-calls-off") return { text: t.modelOff, tone: "warn" };
   return { text: status.byokAvailable ? t.modelNoneByok : t.modelNone, tone: "warn" };
 }
@@ -421,7 +422,7 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
 
       createElement("section", { className: "settings-section", id: "reminder" },
         createElement("h2", null, t.feedHeading),
-        createElement("p", { className: "settings-note" }, t.feedLead),
+        createElement("p", { className: "settings-note", "data-feed-lead": "" }, t.feedLead(v.account?.timezone ?? "Asia/Shanghai")),
         createElement("div", { className: "settings-row" },
           createElement("span", null, t.feedStatusLabel),
           createElement("span", { className: "v", "data-testid": "feed-state" }, feed.enabled ? t.feedOn : t.feedOff),

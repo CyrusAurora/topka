@@ -11,11 +11,20 @@
 //
 // The demo reader is demo@example.com. Its password is DEMO_PASSWORD when set, otherwise a random one
 // printed once when the account is created. A re-run leaves the password alone unless DEMO_PASSWORD is
-// set, in which case it is reset to that value.
+// set, in which case it is reset to that value. In docker compose the containers read .env only when
+// they are (re)created, so after adding DEMO_PASSWORD run `docker compose up -d` first, or pass it to
+// this one run: `docker compose exec -e DEMO_PASSWORD=… api npm run demo:seed`.
 //
-// Safety rule: the seed refuses (exit 1) when the database holds anything that is not the demo's own:
+// Language: the stories are written in Chinese, or in English when SITE_LOCALE=en (the site's content
+// language). The demo sources are `external` rows (items arrive by import, nothing is ever fetched)
+// and switched on, so the demo project's own page shows the same stories as 今日.
+//
+// Safety rule: a first seed refuses (exit 1) when the database holds anything that is not the demo's own:
 // a user other than demo@example.com, or an article from a source that is not a demo source. --force
-// overrides this (the demo rows are then added next to the existing ones; nothing is deleted).
+// overrides this (the demo rows are then added next to the existing ones; nothing is deleted). Once the
+// demo reader exists the check is skipped: a re-run only refreshes the demo's own rows, so DEMO_SEED=true
+// can stay in .env after real sources are switched on. With --if-enabled a refusal is reported and exits
+// 0, so it never stops the stack from starting.
 //
 // Idempotent: sources, articles, publications and card copy are upserted by fixed ids/URLs; the account
 // and the project are reused when they exist; the issues are only written when the demo reader has none
@@ -36,17 +45,23 @@ const { values } = parseArgs({ args: process.argv.slice(2), options: { force: { 
 
 if (values["if-enabled"] && (process.env.DEMO_SEED ?? "").trim().toLowerCase() !== "true") process.exit(0);
 
+const EN = (process.env.SITE_LOCALE ?? "").trim().toLowerCase().startsWith("en");
+
 const SOURCES = [
-  { id: "demo-robot-letter", name: "示例机器人通讯" },
-  { id: "demo-embodied-weekly", name: "示例具身智能周刊" },
-  { id: "demo-factory-notes", name: "示例工厂自动化笔记" },
+  { id: "demo-robot-letter", name: EN ? "Example Robotics Letter" : "示例机器人通讯" },
+  { id: "demo-embodied-weekly", name: EN ? "Example Embodied AI Weekly" : "示例具身智能周刊" },
+  { id: "demo-factory-notes", name: EN ? "Example Factory Automation Notes" : "示例工厂自动化笔记" },
 ] as const;
+
+const PROJECT = EN
+  ? { target: "Humanoid robot mass production (example)", purpose: "Example project: follow humanoid robots from prototype to mass production" }
+  : { target: "人形机器人量产（示例）", purpose: "示例项目：跟踪人形机器人从样机到量产的进展" };
 const DEMO_SOURCE_IDS = SOURCES.map((s) => s.id);
 
 interface Story { source: string; title: string; core: string; summary: string; tag: string; score: number }
 
 // Index 0 is today, 1 yesterday, 2 the day before. Three stories a day, best first.
-const DAYS: Story[][] = [
+const DAYS_ZH: Story[][] = [
   [
     { source: "demo-robot-letter", score: 92, tag: "量产", title: "【示例】虚构公司“星桥机器人”宣布人形机器人试产线每周下线 50 台",
       core: "示例数据：从样机走向小批量，关键在于关节模组的良率。",
@@ -82,6 +97,44 @@ const DAYS: Story[][] = [
   ],
 ];
 
+const DAYS_EN: Story[][] = [
+  [
+    { source: "demo-robot-letter", score: 92, tag: "mass production", title: "[Example] Fictional company Starbridge Robotics says its humanoid pilot line now ships 50 units a week",
+      core: "Example data: from prototype to small batches, joint-module yield is the deciding factor.",
+      summary: "This is an invented story for the demo. The fictional company Starbridge Robotics says its humanoid pilot line has settled at 50 units a week and joint-module yield rose from 70% to 92%. All numbers are examples; the card shows what a complete Today card looks like: title, one-line takeaway, summary, tag and source." },
+    { source: "demo-embodied-weekly", score: 88, tag: "models", title: "[Example] Open vision-language-action model \"Example VLA-2\" gains 12 points on a simulated grasping benchmark",
+      core: "Example data: the same weights run on three robot arms without retraining.",
+      summary: "Demo content, not a real release. A fictional open VLA model raised its success rate on a fictional simulated grasping benchmark from 61% to 73%; the authors credit more varied teleoperation data. This summary shows the full text you see when a card is expanded." },
+    { source: "demo-factory-notes", score: 84, tag: "supply chain", title: "[Example] Fictional supplier brings dexterous-hand cost under $400 per hand",
+      core: "Example data: tendon drives replace micro motors and cut the part count by 40%.",
+      summary: "Example data. A fictional parts supplier says switching to tendon drives brought the bill of materials for a dexterous hand under $400 and cut the part count by about 40%. In a real deployment this is the summary a model writes from the original article." },
+  ],
+  [
+    { source: "demo-embodied-weekly", score: 90, tag: "data", title: "[Example] Fictional consortium releases 100,000 hours of household teleoperation data",
+      core: "Example data: 40 task types, including folding clothes, washing dishes and tidying desks.",
+      summary: "An invented story for the demo. A fictional research consortium released 100,000 hours of household teleoperation data across 40 task types under a permissive licence. It appears in the archive to show an earlier day's issue." },
+    { source: "demo-robot-letter", score: 86, tag: "mass production", title: "[Example] Fictional carmaker pilots 20 humanoid robots for material handling",
+      core: "Example data: a three-month pilot, starting on the night shift.",
+      summary: "Example data, not a real event. A fictional carmaker is piloting 20 humanoid robots for material handling in final assembly for three months, measured by moves per hour and human interventions." },
+    { source: "demo-factory-notes", score: 81, tag: "components", title: "[Example] Harmonic reducer passes a 10,000-hour life test (fictional)",
+      core: "Example data: service life is the second bottleneck for humanoid joints after cost.",
+      summary: "Demo content. A fictional maker reports its harmonic reducer ran 10,000 hours at rated load without failure. In a real deployment this is the key point taken from the original article." },
+  ],
+  [
+    { source: "demo-robot-letter", score: 89, tag: "funding", title: "[Example] Fictional start-up closes a Series A for bipedal gait control",
+      core: "Example data: the money mainly goes to a larger real-robot test site.",
+      summary: "An invented example story. A fictional start-up focused on bipedal gait control closed a Series A and plans to grow its real-robot test site to 2,000 square metres. Amounts and investors are examples." },
+    { source: "demo-embodied-weekly", score: 85, tag: "benchmarks", title: "[Example] Embodied AI leaderboard adds \"open a door\" and \"climb stairs\" tasks",
+      core: "Example data: the leaderboard reports simulation and real-robot results side by side.",
+      summary: "Demo data. A fictional leaderboard adds two long-horizon tasks and asks for both simulation and real-robot results, so results that only look good in simulation stand out." },
+    { source: "demo-factory-notes", score: 80, tag: "safety", title: "[Example] Draft safety standard for collaborative robots opens for comment (fictional)",
+      core: "Example data: the draft gives a first speed limit for humanoids working near people.",
+      summary: "Example content that matches no real standard. A fictional draft standard proposes speed and force limits for humanoid robots in areas shared with people, open for comment for 30 days." },
+  ],
+];
+
+const DAYS = EN ? DAYS_EN : DAYS_ZH;
+
 const slug = (day: number, i: number) => `https://example.org/topka-demo/story-${day}-${i + 1}`;
 
 function password(): { value: string; generated: boolean } {
@@ -90,22 +143,27 @@ function password(): { value: string; generated: boolean } {
   return { value: `demo-${randomBytes(6).toString("hex")}`, generated: true };
 }
 
+class Refused extends Error {}
+
 try {
-  if (!values.force) {
+  const [already] = await sql<{ id: string }[]>`SELECT id FROM users WHERE email = ${DEMO_EMAIL}`;
+  if (!values.force && !already) {
     const [others] = await sql<{ users: number; articles: number }[]>`
       SELECT (SELECT count(*)::int FROM users WHERE email <> ${DEMO_EMAIL}) AS users,
              (SELECT count(*)::int FROM articles WHERE NOT (source_id = ANY(${DEMO_SOURCE_IDS}))) AS articles`;
     if (others!.users || others!.articles) {
       console.error(`demo: this database already has real content (${others!.users} other users, ${others!.articles} non-demo articles); refusing. Pass --force to add the demo anyway.`);
-      process.exit(1);
+      process.exitCode = values["if-enabled"] ? 0 : 1;
+      throw new Refused();
     }
   }
 
-  // Sources: invented, switched off (the worker never fetches them), example.org only.
+  // Sources: invented, example.org only. `external` means items arrive by import and the worker never
+  // schedules a fetch, so they can be switched on: the demo project then reads like a live one.
   for (const s of SOURCES) {
     await sql`INSERT INTO sources (id, name, kind, config, tier, participation_mode, enabled, next_fetch_at)
-              VALUES (${s.id}, ${s.name}, 'rss', ${sql.json({ url: `https://example.org/topka-demo/${s.id}.xml` })}, 'T1', 'editorial', false, NULL)
-              ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`;
+              VALUES (${s.id}, ${s.name}, 'external', ${sql.json({ url: `https://example.org/topka-demo/${s.id}.xml` })}, 'T1', 'editorial', true, NULL)
+              ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, kind = 'external', enabled = true, next_fetch_at = NULL`;
   }
 
   // The reader, through the real registration code path (open mode: the demo needs no invite).
@@ -120,7 +178,7 @@ try {
   }
 
   const sources = SOURCES.map((s) => ({ sourceId: s.id, required: false }));
-  const { project, created } = await createProject({ ownerId: user.id, target: "人形机器人量产（示例）", purpose: "示例项目：跟踪人形机器人从样机到量产的进展", sources });
+  const { project, created } = await createProject({ ownerId: user.id, target: PROJECT.target, purpose: PROJECT.purpose, sources });
   if (!created) await bindProjectSources(project.id, sources);
 
   const today = currentIssueDate(new Date());
@@ -157,9 +215,12 @@ try {
   }
 
   console.log(`demo: ready. Log in at /login as ${DEMO_EMAIL}`);
-  if (pw) console.log(`demo: password ${pw.value}${pw.generated ? "  (shown once; set DEMO_PASSWORD and re-run to reset it)" : " (from DEMO_PASSWORD)"}`);
-  else console.log("demo: account already existed, password unchanged (set DEMO_PASSWORD and re-run to reset it)");
+  const howToReset = "to reset it: add DEMO_PASSWORD=<10+ characters> to .env, run `docker compose up -d`, then `docker compose exec api npm run demo:seed`";
+  if (pw) console.log(`demo: password ${pw.value}${pw.generated ? `  (shown once; ${howToReset})` : " (from DEMO_PASSWORD)"}`);
+  else console.log(`demo: account already existed, password unchanged (${howToReset})`);
   console.log(`demo: project ${project.id}, issues ${haveIssues ? "already present, left as they were" : `written for ${dayDate(2)}, ${dayDate(1)} and ${today}`}`);
+} catch (error) {
+  if (!(error instanceof Refused)) throw error;
 } finally {
   await closeDb();
 }

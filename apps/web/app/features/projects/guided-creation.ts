@@ -6,6 +6,7 @@ import { createElement, useEffect, useState, type FC, type ReactElement } from "
 import { SOURCE_REGION_TOKENS, sourceMatchesRegionFilter } from "@topka/contracts/regions";
 import { messages, problemMessage, useLocale, useT, type UiLocale } from "../../lib/i18n.ts";
 import { zh } from "../../lib/locales/projects.ts";
+import { MODEL_DOC_URL, SOURCES_DOC_URL } from "../../lib/docs-links.ts";
 
 export interface PackSourceView {
   id: string;
@@ -17,9 +18,18 @@ export interface PackSourceView {
 export interface PackView {
   id: string;
   label: string;
+  /** English name, shown to English readers when present. */
+  labelEn?: string | null;
   sources: PackSourceView[];
   /** The pack's sources are real, collectable rows in this instance. */
   available?: boolean;
+  /** Why not available (the API's answer): sources not imported, or none in the chosen region. */
+  reason?: "not-imported" | "region-empty" | null;
+}
+
+/** The pack's name in the reader's language. */
+export function packLabel(pack: Pick<PackView, "label" | "labelEn">, locale: UiLocale = "zh-CN"): string {
+  return locale === "en" && pack.labelEn ? pack.labelEn : pack.label;
 }
 
 export interface PrefsView {
@@ -41,9 +51,10 @@ export function assemblePurpose(pack: PackView, picks: readonly string[], locale
   const names = picks
     .map((id) => pack.sources.find((source) => source.id === id)?.name)
     .filter((name): name is string => Boolean(name));
-  if (names.length === 0) return t.purposeAll(pack.label, pack.sources.length);
-  if (names.length <= 3) return t.purposePicks(pack.label, names.join(t.namesJoin));
-  return t.purposePicksMany(pack.label, names.slice(0, 3).join(t.namesJoin), names.length);
+  const label = packLabel(pack, locale);
+  if (names.length === 0) return t.purposeAll(label, pack.sources.length);
+  if (names.length <= 3) return t.purposePicks(label, names.join(t.namesJoin));
+  return t.purposePicksMany(label, names.slice(0, 3).join(t.namesJoin), names.length);
 }
 
 /**
@@ -52,20 +63,32 @@ export function assemblePurpose(pack: PackView, picks: readonly string[], locale
  * pack label to fall back on — refuses as 「起个名字再创建。」. With a pack, an empty name simply
  * falls back to the pack label and nothing is refused.
  */
-export function validateDraft(input: { target: string; purpose: string; pack: PackView | null }): "goal-purpose" | "name" | null {
+export function validateDraft(input: { target: string; purpose: string; pack: PackView | null; locale?: UiLocale }): "goal-purpose" | "name" | null {
   if (!input.purpose.trim()) return "goal-purpose";
-  const effective = input.target.trim() || input.pack?.label.trim() || "";
+  const effective = input.target.trim() || (input.pack ? packLabel(input.pack, input.locale).trim() : "");
   if (!effective) return "name";
   return null;
 }
 
-export function effectiveTarget(name: string, pack: PackView | null): string {
-  return name.trim() || (pack?.label.trim() ?? "");
+export function effectiveTarget(name: string, pack: PackView | null, locale: UiLocale = "zh-CN"): string {
+  return name.trim() || (pack ? packLabel(pack, locale).trim() : "");
 }
 
 /** Filter a pack's sources by region (same rule as the API: empty = all, `global` always visible). */
 export function filterSourcesByRegion(sources: readonly PackSourceView[], filter: readonly string[]): PackSourceView[] {
   return sources.filter((source) => sourceMatchesRegionFilter(source.regions ?? ["global"], filter));
+}
+
+/** Says which instance switch keeps a new project from filling (collection, a model), with the docs. */
+function setupNotice(instance: WizardState["instance"], t: ReturnType<typeof useT>["projects"]["wizard"]): ReactElement | null {
+  if (!instance || (instance.collectionOn && instance.analysisOn)) return null;
+  const link = (href: string, text: string) => createElement("a", { href, target: "_blank", rel: "noopener noreferrer", className: "mr-4 mt-1.5 inline-block underline" }, text);
+  return createElement("div", { role: "note", className: "mt-3 rounded-2xl bg-bg-sunk px-4 py-3 text-[12.5px] leading-relaxed text-ink-2", "data-wizard-setup": "" },
+    instance.collectionOn ? null : createElement("p", null, t.setupCollectionOff),
+    instance.analysisOn ? null : createElement("p", { className: instance.collectionOn ? undefined : "mt-1.5" }, t.setupAnalysisOff),
+    instance.collectionOn ? null : link(SOURCES_DOC_URL, t.setupSourcesDoc),
+    instance.analysisOn ? null : link(MODEL_DOC_URL, t.setupModelDoc),
+  );
 }
 
 // --- the component -----------------------------------------------------------
@@ -86,6 +109,8 @@ interface WizardState {
   createdProject: { id: string; target: string; purpose: string } | null;
   createError: string | null;
   regionFilter: string[];
+  /** The instance switches a new project depends on; null when the API did not say. */
+  instance: { collectionOn: boolean; analysisOn: boolean } | null;
 }
 
 const initialState: WizardState = {
@@ -102,6 +127,7 @@ const initialState: WizardState = {
   createdProject: null,
   createError: null,
   regionFilter: [],
+  instance: null,
 };
 
 export interface GuidedCreationProps {
@@ -124,7 +150,10 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
           setState((s) => ({ ...s, phase: "unavailable" }));
           return;
         }
-        const packsBody = (await packsRes.json()) as { packs?: PackView[] };
+        const packsBody = (await packsRes.json()) as { packs?: PackView[]; instance?: { collectionOn?: unknown; analysisOn?: unknown } };
+        const instance = packsBody.instance && typeof packsBody.instance === "object"
+          ? { collectionOn: packsBody.instance.collectionOn !== false, analysisOn: packsBody.instance.analysisOn !== false }
+          : null;
         let prefs: PrefsView | null = null;
         try {
           const prefsRes = await doFetch("/api/pack-prefs");
@@ -136,7 +165,7 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
           // A preference that cannot be read is simply not offered back.
         }
         if (!alive) return;
-        setState((s) => ({ ...s, phase: "ready", packs: Array.isArray(packsBody.packs) ? packsBody.packs : [], prefs, step: "packs" }));
+        setState((s) => ({ ...s, phase: "ready", packs: Array.isArray(packsBody.packs) ? packsBody.packs : [], prefs, instance, step: "packs" }));
       } catch {
         if (alive) setState((s) => ({ ...s, phase: "unavailable" }));
       }
@@ -148,7 +177,7 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
   }, []);
 
   const pack = state.packId ? state.packs.find((p) => p.id === state.packId) ?? null : null;
-  const target = effectiveTarget(state.name, pack);
+  const target = effectiveTarget(state.name, pack, locale);
   const purpose = pack ? assemblePurpose(pack, state.picks, locale) : "";
 
   const choosePack = (chosen: PackView) => {
@@ -166,7 +195,7 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
   };
 
   const preview = () => {
-    const problem = validateDraft({ target: state.name, purpose, pack });
+    const problem = validateDraft({ target: state.name, purpose, pack, locale });
     setState((s) => ({ ...s, problem, step: problem ? "naming" : "confirm" }));
   };
 
@@ -212,24 +241,29 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
     const previous = state.prefs ? state.packs.find((p) => p.id === state.prefs!.packId) : null;
     body = createElement("div", null,
       previous && createElement("div", { className: "mb-5 rounded-2xl bg-bg-sunk px-4 py-3 text-[13px] text-ink-2" },
-        t.previousPicked(previous.label),
+        t.previousPicked(packLabel(previous, locale)),
         createElement("button", { type: "button", onClick: usePrevious, className: `${secondary} mt-2 w-full` }, t.usePrevious),
       ),
       createElement("div", { className: "flex flex-col gap-2" },
         state.packs.map((p) =>
           p.available === false
-            ? createElement("div", { key: p.id, className: `${secondary.replace("justify-center", "justify-between")} gap-3 opacity-55`, "aria-disabled": "true" },
-                createElement("span", null, t.packOption(p.label, p.sources.length)),
-                createElement("span", { className: "text-[12px] text-ink-3" }, t.unavailable),
+            ? createElement("div", { key: p.id, className: "rounded-2xl border border-line bg-bg-sunk px-4 py-3", "aria-disabled": "true", "data-pack-unavailable": p.id },
+                createElement("div", { className: "flex items-center justify-between gap-3 text-[14px] text-ink-3" },
+                  createElement("span", null, t.packOption(packLabel(p, locale), p.sources.length)),
+                  createElement("span", { className: "text-[12px]" }, t.unavailable),
+                ),
+                createElement("p", { className: "mt-1.5 text-[12.5px] leading-relaxed text-ink-2" },
+                  p.reason === "region-empty" ? t.unavailableRegion : t.unavailableNotImported),
+                p.reason === "region-empty" ? null : createElement("code", { className: "mt-1.5 block break-all rounded-lg bg-surface px-2 py-1 text-[12px] text-ink" }, `docker compose exec api npm run sources:seed -- --pack ${p.id}`),
               )
-            : createElement("button", { key: p.id, type: "button", onClick: () => choosePack(p), className: secondary.replace("justify-center", "justify-start") }, t.packOption(p.label, p.sources.length)),
+            : createElement("button", { key: p.id, type: "button", onClick: () => choosePack(p), className: secondary.replace("justify-center", "justify-start") }, t.packOption(packLabel(p, locale), p.sources.length)),
         ),
       ),
     );
   } else if (state.step === "sources" && pack) {
     const visible = filterSourcesByRegion(pack.sources, state.regionFilter);
     body = createElement("div", null,
-      createElement("h2", { className: "text-[15px] font-semibold text-ink" }, t.sourcesTitle(pack.label)),
+      createElement("h2", { className: "text-[15px] font-semibold text-ink" }, t.sourcesTitle(packLabel(pack, locale))),
       createElement("div", { className: "mt-3 flex flex-wrap items-center gap-1.5", "aria-label": t.regionFilterLabel },
         createElement("span", { className: "mr-1 text-[12px] text-ink-3" }, t.regionFilterLabel),
         createElement("button", {
@@ -288,7 +322,7 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
         type: "text",
         value: state.name,
         onChange: (e) => setState((s) => ({ ...s, name: (e.target as HTMLInputElement).value, problem: null })),
-        placeholder: pack.label,
+        placeholder: packLabel(pack, locale),
         className: "mt-2 h-11 w-full rounded-full border border-line-strong bg-surface px-4 text-[14.5px] text-ink outline-none transition-colors placeholder:text-ink-4 focus:border-accent",
       }),
       state.problem && createElement("p", { role: "alert", className: "mt-3 text-[12.5px] text-hot" }, state.problem === "goal-purpose" ? t.goalPurposeRequired : t.nameRequired),
@@ -298,10 +332,11 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
       ),
     );
   } else if (state.step === "confirm" && pack) {
+    const setup = setupNotice(state.instance, t);
     const names = state.picks.map((id) => pack.sources.find((source) => source.id === id)?.name).filter((n): n is string => Boolean(n));
     const summary = names.length > 0 ? t.summaryPicks(names.join(t.namesJoin)) : t.summaryAll(pack.sources.length);
     body = createElement("div", null,
-      createElement("h2", { className: "text-[16px] font-semibold text-ink" }, t.confirmTitle(pack.label)),
+      createElement("h2", { className: "text-[16px] font-semibold text-ink" }, t.confirmTitle(packLabel(pack, locale))),
       createElement("p", { className: "mt-1 text-[13px] text-ink-3" }, t.confirmSubtitle),
       createElement("p", { className: "mt-4 text-[13.5px] text-ink-2" }, t.confirmLead),
       createElement("div", { className: "mt-2 rounded-2xl border border-line bg-surface px-4 py-3" },
@@ -309,6 +344,7 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
         row(t.purposeLabel, purpose),
         row(t.sourcesSummaryLabel, summary),
       ),
+      setup,
       state.createError && createElement("p", { role: "alert", className: "mt-3 text-[12.5px] text-hot" }, state.createError),
       createElement("div", { className: "mt-6 flex gap-2" },
         createElement("button", { type: "button", onClick: () => void confirm(), disabled: state.creating || state.created, className: primary }, state.creating ? t.creating : t.confirmCreate),
@@ -323,6 +359,7 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
         row(t.purposeLabel, state.createdProject.purpose),
       ),
       createElement("p", { className: "mt-4 text-[13px] leading-relaxed text-ink-2" }, t.doneNotice),
+      setupNotice(state.instance, t),
       createElement("a", { href: "/projects", className: `${secondary} mt-6` }, t.backToOverview),
     );
   } else {

@@ -39,9 +39,13 @@ COPY . .
 COPY --from=web /app/apps/web/build apps/web/build
 
 FROM base
-ENV NODE_ENV=production
+# No "New major version of npm available" notice under every `docker compose exec api npm run …`.
+ENV NODE_ENV=production NPM_CONFIG_UPDATE_NOTIFIER=false
 COPY --from=build --chown=node:node /app /app
 RUN mkdir -p /data && chown node:node /data
+# Settings reach the containers through compose's env_file; an empty .env keeps the npm scripts'
+# `node --env-file-if-exists=.env` from printing ".env not found" inside them.
+RUN : > /app/.env && chown node:node /app/.env
 USER node
 EXPOSE 3000
 CMD ["node", "apps/web/server.ts"]

@@ -1,6 +1,7 @@
 // Lists sources and switches them on or off. Only switched-on sources are collected and processed
 // by models; switched-off ones stay in the database untouched.
 //   node --env-file=.env scripts/sources.ts list [--enabled | --disabled] [--q TEXT]
+//     (last success in the instance's schedule time, UTC+8, with the offset written out)
 //   node --env-file=.env scripts/sources.ts toggle --on|--off --id ID [--id ID ...] [--reason TEXT]
 //   node --env-file=.env scripts/sources.ts only --id ID [--id ID ...] [--reason TEXT]   (these on, all others off)
 // --id takes a source id or its exact name.
@@ -8,6 +9,7 @@ import { parseArgs } from "node:util";
 import { closeDb } from "@topka/backend/db";
 import { stopBoss } from "@topka/backend/jobs/queue";
 import { listSourceLines, onlySources, switchSources } from "@topka/backend/admin/source-switch";
+import { toBeijingIso } from "@topka/contracts/time";
 
 const USAGE = `usage:
   sources.ts list [--enabled | --disabled] [--q TEXT]
@@ -41,7 +43,7 @@ try {
     if (values.enabled && values.disabled) fail("--enabled 和 --disabled 只能选一个");
     const lines = await listSourceLines({ enabled: values.enabled ? true : values.disabled ? false : undefined, q: values.q });
     for (const s of lines) {
-      console.log([s.enabled ? "on " : "off", s.id, s.kind, s.health, `${s.articles} 篇`, s.last_ok_at ? s.last_ok_at.toISOString() : "-", s.name].join("\t"));
+      console.log([s.enabled ? "on " : "off", s.id, s.kind, s.health, `${s.articles} 篇`, s.last_ok_at ? toBeijingIso(s.last_ok_at) : "-", s.name].join("\t"));
     }
     console.log(`共 ${lines.length} 个（开 ${lines.filter((s) => s.enabled).length}）`);
   } else if (command === "toggle" || command === "only") {

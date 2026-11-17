@@ -17,11 +17,11 @@
 
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
-docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts
-DEMO_SEED=true docker compose up -d --build
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
+docker compose up -d --build
 ```
 
-<sub>三条命令，登录后就是上面那张图。用自带的虚构演示数据，不需要 API key，不抓站，不调模型。</sub>
+<sub>三条命令装好，再用 `docker compose logs setup | grep demo:` 取演示密码，登录后就是上面那张图。用自带的虚构演示数据和内置演示模型，不需要 API key，不抓站，不花钱。</sub>
 
 [看效果](#看效果) · [先跑起来](#先跑起来不要-api-key) · [接上真实信源和模型](#接上真实信源和模型) · [它怎么工作](#它怎么工作) · [诚实边界](#诚实边界) · [排错](#排错)
 
@@ -45,24 +45,32 @@ DEMO_SEED=true docker compose up -d --build
 
 ## 先跑起来（不要 API key）
 
-**需要：** Docker Compose v2（`docker compose version` 能出版本号）、`git`、约 3 GB 磁盘、本机 3000 端口空闲。2 核 4 GB 够。不需要 Node、PostgreSQL、API key、GPU。端口被占时，命令前加 `PORT=127.0.0.1:3300`。默认只在本机可访问；给外机用见 [HTTPS](docs/self-hosting.md#https-caddy-profile)。
+**需要：** Docker Compose v2（`docker compose version` 能出版本号）、`git`、约 3 GB 磁盘。2 核 4 GB 够。不需要 Node、PostgreSQL、API key、GPU。默认用本机 3000 端口，只在本机可访问；给外机用见 [HTTPS](docs/self-hosting.md#https-caddy-profile)。
+
+**端口只在一处设置：** `.env` 里的 `PORT`。3000 被占，就在第 1 步的 `init-env.ts` 后面加 `--port 127.0.0.1:3300`（已经生成过 `.env` 就直接改 `PORT=` 那一行）。之后每次 `docker compose up` 都用它，站内链接、RSS、订阅地址也跟着走，不用再改别处。
 
 **1. 克隆并生成 `.env`**
 
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
-docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
 ```
 
-会打印管理员密码，以及一句「还差一步：填 LLM_API_KEY」——演示先不用管。
+会打印网站地址和管理员密码。`--demo` 在 `.env` 里写上 `DEMO_SEED=true`：启动时写入演示数据，没接模型时「对话」由内置演示模型回答。提示 `LLM_API_KEY 还空着` 演示先不用管。再跑一次不会覆盖已有的 `.env`（密码和密钥不变）。
 
-**2. 带着演示数据启动**
+**2. 启动**
 
 ```bash
-DEMO_SEED=true docker compose up -d --build
+docker compose up -d --build
 ```
 
-首次构建大约 5–15 分钟。会起数据库、跑迁移、写入演示读者、项目「人形机器人量产（示例）」和三天虚构卡片。
+首次构建视网速从半分钟到十几分钟。会起数据库、跑迁移、导入信源和四个项目方向包（都关着）、写入演示读者、项目「人形机器人量产（示例）」和三天虚构卡片。
+
+确认起来了（问的是这个 stack 自己的端口，换了 `PORT` 也对；刚启动可能要等几秒）：
+
+```bash
+curl -s "http://$(docker compose port web 3000)/api/health"   # {"ok":true,"db":"ok",…}
+```
 
 **3. 取演示密码并登录**
 
@@ -72,16 +80,18 @@ docker compose logs setup | grep demo:
 
 ```text
 setup-1  | demo: ready. Log in at /login as demo@example.com
-setup-1  | demo: password demo-1be4ef872d6d  (shown once; set DEMO_PASSWORD and re-run to reset it)
+setup-1  | demo: password demo-1be4ef872d6d  (shown once; to reset it: add DEMO_PASSWORD=<10+ characters> to .env, run `docker compose up -d`, then `docker compose exec api npm run demo:seed`)
 ```
 
-密码只出现一次。打开 <http://localhost:3000/login>，用 `demo@example.com` 登录。
+密码只出现一次。打开 <http://localhost:3000/login>（换了端口就用 init-env 打印的地址），用 `demo@example.com` 登录。
 
 **看到这些就成了**
 
 - 「今日」是 **No. 003**，三张【示例】卡片，和页顶截图一样
 - 点标题展开摘要；「往期」有前两天
-- 后台 <http://localhost:3000/admin>，密码是 `.env` 的 `ADMIN_PASSWORD`
+- 「对话」能聊：顶部写着「演示模型」，按固定规则问两三个问题，出一张跟踪卡片，确认后建好项目
+- 「设置 → 新建项目」四个方向包都能选
+- 后台 `/admin`，密码是 `.env` 的 `ADMIN_PASSWORD`
 
 不行就看[排错](#排错)。要抓真实文章但仍不调模型： [教程第二部分](docs/tutorial.md#第二部分接两个真实信源仍然不用模型-key)。
 
@@ -95,7 +105,7 @@ docker compose down -v   # 不玩了，连库一起清
 
 演示数据不会自己变。每天出新一期需要：**打开信源** + **接上模型**。两者默认关着。
 
-**信源。** 仓库约 400 个信源，启动时导入但全关。在 `/admin/sources` 打开，或：
+**信源。** 仓库约 400 个信源，装好时都在库里但全关（大部分来自迁移，所以 setup 日志里「新增」的数目远小于总数，日志也会写出库里一共多少个）。在 `/admin/sources` 打开，或：
 
 ```bash
 docker compose exec api npm run sources:only -- --id rss-hugging-face --id rss-github-ai
@@ -109,7 +119,10 @@ LLM_API_KEY=sk-...
 LLM_MODEL=deepseek-flash
 ```
 
-只要免费模型：接 OpenRouter，在 `LLM_FREE_MODELS` 列带 `:free` 的模型；报价非 0 的不用，全都不可用就停，不会偷偷换成收费模型。见 [model connection](docs/self-hosting.md#model-connection)。
+不花钱的两条路（具体几行见 [Without a paid key](docs/self-hosting.md#without-a-paid-key)）：
+
+- **本地 Ollama**：不用注册。`.env` 里 `COMPOSE_PROFILES=ollama`、`LLM_BASE_URL=http://ollama:11434/v1`、`LLM_API_KEY=ollama`、`LLM_MODEL=qwen2.5:7b`，再 `docker compose exec ollama ollama pull qwen2.5:7b`。要有 GPU 才好用：纯 CPU 时 7B 模型约一半回答格式不合要求，更小的基本用不起来（实测见链接）。
+- **OpenRouter `:free` 模型**：免费账号的 Key，`LLM_FREE_MODELS` 列带 `:free` 的模型；报价非 0 的不用，全都不可用就停，不会偷偷换成收费模型。
 
 ```bash
 sed -i 's/^COLLECT_ENABLED=false/COLLECT_ENABLED=true/; s/^MODEL_CALLS_ENABLED=false/MODEL_CALLS_ENABLED=true/' .env
@@ -150,7 +163,8 @@ docker compose up -d
 
 ## 诚实边界
 
-- 界面有简体中文和英文；公共内容池里的标题、摘要和「对话」里助手的回复仍是中文，英文只覆盖界面和读者自己今日卡片的文案
+- 界面有简体中文和英文；「对话」按读者的语言回答，读者自己今日卡片的文案也按读者语言写。公共内容池里的标题、摘要跟站点语言（`SITE_LOCALE`）走；信源名是原名（多为英文）
+- 内置演示模型只是固定规则，不是真模型：用来走通「对话 → 卡片 → 建项目」，不分析文章
 - 默认不转载全文，只放摘要和原文链接（个别源可开 `site_fulltext`）
 - 单机 + PostgreSQL，没有多节点
 - 卡片质量取决于你接的模型和信源；演示是手写的，真实摘要可能出错，所以页顶写着「AI 生成摘要，以原文为准」
@@ -164,12 +178,16 @@ docker compose up -d
 | 症状 | 原因 | 处理 |
 |---|---|---|
 | `required variable POSTGRES_PASSWORD is missing a value` | 还没生成 `.env` | 先跑第 1 步的 `init-env` |
-| `Bind for …:3000 failed: port is already allocated` | 3000 被占 | 命令前加 `PORT=127.0.0.1:3300` |
-| `logs setup` 里没有 `demo:` | 启动时没带 `DEMO_SEED=true` | `docker compose exec api npm run demo:seed` |
-| 演示密码丢了 | 只打印一次；改 `.env` 再重启会清掉 setup 日志 | `.env` 加 `DEMO_PASSWORD=至少10个字符`，再跑 `demo:seed` |
+| `Bind for …:3000 failed: port is already allocated` | 3000 被占 | `.env` 里改成 `PORT=127.0.0.1:3300`，再 `docker compose up -d` |
+| `curl …/api/health` 有 200，页面却不是 Topka | 问到了占着那个端口的别的服务 | 用 `curl -s "http://$(docker compose port web 3000)/api/health"` |
+| `logs setup` 里没有 `demo:` | `.env` 里不是 `DEMO_SEED=true` | 改成 `true` 再 `docker compose up -d`，或直接 `docker compose exec api npm run demo:seed` |
+| 演示密码丢了 | 只打印一次；改 `.env` 再重启会清掉 setup 日志 | `.env` 加 `DEMO_PASSWORD=至少10个字符` → `docker compose up -d`（容器只在重建时读 `.env`）→ `docker compose exec api npm run demo:seed` |
+| 「新建项目」里某个方向包「暂不可用」 | 旧库升级后还没重启，包里的信源没导入 | 页面上写了原因和命令：`docker compose exec api npm run sources:seed -- --pack <名字>` |
+| 「对话」输入框是灰的 | 没接模型，也没开演示模型 | 页面上有文档链接；`.env` 设 `DEMO_SEED=true` 先体验，或接 Ollama / 免费模型 |
 | `demo:seed` 拒绝运行 | 库里已有别的用户或真实文章 | 确定要掺就加 `-- --force`，或 `docker compose down -v` 重来 |
 | 容器里 `npm run` 先打出 `.env not found` | 容器读 Compose 环境，不读文件 | 正常，忽略 |
 | 开了信源，几分钟还没新文章 | `COLLECT_ENABLED=false`，或改完没重启 | 改成 `true`，`docker compose up -d`；失败原因在 `/admin/sources` |
+| `docker compose logs` 每行前面有 `ESC[2K` | Docker Compose 自己在非终端输出里留的清行控制符，不是 Topka 打的 | 不影响 grep。Compose 2.26 上 `--ansi never`、`--no-log-prefix` 都去不掉；要干净的文本直接读容器日志：`docker logs $(docker compose ps -aq setup)` |
 | 有文章但没有新卡片 | 模型没接上或 `MODEL_CALLS_ENABLED=false` | 见[接上真实信源和模型](#接上真实信源和模型)；日志搜 `is not configured` |
 
 更多（`NO_FREE_MODEL`、国内连海外信源等）： [troubleshooting](docs/self-hosting.md#troubleshooting)。

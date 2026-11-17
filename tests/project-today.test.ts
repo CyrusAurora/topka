@@ -93,7 +93,7 @@ test("nothing qualifying is the explicit 无重要变化 result, not an error", 
   assert.equal(body.emptyState.title, "无重要变化");
   assert.equal(body.window.basis, "default", "without a checkpoint, today is the last 24 hours");
   assert.equal(body.checkpoint.readThrough, null);
-  assert.deepEqual(body.sources, { linked: 2, active: 1 });
+  assert.deepEqual(body.sources, { linked: 2, active: 1, scheduled: 1, collectionOn: true, analysisOn: false });
   assert.equal(body.project.slug, project.slug);
   assert.equal(body.kind, "project-today");
   assert.equal(body.schemaVersion, 2);

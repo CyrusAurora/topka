@@ -113,18 +113,22 @@ jobs:
         run: |
           test ! -e docker-compose.override.yml   # the maintainer override must not ship
           docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim \
-            node scripts/init-env.ts
+            node scripts/init-env.ts --demo
           grep -Eq '^KEY_ENCRYPTION_SECRET=[0-9a-f]{64}$' .env
+          grep -qx 'DEMO_SEED=true' .env
       - name: Build and start with docker compose
         working-directory: ${{ runner.temp }}/topka
         run: docker compose up -d --build
       # Sources after setup, counted by origin so a new import batch does not break an unrelated total:
-      # imported_from IS NULL = 18 demo sources of the seed script + 37 curated-pack sources of migration 0040;
-      # imported_from = 'batch-1' = 336 sources of migration 0041 (69 RSS + 257 directory + 11 Weibo, one duplicate feed skipped).
+      # imported_from IS NULL = 18 sources of industry/sources.json + 3 of the demo project (DEMO_SEED);
+      # 'batch-1' = 336 of migration 0041 less 14 untouched rows whose feed a pack ships under its own id;
+      # 'pack:%' = 43 rows the four packs add (the other 10 pack entries bind rows already there).
+      # Migration 0040's 37 placeholder rows are gone, replaced by the packs' real feeds.
       - name: Smoke check
         working-directory: ${{ runner.temp }}/topka
         run: |
-          for i in $(seq 1 90); do curl -fsS -o /dev/null http://127.0.0.1:3000/api/health 2>/dev/null && break; sleep 2; done
+          # README step 3, verbatim: the address comes from PORT in .env.
+          for i in $(seq 1 90); do curl -fsS -o /dev/null "http://$(docker compose port web 3000)/api/health" 2>/dev/null && break; sleep 2; done
           docker compose ps
           # The database stays private: the default compose publishes no port for it.
           ! docker compose ps db --format '{{.Ports}}' | grep -q -- '->'
@@ -135,8 +139,17 @@ jobs:
           curl -fsS -b jar -X PUT -H 'content-type: application/json' \
             -d '{"baseUrl":"https://api.deepseek.com/v1","model":"deepseek-chat","apiKey":"sk-ci-not-a-real-key-1234"}' \
             http://127.0.0.1:3000/api/me/keys/llm | grep -q '"1234"'
-          docker compose exec -T db psql -U topka -d topka -Atc "select count(*) from sources where imported_from is null" | grep -qx 55
-          docker compose exec -T db psql -U topka -d topka -Atc "select count(*) from sources where imported_from = 'batch-1'" | grep -qx 336
+          q() { docker compose exec -T db psql -U topka -d topka -Atc "$1"; }
+          q "select count(*) from sources where imported_from is null" | grep -qx 21
+          q "select count(*) from sources where imported_from = 'batch-1'" | grep -qx 322
+          q "select count(*) from sources where imported_from like 'pack:%'" | grep -qx 43
+          # Every pack is in the wizard, and every source it lists exists.
+          q "select count(*) from source_packs" | grep -qx 4
+          q "select count(*) from source_packs p, jsonb_array_elements(p.sources) e where not exists (select 1 from sources s where s.id = e->>'id')" | grep -qx 0
+          # The demo model answers Chat with no key: the demo reader is set up and the instance says so.
+          docker compose logs --no-log-prefix setup | grep -q 'demo: '
+          curl -fsS -c demo-jar -H 'content-type: application/json' -d '{"email":"ci@example.com","password":"ci-password-1"}' "http://$(docker compose port web 3000)/api/auth/login" >/dev/null
+          curl -fsS -b demo-jar "http://$(docker compose port web 3000)/api/me/model-status" | grep -q '"via":"demo"'
       - name: Logs
         if: failure()
         working-directory: ${{ runner.temp }}/topka

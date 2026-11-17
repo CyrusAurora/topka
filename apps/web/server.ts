@@ -7,8 +7,9 @@ import { createServer, request as httpRequest } from "node:http";
 import path from "node:path";
 import { createRequestListener } from "@react-router/node";
 import { isApiOwned, resolveRedirect } from "@topka/contracts/http-policy";
+import { publishedPort } from "@topka/contracts/address";
 
-const PORT = Number(process.env.WEB_PORT || process.env.PORT || 3000);
+const PORT = Number(process.env.WEB_PORT || publishedPort(process.env.PORT) || 3000);
 const HOST = process.env.WEB_HOST || "127.0.0.1";
 const API = new URL(process.env.API_BASE_URL || "http://127.0.0.1:3001");
 /**

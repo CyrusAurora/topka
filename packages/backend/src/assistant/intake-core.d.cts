@@ -6,6 +6,8 @@ declare namespace core {
     v: number; stage: "asking" | "confirm" | "card" | "done"; ask: string; turns: IntakeTurn[]; asked: number;
     analysis: Record<string, string[]> | null; summary: IntakeSummary | null; corrections: string[];
     card: { proposal: IntakeProposal; id?: string } | null; startedAt: number; updatedAt: number;
+    /** The reader's language when the session started; absent means Chinese. */
+    lang?: "en";
   }
   export interface IntakeBrief extends IntakeSummary { judgement: string; reasons: string[]; next: string }
   export interface IntakeProposal { target: string; purpose: string; focus: string; exclusions: string; sourceIds: string[]; intake: IntakeBrief }
@@ -21,8 +23,11 @@ declare namespace core {
 }
 declare const core: {
   VERSION: number; MAX_QUESTIONS: number; SESSION_TTL_MS: number; OTHER: string; CONFIRM_YES: string; CONFIRM_NO: string; RESTART: string; UNAVAILABLE: string;
+  TEXT: Record<"zh" | "en", { other: string; yes: string; no: string; restarted: string; whatsWrong: string; unavailable: string; join: string }>;
+  unavailableIn(lang: string | null | undefined): string;
   routeOf(text: string): "manage" | "intake";
-  planTurn(session: core.IntakeSession | null, text: string, now: number): core.IntakePlan;
+  /** `lang` ("en" or Chinese otherwise) applies when this turn starts a new session. */
+  planTurn(session: core.IntakeSession | null, text: string, now: number, lang?: string | null): core.IntakePlan;
   buildUser(mode: core.IntakeMode, session: core.IntakeSession, ctx?: core.IntakeContext): string;
   parseJson(text: string): unknown;
   applyAnswer(mode: core.IntakeMode, session: core.IntakeSession, answer: unknown, ctx?: core.IntakeContext): core.IntakeApplied | null;
