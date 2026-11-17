@@ -1,0 +1,84 @@
+{
+ "issue": {
+  "date": "2026-10-25",
+  "no": 3,
+  "fixedAt": "2026-10-25T00:09:44.793Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-10-25-1",
+    "position": 1,
+    "title_a": "Unitree G1 月球行走测试",
+    "title_b": "生存率与重力转移",
+    "core_a": "模拟 Unitree G1 12 种策略，",
+    "core_b": "验证地球控制器迁移月球上限。",
+    "summary": "研究在模拟 Unitree G1 上训练 12 种策略，测试地球与月球重力下的运动控制。发现地球训练策略在月球平坦地面生存率为 0.64–0.75，月球训练策略无法在地球站立。粗糙地形训练可将地球生存率从 0.53 提升至 0.98，月球从 0.80 提升至 0.99。",
+    "tag": "whole-body control",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.30080",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-22T04:00:00.000Z",
+    "listedAt": "2026-10-23T03:12:01.819Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-25-2",
+    "position": 2,
+    "title_a": "SP-HLM：稀疏位姿驱动",
+    "title_b": "人形位操全身控制框架",
+    "core_a": "预测 5 个关键位姿加手指关节，",
+    "core_b": "重建协调全身运动用于位操。",
+    "summary": "SP-HLM 是面向人形机器人位操的框架，采用稀疏位姿驱动接口。SP-VLA 预测任务相关稀疏位姿和手指关节位置，SP-MGM 通过两阶段蒸馏实时重建全身运动，SP-GMT 整合显式目标与隐式先验进行控制。仿真与实机实验显示，其运动追踪、全身协调及位操成功率优于现有方法。",
+    "tag": "loco-manipulation",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.30044",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-22T04:00:00.000Z",
+    "listedAt": "2026-10-23T03:15:12.906Z",
+    "hasCopy": true,
+    "overBudget": true,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-25-3",
+    "position": 3,
+    "title_a": "SimPT：自动化 VLA 后训练",
+    "title_b": "基于干预的仿真框架",
+    "core_a": "Progress Graph 减少 75% 恢复尝试，",
+    "core_b": "实机任务成功率升至 96%。",
+    "summary": "SimPT 是基于干预的 VLA 后训练仿真框架，整合策略滚动、纠正数据收集、训练及评估。Progress Graph 追踪进度生成纠正轨迹。相比固定间隔基线，恢复尝试减少 75.0%，成功率升至 98.9%。实机以太网电缆插入任务成功率从 72% 升至 96%。",
+    "tag": "VLA 后训练",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.29161",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-22T04:00:00.000Z",
+    "listedAt": "2026-10-23T03:27:21.746Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}

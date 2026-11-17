@@ -1,0 +1,84 @@
+{
+ "issue": {
+  "date": "2026-10-30",
+  "no": 8,
+  "fixedAt": "2026-10-30T00:08:25.976Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-10-30-1",
+    "position": 1,
+    "title_a": "VicOne 测试：",
+    "title_b": "操纵输入致机器人违背安全设计",
+    "core_a": "意外输入已能改写 VLA 机器人动作，",
+    "core_b": "暴露基于意外故障的安全假设需重新评估。",
+    "summary": "VicOne LAB R7 研究揭示被操纵传感器输入可致机器人违背安全设计。测试中，Gemma 4 E4B 机器狗因海报文字改变运动，Nemotron 因不可听音频改变行为，ROS 2 消息注入突破静止控制。这些人为攻击暴露冗余传感器失效风险，需重新评估基于意外故障的安全假设。",
+    "tag": "机器人安全",
+    "source": "IEEE Spectrum",
+    "url": "https://spectrum.ieee.org/ai-robot-safety-cybersecurity-vicone",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-27T16:14:39.000Z",
+    "listedAt": "2026-10-29T15:36:15.060Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-30-2",
+    "position": 2,
+    "title_a": "Robot Report：",
+    "title_b": "《2026 手册》梳理人形与 AI 趋势",
+    "core_a": "IFR 与 A3 数据表明机器人订单回升，",
+    "core_b": "人形机器人与应用竞争升温。",
+    "summary": "Robot Report 发布免费《2026 手册》，梳理机器人与市场趋势。IFR 与 A3 数据称全球及美国订单在劳动力短缺下回升。资金推动科技公司与初创在人形与 AI 应用上竞争，自主性提升。",
+    "tag": "行业报告",
+    "source": "Robot Report",
+    "url": "https://www.therobotreport.com/2026-robotics-handbook-looks-at-humanoids/",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-29T19:36:12.000Z",
+    "listedAt": "2026-10-29T20:06:39.973Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-30-3",
+    "position": 3,
+    "title_a": "智元 AgiBot：",
+    "title_b": "Genie Sim 11 月 2 日发新版",
+    "core_a": "项目文档更新预告 11 月 2 日主要更新，",
+    "core_b": "关注仿真框架发版节奏与功能迭代。",
+    "summary": "智元 AgiBot Genie Sim 在代码仓库文档中预告将于 11 月 2 日 2026 年发布下一次主要更新。该信息以 Diff 形式更新至 readme，作为新版本发布的预告，未披露具体新功能细节。",
+    "tag": "仿真框架",
+    "source": "AgiBot Genie Sim",
+    "url": "https://github.com/AgibotTech/genie_sim/commit/30d2bc123d4eda624770dc0daa528541257de580",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-28T07:18:20.000Z",
+    "listedAt": "2026-10-29T02:10:18.817Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}

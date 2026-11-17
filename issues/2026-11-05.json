@@ -1,0 +1,84 @@
+{
+ "issue": {
+  "date": "2026-11-05",
+  "no": 11,
+  "fixedAt": "2026-11-05T00:05:21.992Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-11-05-1",
+    "position": 1,
+    "title_a": "REPAIR：蒸馏 RL 专家，",
+    "title_b": "真实任务成功率 100%",
+    "core_a": "RL 专家能力蒸馏进 VLA，",
+    "core_b": "部署时移除专家，消除切换控制开销。",
+    "summary": "论文提出 REPAIR，将 RL 专家能力蒸馏进 flow-matching VLA。在关键阶段由专家提供动作候选，用其 critic 加权构造监督分布。六项真实机器人任务每任务 30 次评估，REPAIR 全部任务成功率 100%，末端执行器平均 jerk 低于专家辅助执行。",
+    "tag": "VLA 蒸馏",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.02777",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-03T05:00:00.000Z",
+    "listedAt": "2026-11-04T00:06:03.586Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-11-05-2",
+    "position": 2,
+    "title_a": "VLALagBench：VLA 延迟，",
+    "title_b": "100 ms 可使移动目标任务成功率近乎减半",
+    "core_a": "100 ms 延迟使移动目标任务成功率减半，",
+    "core_b": "异步执行可部分恢复成功率。",
+    "summary": "论文提出 VLALagBench，评估 VLA 推理延迟对任务成功率的影响。研究发现 100 ms 延迟可使移动目标任务成功率近乎减半，而异步执行通过重叠推理与动作可部分恢复成功率。研究还发展出经验模型，RMSE 预测误差 5.7-7.8%，用于指导系统配置选择。",
+    "tag": "VLA 基准",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.03103",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-03T05:00:00.000Z",
+    "listedAt": "2026-11-04T00:07:05.395Z",
+    "hasCopy": true,
+    "overBudget": true,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-11-05-3",
+    "position": 3,
+    "title_a": "LiberAI 发布 Liber-0，",
+    "title_b": "220 万小时人类经验预训练",
+    "core_a": "Liber-0 支持零样本机器人操作，",
+    "core_b": "60 项任务成功率 36.0%。",
+    "summary": "LiberAI 发布世界动作模型 Liber-0，预训练于超 220 万小时人类经验，支持零样本机器人操作。在 60 项任务上，模型整体成功率 36.0%，取放任务 63.5%，非取放任务 34.0%。模型结合人类视频与手部运动数据，将操作经验转移至机器人。",
+    "tag": "世界动作模型",
+    "source": "The Robot Report",
+    "url": "https://www.therobotreport.com/liberai-unveils-liber-0-a-world-action-model-that-grounds-human-experience-in-robot-action/",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-04T15:02:57.000Z",
+    "listedAt": "2026-11-04T15:55:23.365Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}
