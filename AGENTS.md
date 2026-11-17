@@ -33,6 +33,7 @@ samples (`docs/selection.md`) — do not change the numbers by feel.
   containers and volumes when done (`docker compose down -v`).
 - Before calling a change done, run what CI runs and read the result:
 
+  <!-- doc-test: skip placeholder connection strings; the Check job runs each of these commands -->
   ```bash
   npm run typecheck
   DATABASE_URL=postgres://…/<name>_test node scripts/migrate.ts   # empty database; name ends in _test or _ci
@@ -47,6 +48,9 @@ samples (`docs/selection.md`) — do not change the numbers by feel.
   `industry/taxonomy.ts`, replace those examples with the new industry's equivalents.
 - A new environment variable goes into `.env.example` and `docs/configuration.md` in the same
   change (`tests/env-example.test.ts` checks the first).
+- A shell or TypeScript block in any doc needs a `<!-- doc-test: … -->` marker on the line above
+  (run it, or skip it with a reason); `node scripts/doc-blocks.ts --check` says what is missing, and CI
+  runs the runnable ones (`docs/doc-blocks.md`).
 
 ## Invariants to respect
 

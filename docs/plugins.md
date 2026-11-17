@@ -10,6 +10,7 @@ sandbox, no signature check and no remote loader.
 
 ## Loading
 
+<!-- doc-test: skip a .env line naming example plugin files that do not ship -->
 ```bash
 TOPKA_PLUGINS=./plugins/example.ts,./plugins/audit.ts
 ```
@@ -28,6 +29,7 @@ TOPKA_PLUGINS=./plugins/example.ts,./plugins/audit.ts
 first enabled route that is not benched answers the call. Background work (collection, scoring,
 grouping, reports) never uses plugin routes.
 
+<!-- doc-test: typecheck -->
 ```ts
 import { registerInteractiveChatRoute } from "@topka/backend/providers/chat-routes";
 import { ProviderRejectedError } from "@topka/backend/providers/receipts";
@@ -46,11 +48,11 @@ export default function register() {
         body: JSON.stringify({ model: process.env.MY_CHAT_MODEL, messages, temperature, max_tokens: maxTokens }),
         signal: AbortSignal.timeout(timeoutMs),
       });
-      if (res.status === 402) throw new ProviderRejectedError("quota used up", 402);
-      if (res.status === 429) throw new ProviderRejectedError("busy", 429);
-      if (res.status === 504) throw new ProviderRejectedError("timeout", 504);
-      if (!res.ok) throw new ProviderRejectedError(`HTTP ${res.status}`, 502);
-      const body = await res.json();
+      if (res.status === 402) throw new ProviderRejectedError("quota used up", 402, false);
+      if (res.status === 429) throw new ProviderRejectedError("busy", 429, true);
+      if (res.status === 504) throw new ProviderRejectedError("timeout", 504, true);
+      if (!res.ok) throw new ProviderRejectedError(`HTTP ${res.status}`, 502, true);
+      const body = (await res.json()) as { model: string; choices: Array<{ message: { content: string } }> };
       return { text: body.choices[0].message.content, model: body.model };
     },
   });
@@ -74,7 +76,8 @@ other route.
 
 ## Failures and fallback
 
-Throw `ProviderRejectedError(message, status)` when the route cannot take the call:
+Throw `ProviderRejectedError(message, status, retryable)` when the route cannot take the call
+(`retryable`: whether trying again later can succeed — `false` for a spent quota, `true` otherwise):
 
 | Status | Meaning | Bench |
 | --- | --- | --- |
@@ -104,6 +107,7 @@ fallback path, not by the plugin.
 
 Tests can register a fake route directly without a plugin file:
 
+<!-- doc-test: typecheck -->
 ```ts
 import { resetChatRoutes, clearChatRoutes } from "@topka/backend/providers/chat-routes";
 

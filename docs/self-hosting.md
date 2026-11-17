@@ -18,9 +18,10 @@ plus backup, upgrade and troubleshooting. Configuration details for every variab
 
 Keep collection and model calls off during setup:
 
+<!-- doc-test: run quickstart; timeout 1800 -->
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
-docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim \
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:26-trixie-slim \
   node scripts/init-env.ts          # creates .env: random secrets + admin password (printed once)
 # edit .env: model connection (next section); COLLECT_ENABLED / MODEL_CALLS_ENABLED default to false
 docker compose up -d --build
@@ -58,6 +59,7 @@ Check that it is up (the web server forwards `/api/*` to the API, so this tests 
 in one go). `docker compose port web 3000` prints where this stack's web container is published, so
 the check follows `PORT` and never reaches another service that happens to hold port 3000:
 
+<!-- doc-test: run quickstart; retry 180; expect "ok":true -->
 ```bash
 docker compose ps                                         # db healthy; api, worker, web running; setup exited (0)
 curl -s "http://$(docker compose port web 3000)/api/health"   # {"app":"topka",…,"ok":true,"db":"ok",…}
@@ -75,6 +77,7 @@ score, summarise and group it. Topka talks to any **OpenAI-compatible** endpoint
 most providers offer. The simplest setup is three lines in `.env` with a key from the provider's
 console (the key is the password for calling the model, and the provider bills you for its use):
 
+<!-- doc-test: skip lines for .env with placeholder values, not commands -->
 ```bash
 LLM_BASE_URL=https://api.deepseek.com/v1
 LLM_API_KEY=sk-...
@@ -95,6 +98,7 @@ answer says it comes from the demo model, and the chat page shows a "Demo model"
 analyses articles, so no invented analysis reaches real content. `LLM_DEMO=false` turns it off,
 `LLM_DEMO=true` forces it on; it switches itself off once a real model is configured.
 
+<!-- doc-test: skip the first line belongs in .env, not in a shell -->
 ```bash
 DEMO_SEED=true            # in .env; `init-env.ts --demo` writes it
 docker compose up -d
@@ -103,6 +107,7 @@ docker compose up -d
 **Local model with Ollama (free, no account; works best with a GPU).** The compose file has an
 `ollama` service behind a profile. In `.env`:
 
+<!-- doc-test: skip lines for .env with placeholder values, not commands -->
 ```bash
 COMPOSE_PROFILES=ollama
 LLM_BASE_URL=http://ollama:11434/v1
@@ -114,6 +119,7 @@ MODEL_CALLS_ENABLED=true
 
 Then start it and download the model once (4.7 GB; it stays in the `ollama` volume):
 
+<!-- doc-test: skip pulls a 4.7 GB local model and needs the memory to run it -->
 ```bash
 docker compose up -d
 docker compose exec ollama ollama pull qwen2.5:7b
@@ -139,6 +145,7 @@ Use `LLM_BASE_URL=http://host.docker.internal:11434/v1`, leave `COMPOSE_PROFILES
 **OpenRouter `:free` models (free account, real hosted models).** Create an OpenRouter account
 (no card needed) and a key, then in `.env`:
 
+<!-- doc-test: skip lines for .env with placeholder values, not commands -->
 ```bash
 LLM_BASE_URL=https://openrouter.ai/api/v1
 LLM_API_KEY=sk-or-...
@@ -240,6 +247,7 @@ already exist, so every pack is selectable on a fresh install. A pack shows as u
 when none of its sources are in the database (an older install that has not restarted since
 upgrading) or none match the region filter; the page then says which, with the command to fix it:
 
+<!-- doc-test: run quickstart -->
 ```bash
 docker compose exec api npm run sources:seed -- --pack embodied   # file name or pack id
 ```
@@ -262,6 +270,7 @@ host: prefix it with `docker compose exec api`, e.g.
 `docker compose exec api npm run sources:list -- --enabled`. (Without Docker, run it as written
 in the repo directory.)
 
+<!-- doc-test: skip host-side commands with placeholders in angle brackets, for a site run without Docker -->
 ```bash
 npm run sources:list -- --enabled            # also --disabled, --q TEXT
 npm run sources:toggle -- --off --id <source id or full name> [--id ...]
@@ -270,6 +279,7 @@ npm run sources:only -- --id <id>            # keep only these on, everything el
 
 To switch on a whole pack instead of picking sources by hand (here only the embodied pack stays on):
 
+<!-- doc-test: run quickstart -->
 ```bash
 docker compose exec api npm run sources:seed -- --pack embodied --only
 ```
@@ -300,6 +310,7 @@ trim noisy sources — unmatched items fetch no full text and cost no model mone
     fails closed). The register page asks for the code only in this mode
     (`GET /api/auth/registration` tells it which). Create codes with:
 
+  <!-- doc-test: run quickstart -->
   ```bash
   docker compose exec api npm run invite:create             # 1 use, 7 days, random code
   docker compose exec api npm run invite:create -- --uses 5 --days 30 --note "first round"
@@ -366,11 +377,13 @@ slots run once on catch-up (`apps/worker/src/schedules.ts`). Highlights:
 
 Point the domain's DNS at the server, then set in `.env`:
 
+<!-- doc-test: skip lines for .env with placeholder values, not commands -->
 ```bash
 SITE_DOMAIN=example.com # the site address becomes https://example.com
 TRUST_PROXY=true        # read visitor addresses from the reverse-proxy headers
 ```
 
+<!-- doc-test: skip needs a public domain pointing at this machine for the TLS certificate -->
 ```bash
 docker compose --profile https up -d --build
 ```
@@ -390,6 +403,7 @@ set `SITE_URL` when neither gives the right one.
 
 ## Running without Docker
 
+<!-- doc-test: skip the path without Docker needs a PostgreSQL server you administer; the Check job runs the same steps on its own database -->
 ```bash
 npm ci
 node scripts/init-env.ts
@@ -398,11 +412,13 @@ createdb topka
 
 In `.env`, add:
 
+<!-- doc-test: skip lines for .env with placeholder values, not commands -->
 ```bash
 DATABASE_URL=postgres://<user>@127.0.0.1:5432/topka
 API_BASE_URL=http://127.0.0.1:3001
 ```
 
+<!-- doc-test: skip long-running servers for the path without Docker; the Check job starts the same three processes in its smoke step -->
 ```bash
 npm run db:migrate                   # applies database/migrations/*.sql in order; safe to re-run
 node --env-file=.env scripts/seed.ts # topics + demo sources (existing rows are not overwritten)
@@ -418,6 +434,7 @@ Keep all three processes alive (systemd or pm2). Dev hot-reload: `npm run dev:ap
 
 ## Migrations
 
+<!-- doc-test: skip the path without Docker needs a PostgreSQL server you administer; the Check job runs the same steps on its own database -->
 ```bash
 npm run db:migrate
 ```
@@ -430,6 +447,7 @@ automatically (the `setup` service). **Take a backup before upgrading.**
 
 ## Upgrade procedure
 
+<!-- doc-test: skip git pull needs the remote of your own clone; the up --build after it runs in the quickstart blocks -->
 ```bash
 git pull
 docker compose up -d --build
@@ -450,6 +468,7 @@ backups, `/data` in the container), and `caddy` (certificates). `docker compose 
   daily at 04:10 (needs `pg_dump`, present in the app image).
 - Manual:
 
+  <!-- doc-test: run quickstart -->
   ```bash
   docker compose exec -T db pg_dump -U topka topka | gzip > topka-$(date +%F).sql.gz
   ```
@@ -457,6 +476,7 @@ backups, `/data` in the container), and `caddy` (certificates). `docker compose 
 - Restore: load the dump into a **new, empty** database, then swap it in. Never load it into the
   live `topka` database — the dump re-creates every table and fails on the existing ones.
 
+  <!-- doc-test: run quickstart -->
   ```bash
   # 1. a new empty database; createdb refuses if the name already exists
   docker compose exec -T db createdb -U topka topka_restore
@@ -484,6 +504,7 @@ backups, `/data` in the container), and `caddy` (certificates). `docker compose 
   per-source fetch status.
 - Whole-site smoke check of every main page and machine endpoint:
 
+  <!-- doc-test: run quickstart; retry 120; expect all checks passed -->
   ```bash
   docker compose exec web node scripts/smoke.ts --base http://localhost:3000
   ```

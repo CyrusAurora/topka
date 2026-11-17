@@ -1,7 +1,7 @@
 # Checks on GitHub-hosted runners: install, typecheck, web build, the web tests, the backend tests on a
 # fresh PostgreSQL with the 85% line-coverage gate, the built site's smoke check, browser E2E, the online
-# demo's static build, the publication gate, and the exported (public) tree brought up with docker
-# compose as its README says.
+# demo's static build, the publication gate, the code blocks of the docs (docs/doc-blocks.md), and the
+# exported (public) tree brought up with docker compose as its README says.
 # Only GitHub-owned actions, pinned to a full commit SHA.
 name: Check
 
@@ -54,6 +54,12 @@ jobs:
         run: npm run docs:links
       - name: SBOM builds
         run: npm sbom --sbom-format=cyclonedx > /dev/null
+      # docs/doc-blocks.md: every shell/TypeScript block in the docs is marked run, skip (with a
+      # reason), excerpt or typecheck; JSON parses; excerpts match their source; named paths exist.
+      - name: Doc code blocks (markers, excerpts, references, TypeScript)
+        run: |
+          node scripts/doc-blocks.ts --check
+          node scripts/doc-blocks.ts --typecheck
       - name: Typecheck
         run: npm run typecheck
       - name: Build web
@@ -103,6 +109,11 @@ jobs:
         env:
           OSS_DEST: ${{ runner.temp }}/topka-export
         run: bash scripts/oss-check.sh
+      # Last: the repo suite rewrites docs/quality/* (npm run eval -- --write) and reinstalls (npm ci).
+      - name: Doc code blocks (repo and scratch suites)
+        run: |
+          node scripts/doc-blocks.ts --run repo
+          node scripts/doc-blocks.ts --run scratch
       - name: Server logs
         if: failure()
         run: tail -n 60 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log" 2>/dev/null || true
@@ -110,11 +121,15 @@ jobs:
   # The public tree, not this repo: export it (fresh history, scanned), then follow its README quickstart.
   docker:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
       - name: Install gitleaks
         uses: ./.github/actions/install-gitleaks
       - name: Export the public tree
@@ -125,7 +140,7 @@ jobs:
         working-directory: ${{ runner.temp }}/topka
         run: |
           test ! -e docker-compose.override.yml   # the maintainer override must not ship
-          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim \
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:26-trixie-slim \
             node scripts/init-env.ts --demo
           grep -Eq '^KEY_ENCRYPTION_SECRET=[0-9a-f]{64}$' .env
           grep -qx 'DEMO_SEED=true' .env
@@ -163,6 +178,12 @@ jobs:
           docker compose logs --no-log-prefix setup | grep -q 'demo: '
           curl -fsS -c demo-jar -H 'content-type: application/json' -d '{"email":"ci@example.com","password":"ci-password-1"}' "http://$(docker compose port web 3000)/api/auth/login" >/dev/null
           curl -fsS -b demo-jar "http://$(docker compose port web 3000)/api/me/model-status" | grep -q '"via":"demo"'
+      # docs/doc-blocks.md: the quickstart suite. Each README, tutorial, self-hosting and contributing
+      # page is followed from a fresh clone of the exported tree, block by block, on port 3300 (init-env
+      # --port), so no page may depend on 3000; alerts.md continues on the self-hosted site.
+      - name: Doc code blocks (quickstart suite, port 3300)
+        working-directory: ${{ runner.temp }}/topka
+        run: node scripts/doc-blocks.ts --run quickstart --port 3300
       - name: Logs
         if: failure()
         working-directory: ${{ runner.temp }}/topka

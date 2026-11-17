@@ -24,7 +24,8 @@ Project:
 - [Upstream & third-party notices](../NOTICE) — Topka attribution and bundled asset licenses.
 - [Decision records](decisions/README.md) — why MIT and not Apache-2.0, why DCO is a request and
   not a gate, why the maintenance promise is one maintainer and best-effort.
-- [Release checklist](release.md) — bumping versions, the SBOM, tagging and publishing a release.
+- [Release checklist](release.md) — bumping versions, the SBOM, tagging and publishing a release,
+  SLSA Build L3 provenance and how to verify it.
 
 Architecture & operation:
 
@@ -53,4 +54,5 @@ Extension:
 Maintenance:
 
 - [Secret scan](ci-secret-scan.md) — keep real credentials out of the diff and CI.
+- [Doc code blocks](doc-blocks.md) — every command in the docs is run by CI or marked skip with a reason.
 

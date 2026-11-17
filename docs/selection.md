@@ -31,14 +31,16 @@ items are never recomputed.
 
 ## Thresholds: `industry/selection.ts`
 
+<!-- doc-test: excerpt industry/selection.ts -->
 ```ts
 export const SELECTION = {
-  thresholds: { T1: 60, T1_5: 65, T2: 76 },   // average of the two scores must at least reach this
+  thresholds: { T1: 60, T1_5: 65, T2: 76 } as Record<string, number>,   // average of the two scores must at least reach this
   understandFloor: 50,                        // unselected items above this are written like selected ones
+  issueFloor: 50,                             // a reader's daily Top 3 takes nothing scored below this
   firstScoreFloor: 50,                        // first score below this: stop (one call, no listing)
   projectFirstScoreFloor: 40,                 // same, for sources followed by an active project
   secondScoreBand: 15,                        // second score only when the first is this close to the threshold
-};
+} as const;
 ```
 
 To save model calls the first score runs before anything else. An item whose first score is
@@ -86,6 +88,7 @@ Tips:
 
 ### 2. Run the evaluation
 
+<!-- doc-test: skip needs a labelled gold file you write and a configured model -->
 ```bash
 node --env-file=.env scripts/eval-selection.ts --gold .data/gold.jsonl --split development --label "rubric v1"
 ```

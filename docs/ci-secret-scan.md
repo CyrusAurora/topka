@@ -31,12 +31,14 @@ values the generic patterns cannot know; keep that file outside the repository.
 Scan your own environment file before pushing (the known-values half makes your real keys
 testable against the diff):
 
+<!-- doc-test: skip placeholder path to your own .env file -->
 ```bash
 bash scripts/secret-scan.sh /path/to/your/.env
 ```
 
 To run it on every push:
 
+<!-- doc-test: run scratch -->
 ```bash
 git config --local core.hooksPath .githooks
 mkdir -p .githooks

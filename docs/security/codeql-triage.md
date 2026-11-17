@@ -78,6 +78,7 @@ repository first runs code scanning, dismiss them with the reasons in
 [`codeql-dismissals.json`](codeql-dismissals.json) (the alert numbers are only known then, so the
 loop matches each open alert by rule and file):
 
+<!-- doc-test: skip dismisses code-scanning alerts with an admin token -->
 ```bash
 REPO=CyrusAurora/topka
 gh api "repos/$REPO/code-scanning/alerts?state=open&per_page=100" --paginate \

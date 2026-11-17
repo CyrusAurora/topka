@@ -17,9 +17,10 @@
 
 **[在线体验 →](https://cyrusaurora.github.io/topka/)** 不用安装：看一个真实运行的 Topka 每天定稿的 3 条和往期；对话和建项目由浏览器里的演示模型回答。（[怎么做的](docs/online-demo.md)）
 
+<!-- doc-test: run quickstart; timeout 1800 -->
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
-docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:26-trixie-slim node scripts/init-env.ts --demo
 docker compose up -d --build
 ```
 
@@ -53,15 +54,17 @@ docker compose up -d --build
 
 **1. 克隆并生成 `.env`**
 
+<!-- doc-test: skip the quick start block above runs these same commands -->
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
-docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:26-trixie-slim node scripts/init-env.ts --demo
 ```
 
 会打印网站地址和管理员密码。`--demo` 在 `.env` 里写上 `DEMO_SEED=true`：启动时写入演示数据，没接模型时「对话」由内置演示模型回答。提示 `LLM_API_KEY 还空着` 演示先不用管。再跑一次不会覆盖已有的 `.env`（密码和密钥不变）。
 
 **2. 启动**
 
+<!-- doc-test: skip the quick start block above runs these same commands -->
 ```bash
 docker compose up -d --build
 ```
@@ -70,12 +73,14 @@ docker compose up -d --build
 
 确认起来了（问的是这个 stack 自己的端口，换了 `PORT` 也对；刚启动可能要等几秒）：
 
+<!-- doc-test: run quickstart; retry 180; expect "ok":true -->
 ```bash
 curl -s "http://$(docker compose port web 3000)/api/health"   # {"app":"topka",…,"ok":true,"db":"ok",…}
 ```
 
 **3. 取演示密码并登录**
 
+<!-- doc-test: run quickstart; retry 180; expect demo: ready -->
 ```bash
 docker compose logs setup | grep demo:
 ```
@@ -97,6 +102,7 @@ setup-1  | demo: password demo-1be4ef872d6d  (shown once; to reset it: add DEMO_
 
 不行就看[排错](#排错)。要抓真实文章但仍不调模型： [教程第二部分](docs/tutorial.md#第二部分接两个真实信源仍然不用模型-key)。
 
+<!-- doc-test: run quickstart; defer -->
 ```bash
 docker compose down -v   # 不玩了，连库一起清
 ```
@@ -109,12 +115,14 @@ docker compose down -v   # 不玩了，连库一起清
 
 **信源。** 仓库自带三百多个信源（确切数字是 setup 日志里 `in the database` 前的那个数；后台的总数还会多出 `--demo` 的 3 个演示信源），装好时都在库里但全关（大部分来自迁移，所以日志里「added」的数目远小于总数）。在 `/admin/sources` 打开，或：
 
+<!-- doc-test: run quickstart; expect 2 -->
 ```bash
 docker compose exec api npm run sources:only -- --id rss-hugging-face --id rss-github-ai
 ```
 
 **模型。** 任意 OpenAI 兼容接口。在 `.env` 填：
 
+<!-- doc-test: skip lines for .env with placeholder values, not commands -->
 ```bash
 LLM_BASE_URL=https://api.deepseek.com/v1
 LLM_API_KEY=sk-...
@@ -126,6 +134,7 @@ LLM_MODEL=deepseek-flash
 - **本地 Ollama**：不用注册。`.env` 里 `COMPOSE_PROFILES=ollama`、`LLM_BASE_URL=http://ollama:11434/v1`、`LLM_API_KEY=ollama`、`LLM_MODEL=qwen2.5:7b`，再 `docker compose exec ollama ollama pull qwen2.5:7b`。要有 GPU 才好用：纯 CPU 时 7B 模型约一半回答格式不合要求，更小的基本用不起来（实测见链接）。
 - **OpenRouter `:free` 模型**：免费账号的 Key，`LLM_FREE_MODELS` 列带 `:free` 的模型；报价非 0 的不用，全都不可用就停，不会偷偷换成收费模型。
 
+<!-- doc-test: skip turns on collection and model calls, which reach outside services; CI makes no outside calls -->
 ```bash
 sed -i 's/^COLLECT_ENABLED=false/COLLECT_ENABLED=true/; s/^MODEL_CALLS_ENABLED=false/MODEL_CALLS_ENABLED=true/' .env
 docker compose up -d

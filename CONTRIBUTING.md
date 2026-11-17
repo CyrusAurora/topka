@@ -22,16 +22,18 @@ Codex-class agents: follow `AGENTS.md`.
 - **Node.js ≥ 24.11** (TypeScript runs directly; the backend has no build step).
 - **PostgreSQL 17 from Docker** (recommended), or your own PostgreSQL 16/17 with the `pg_trgm`
   and `citext` extensions. `docker-compose.yml` publishes no database port; for host-side tests
-  publish it on `127.0.0.1:5432` with a local override (git-ignored, picked up automatically):
+  publish it on `127.0.0.1:5432` with a local override (git-ignored, picked up automatically; the next
+  step starts the database):
+  <!-- doc-test: run quickstart -->
   ```bash
   printf 'services:\n  db:\n    ports: ["127.0.0.1:5432:5432"]\n' > docker-compose.override.yml
-  docker compose up -d db
   ```
 - One checkout, npm workspaces (`apps/*`, `packages/*`, `industry`):
+  <!-- doc-test: run quickstart; timeout 1800 -->
   ```bash
   npm ci
   node scripts/init-env.ts          # creates .env with development-safe defaults
-  docker compose up -d db           # PostgreSQL only
+  docker compose up -d --wait db    # PostgreSQL only; returns once it accepts connections
   docker compose exec db createdb -U topka topka_test   # test DB name must end in _test or _ci, and be empty
   export DATABASE_URL=postgres://topka:$(sed -n 's/^POSTGRES_PASSWORD=//p' .env)@127.0.0.1:5432/topka_test
   node scripts/migrate.ts && npm test

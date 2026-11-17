@@ -21,9 +21,10 @@
 
 ### 1. 拿代码，生成 `.env`
 
+<!-- doc-test: run quickstart -->
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
-docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:26-trixie-slim node scripts/init-env.ts --demo
 ```
 
 第二条命令在一个用完就删的 Node 容器里运行 `scripts/init-env.ts`，生成配置文件 `.env`：数据库密码、会话密钥这些都是随机生成的。`-u "$(id -u):$(id -g)"` 让生成的文件归你自己，而不是归 root。`--demo` 在 `.env` 里写上 `DEMO_SEED=true`。它会打印：
@@ -41,6 +42,7 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-sli
 
 ### 2. 带着演示数据启动
 
+<!-- doc-test: run quickstart; timeout 1800 -->
 ```bash
 docker compose up -d --build
 ```
@@ -64,6 +66,7 @@ docker compose up -d --build
 
 确认服务起来了（`docker compose port web 3000` 打印的是这个 stack 自己发布的地址，改了 `PORT` 也对，不会问到占着 3000 的别的服务）：
 
+<!-- doc-test: run quickstart; retry 180; expect "ok":true -->
 ```bash
 curl -s "http://$(docker compose port web 3000)/api/health"
 ```
@@ -78,6 +81,7 @@ curl -s "http://$(docker compose port web 3000)/api/health"
 
 密码是随机的，只在第一次创建账号时打印一次，在 `setup` 的日志里：
 
+<!-- doc-test: run quickstart; retry 180; expect demo: ready -->
 ```bash
 docker compose logs setup | grep demo:
 ```
@@ -92,6 +96,7 @@ setup-1  | demo: project project:h7e5…, issues written for 2026-11-07, 2026-11
 
 想自己定密码，三步（容器只在重建时读 `.env`，所以中间那步不能省）：
 
+<!-- doc-test: run quickstart; retry 120; expect demo: password -->
 ```bash
 echo 'DEMO_PASSWORD=至少10个字符' >> .env
 docker compose up -d
@@ -125,6 +130,7 @@ docker compose exec api npm run demo:seed     # 打印 demo: password …（from
 
 **1. 只打开两个信源**（其余全部保持关闭）：
 
+<!-- doc-test: run quickstart -->
 ```bash
 docker compose exec api npm run sources:only -- --id rss-hugging-face --id rss-github-ai
 ```
@@ -141,6 +147,7 @@ docker compose exec api npm run sources:only -- --id rss-hugging-face --id rss-g
 
 **2. 打开采集，重启：**
 
+<!-- doc-test: skip turns on collection, so the worker fetches real feeds from the internet; CI makes no outside calls -->
 ```bash
 sed -i 's/^COLLECT_ENABLED=false/COLLECT_ENABLED=true/' .env
 docker compose up -d
@@ -181,6 +188,7 @@ Compose 还会起一个 `rsshub` 容器（约 470 MB），给自带的微博信�
 
 - **本地 Ollama**，不用注册：
 
+  <!-- doc-test: skip pulls a 4.7 GB local model and needs the memory to run it -->
   ```bash
   cat >> .env <<'EOF'
   COMPOSE_PROFILES=ollama
@@ -199,6 +207,7 @@ Compose 还会起一个 `rsshub` 容器（约 470 MB），给自带的微博信�
 
 ## 收尾
 
+<!-- doc-test: run quickstart -->
 ```bash
 docker compose down -v   # 停掉所有容器，并删除数据库卷
 ```

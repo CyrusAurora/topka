@@ -142,6 +142,7 @@ compile errors: `packages/backend/src/leaderboard/`, `packages/backend/src/monit
 - `nameplates/`: the masthead words over report pages ("AI Daily"-style). Regenerate after
   changing the industry word:
 
+  <!-- doc-test: skip downloads a font package from the npm registry and rewrites the bundled nameplate images -->
   ```bash
   npm pack @fontsource/noto-sans-sc@5.3.0 && tar xzf fontsource-noto-sans-sc-5.3.0.tgz
   node scripts/nameplates.ts package
@@ -171,6 +172,7 @@ Please do not use the Topka name or logo (see [NOTICE](../NOTICE)).
 
 ## Check after changing
 
+<!-- doc-test: skip placeholder connection string; the Check job runs the same three commands -->
 ```bash
 npm run typecheck
 DATABASE_URL=postgres://…/topka_test npm test   # database name must end in _test or _ci

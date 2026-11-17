@@ -33,6 +33,7 @@ the roster are created automatically with the evaluator's name — naming/vendor
 each refresh backfills models that are missing a price. When vendors change prices or release
 models, edit the file and run:
 
+<!-- doc-test: skip a maintainer command for a running site's database (.env); the leaderboard tests cover the import -->
 ```bash
 node --env-file=.env scripts/import-leaderboard-prices.ts
 ```
@@ -48,6 +49,7 @@ node --env-file=.env scripts/import-leaderboard-prices.ts
 
 **Tools**:
 
+<!-- doc-test: skip fetches leaderboard pages from the internet into a running site database -->
 ```bash
 node --env-file=.env scripts/lb-round.ts --fetch      # fetch and compute a round now
 node --env-file=.env scripts/lb-fetch-check.ts        # fetch without writing, diff line-by-line vs stored snapshots

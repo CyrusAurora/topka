@@ -14,6 +14,13 @@ Upgrading runs migrations `0061`, `0062` and `0063`.
 
 ### Added
 
+- Release provenance at SLSA Build Level 3 (docs/release.md): slsa-github-generator's isolated
+  generic and container generators sign provenance for the release files and the image, which
+  `slsa-verifier` checks; the build job holds no signing identity. Pre-release tags (`vX.Y.Z-<label>`)
+  rehearse the whole pipeline, and `release-cleanup.yml` removes one afterwards.
+- The docs' code blocks run in CI (docs/doc-blocks.md): each shell or TypeScript block is marked run,
+  skip (with a reason), excerpt or typecheck; the README, tutorial, self-hosting and contributing pages
+  are followed block by block on port 3300 against the exported tree.
 - Operations alerts to a webhook: `ALERT_WEBHOOK_URL` takes a Feishu custom-bot address (or any
   receiver of that JSON; `ALERT_WEBHOOK_SECRET` signs), with dedupe of the same text, an hourly cap
   that reports what it held back, and retry of an alert or recovery no outlet took.
@@ -61,6 +68,11 @@ Upgrading runs migrations `0061`, `0062` and `0063`.
 
 ### Changed
 
+- The Docker image and the quickstart's one-off container use Node.js 26 (LTS), `node:26-trixie-slim`;
+  running from source still needs Node.js 24.11 or later. Dependencies: postgres 4 (the server types
+  every parameter; the suite passes unchanged in a UTC+8 time zone), @babel/parser 8 (tests only), and
+  patch and minor updates of vite, pg-boss, motion, jsdom, isbot, sanitize-html, fast-xml-parser,
+  hyparquet and playwright-core.
 - Dependabot opens at most one PR per ecosystem a month, each grouping all updates (majors included);
   `.github/CODEOWNERS` is gone while there is one maintainer (`MAINTAINERS.md` is the record).
 - `POST /api/projects/:projectId/today/ack` takes `{snapshotId, ackSeq, shownIds, commandId}` instead
@@ -85,6 +97,10 @@ Upgrading runs migrations `0061`, `0062` and `0063`.
 
 ### Fixed
 
+- Docs that had drifted from the code, found by running their blocks: the plugin example's
+  `ProviderRejectedError` takes a third argument, `retryable` (docs/plugins.md), and the thresholds
+  excerpt in docs/selection.md matches `industry/selection.ts` again, and CONTRIBUTING.md no longer
+  starts the database before `.env` exists (it waits for it to be ready, too).
 - Demo model: English requests to delete, remove, rename or pause a project go to that project (they
   started a new interview before); a cancel, a new topic or a delete said in the middle of an interview
   is taken first; a new project's name is a cleaned phrase cut at a word boundary, not 15 characters

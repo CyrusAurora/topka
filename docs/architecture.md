@@ -154,6 +154,7 @@ agents in [AGENTS.md](../AGENTS.md)):
 
 ## Verification
 
+<!-- doc-test: skip needs a local PostgreSQL you can run createdb on; the Check job runs each of these commands -->
 ```bash
 npm run typecheck
 createdb topka_test

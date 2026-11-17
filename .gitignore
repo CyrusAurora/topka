@@ -31,3 +31,4 @@ docker-compose.override.yml
 # Release attachments built by docs/release.md step 3; they go on the GitHub release, not in git
 sbom.cyclonedx.json
 SHA256SUMS
+examples/doc-blocks/

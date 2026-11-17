@@ -49,6 +49,7 @@ Outside production every message starts with the environment name (`【staging�
    "已恢复" does not, so prefer the signature.)
 3. In `.env` on the server:
 
+   <!-- doc-test: skip lines for .env with placeholder values, not commands -->
    ```bash
    ALERT_WEBHOOK_URL=https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx
    ALERT_WEBHOOK_SECRET=xxxxxxxx   # only if signature verification is on
@@ -57,6 +58,7 @@ Outside production every message starts with the environment name (`【staging�
 4. Restart so the processes read it (`docker compose up -d`; without Docker restart api and worker),
    then send a test message:
 
+   <!-- doc-test: run quickstart; exit 2; expect disabled: -->
    ```bash
    docker compose exec api npm run alerts:test   # without Docker: npm run alerts:test
    ```

@@ -36,9 +36,10 @@ screenshots here show the Chinese default).
 
 ### 1. Get the code and generate `.env`
 
+<!-- doc-test: run quickstart -->
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
-docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:26-trixie-slim node scripts/init-env.ts --demo
 ```
 
 The second command runs `scripts/init-env.ts` in a throwaway Node container and writes `.env` with
@@ -64,6 +65,7 @@ are. Rename or delete `.env` first to generate a new one. With Node.js ≥ 24 on
 
 ### 2. Start with the demo content
 
+<!-- doc-test: run quickstart; timeout 1800 -->
 ```bash
 docker compose up -d --build
 ```
@@ -93,6 +95,7 @@ nothing else.
 Check that the services answer. `docker compose port web 3000` prints where this stack's web
 container is published, so the check follows `PORT` and never reaches another service holding 3000:
 
+<!-- doc-test: run quickstart; retry 180; expect "ok":true -->
 ```bash
 curl -s "http://$(docker compose port web 3000)/api/health"
 ```
@@ -108,6 +111,7 @@ first request can come back empty; wait a few seconds and repeat.
 
 It is random and printed once, when the account is created, in the setup log:
 
+<!-- doc-test: run quickstart; retry 180; expect demo: ready -->
 ```bash
 docker compose logs setup | grep demo:
 ```
@@ -124,6 +128,7 @@ editing `.env`, the `setup` container is recreated and these log lines are gone.
 To choose the password yourself, three steps (containers read `.env` only when they are recreated, so
 the middle one matters):
 
+<!-- doc-test: run quickstart; retry 120; expect demo: password -->
 ```bash
 echo 'DEMO_PASSWORD=at-least-10-chars' >> .env
 docker compose up -d
@@ -172,6 +177,7 @@ arrive, but no scoring, no summaries and no new cards.
 
 **1. Switch on two sources** (all others stay off):
 
+<!-- doc-test: run quickstart -->
 ```bash
 docker compose exec api npm run sources:only -- --id rss-hugging-face --id rss-github-ai
 ```
@@ -194,6 +200,7 @@ all the others off.
 
 **2. Turn collection on in `.env` and restart:**
 
+<!-- doc-test: skip turns on collection, so the worker fetches real feeds from the internet; CI makes no outside calls -->
 ```bash
 sed -i 's/^COLLECT_ENABLED=false/COLLECT_ENABLED=true/' .env
 docker compose up -d
@@ -259,6 +266,7 @@ answers are fixed and it analyses no articles.
 
 - **Local Ollama**, no account:
 
+  <!-- doc-test: skip pulls a 4.7 GB local model and needs the memory to run it -->
   ```bash
   cat >> .env <<'EOF'
   COMPOSE_PROFILES=ollama
@@ -283,6 +291,7 @@ answers are fixed and it analyses no articles.
 
 ## Clean up
 
+<!-- doc-test: run quickstart -->
 ```bash
 docker compose down -v   # stops everything and deletes the database volume
 ```

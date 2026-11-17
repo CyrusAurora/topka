@@ -11,6 +11,7 @@ The latest numbers are in [quality/report.md](quality/report.md) (machine-readab
 
 ## Running
 
+<!-- doc-test: run repo -->
 ```bash
 npm run eval                  # print every dimension and the threshold checks
 npm run eval -- --check       # the same; exit 1 if any threshold fails (this runs in CI)
@@ -30,6 +31,7 @@ run instead of failing.
 
 ### Live mode (a real model)
 
+<!-- doc-test: skip calls a live model; the model id is a placeholder -->
 ```bash
 node --env-file=.env scripts/eval.ts --live --model <provider model id>:free
 ```

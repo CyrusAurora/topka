@@ -6,6 +6,7 @@ OpenAI-compatible model, the API (`E2E_API_PORT`, default 13001) and the web ser
 
 Run it on a throwaway, migrated database only — it registers users and stores keys:
 
+<!-- doc-test: skip placeholder connection string; the Check job runs npm run e2e -->
 ```sh
 npm run build -w @topka/web
 DATABASE_URL=postgres://…/topka_e2e npm run e2e

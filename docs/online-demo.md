@@ -42,6 +42,7 @@ workflow runs the same scan again (`scripts/pages-check.ts`) before deploying.
   and when the issues changed (or the published copy is older than `PAGES_REFRESH_HOURS`, 20 by
   default) it replaces the `pages-data` commit and starts the workflow. It prints counts only.
 
+<!-- doc-test: skip needs push access to a Pages repository and a site with the demo reader; the Check job runs the same export and check -->
 ```bash
 PAGES_REPO=you/topka PAGES_DEMO_READER=reader@example.com bash scripts/pages-publish.sh --dry-run
 ```

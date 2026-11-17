@@ -26,6 +26,7 @@ step "exported tree stands alone"
 ( cd "$dest" && npm run -s typecheck >/dev/null 2>&1 ); result $? "typecheck (export)"
 ( cd "$dest" && npm run -s build -w @topka/web >/dev/null 2>&1 ); result $? "web build (export)"
 ( cd "$dest" && node --test apps/web/tests/*.test.ts >/dev/null 2>&1 ); result $? "web tests (export)"
+( cd "$dest" && node scripts/doc-blocks.ts --check >/dev/null 2>&1 && node scripts/doc-blocks.ts --typecheck >/dev/null 2>&1 ); result $? "doc code blocks (export)"
 
 step "secret scan of this repo's pending diff"
 bash scripts/secret-scan.sh; result $? "secret-scan"

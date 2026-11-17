@@ -17,9 +17,10 @@
 
 **[Try it online →](https://cyrusaurora.github.io/topka/)** Nothing to install: the real daily picks and past issues of a running Topka; Chat and project creation are answered by the demo model in your browser. ([How it works](docs/online-demo.md))
 
+<!-- doc-test: run quickstart; timeout 1800 -->
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
-docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:26-trixie-slim node scripts/init-env.ts --demo
 docker compose up -d --build
 ```
 
@@ -53,15 +54,17 @@ Past issues stay under Archive:
 
 **1. Clone and generate `.env`**
 
+<!-- doc-test: skip the quick start block above runs these same commands -->
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
-docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:26-trixie-slim node scripts/init-env.ts --demo
 ```
 
 It prints the site address and the admin password. `--demo` writes `DEMO_SEED=true` to `.env`: startup loads the demo content, and until a model is connected the built-in demo model answers in Chat. The `LLM_API_KEY is empty` line can wait. Running it again never overwrites an existing `.env` (passwords and secrets stay). Add `--locale en` for an English site with English demo stories (the screenshots show the default Chinese demo).
 
 **2. Start**
 
+<!-- doc-test: skip the quick start block above runs these same commands -->
 ```bash
 docker compose up -d --build
 ```
@@ -70,12 +73,14 @@ The first build takes from half a minute to a quarter of an hour, depending on t
 
 Check it is up (this asks this stack's own port, so it stays right after a `PORT` change; give it a few seconds after start):
 
+<!-- doc-test: run quickstart; retry 180; expect "ok":true -->
 ```bash
 curl -s "http://$(docker compose port web 3000)/api/health"   # {"app":"topka",…,"ok":true,"db":"ok",…}
 ```
 
 **3. Get the demo password and sign in**
 
+<!-- doc-test: run quickstart; retry 180; expect demo: ready -->
 ```bash
 docker compose logs setup | grep demo:
 ```
@@ -97,6 +102,7 @@ The password is shown once. Open <http://localhost:3000/login> (or the address i
 
 Stuck? [Troubleshooting](#troubleshooting). Real articles without a model: [tutorial part 2](docs/tutorial.en.md#part-2-real-articles-still-no-model-key).
 
+<!-- doc-test: run quickstart; defer -->
 ```bash
 docker compose down -v   # wipe including the database
 ```
@@ -109,12 +115,14 @@ Demo data does not refresh. A new daily issue needs **sources on** and **a model
 
 **Sources.** A few hundred ship with the repo (the exact number is the one before `in the database` in the setup log; the admin total also counts the 3 demo sources with `--demo`), all in the database but switched off (most come from migrations, so the log's "added" count is far below the total). Enable them in `/admin/sources`, or:
 
+<!-- doc-test: run quickstart; expect 2 -->
 ```bash
 docker compose exec api npm run sources:only -- --id rss-hugging-face --id rss-github-ai
 ```
 
 **Model.** Any OpenAI-compatible endpoint. In `.env`:
 
+<!-- doc-test: skip lines for .env with placeholder values, not commands -->
 ```bash
 LLM_BASE_URL=https://api.deepseek.com/v1
 LLM_API_KEY=sk-...
@@ -126,6 +134,7 @@ Two ways at no cost (exact lines in [Without a paid key](docs/self-hosting.md#wi
 - **Local Ollama**, no account: in `.env` `COMPOSE_PROFILES=ollama`, `LLM_BASE_URL=http://ollama:11434/v1`, `LLM_API_KEY=ollama`, `LLM_MODEL=qwen2.5:7b`, then `docker compose exec ollama ollama pull qwen2.5:7b`. Needs a GPU to be useful: on a CPU a 7B model breaks the required format in about half its answers, smaller ones barely work (measurements behind the link).
 - **OpenRouter `:free` models** with a free account's key, listed in `LLM_FREE_MODELS`. Non-zero prices are refused; if none are free it waits and never switches to a paid model.
 
+<!-- doc-test: skip turns on collection and model calls, which reach outside services; CI makes no outside calls -->
 ```bash
 sed -i 's/^COLLECT_ENABLED=false/COLLECT_ENABLED=true/; s/^MODEL_CALLS_ENABLED=false/MODEL_CALLS_ENABLED=true/' .env
 docker compose up -d

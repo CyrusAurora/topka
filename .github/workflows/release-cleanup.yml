@@ -1,0 +1,60 @@
+# Removes a throwaway pre-release (docs/release.md, "Rehearsing a release"): its GitHub release, its
+# tag, and the image versions its release run pushed to ghcr.io (the image, its platform manifests,
+# signature and attestations). Started by hand with the tag. Refuses a tag without a "-<label>"
+# suffix, a release not marked pre-release, and any image version in the run's time window that
+# carries a tag other than the pre-release's own or a sha256-… signature/attestation tag.
+name: Release cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Pre-release tag to remove, e.g. v0.2.0-rc.1"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # delete the release and the tag
+      packages: write # delete the image versions
+      actions: read # find the release run's time window
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - name: Only a pre-release
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z.-]+$ ]] || { echo "::error::$TAG is not a pre-release tag (vX.Y.Z-<label>)"; exit 1; }
+          pre=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq .isPrerelease 2>/dev/null || echo missing)
+          [ "$pre" != false ] || { echo "::error::$TAG is a full release; not removing it"; exit 1; }
+          echo "release: $pre"
+      - name: Image versions pushed by the release run
+        run: |
+          owner=${GITHUB_REPOSITORY%%/*}; name=${GITHUB_REPOSITORY#*/}; name=${name,,}
+          kind=$(gh api "users/$owner" --jq .type)
+          base=$([ "$kind" = Organization ] && echo "orgs/$owner" || echo "users/$owner")/packages/container/$name
+          run=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow release.yml --branch "$TAG" --limit 1 --json databaseId,createdAt,updatedAt --jq '.[0]')
+          [ -n "$run" ] && [ "$run" != null ] || { echo "no release run for $TAG; nothing pushed"; exit 0; }
+          from=$(jq -r .createdAt <<<"$run"); to=$(jq -r .updatedAt <<<"$run")
+          echo "release run $(jq -r .databaseId <<<"$run"): $from .. $to"
+          gh api --paginate "$base/versions?per_page=100" > versions.json
+          own=${TAG#v}
+          jq -c --arg from "$from" --arg to "$to" '.[] | select(.created_at >= $from and .created_at <= $to) | {id, name, created_at, tags: .metadata.container.tags}' versions.json > window.jsonl
+          cat window.jsonl
+          if jq -e --arg own "$own" 'select(any(.tags[]; . != $own and (test("^sha256-[0-9a-f]{64}") | not)))' window.jsonl > /dev/null; then
+            echo "::error::a version in the window carries another tag; refusing"; exit 1
+          fi
+          jq -e --arg own "$own" 'select(.tags | index($own))' window.jsonl > /dev/null || { echo "::error::no version tagged $own in the run window"; exit 1; }
+          for id in $(jq -r .id window.jsonl); do gh api -X DELETE "$base/versions/$id"; echo "deleted version $id"; done
+      - name: Release and tag
+        run: |
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG" 2>/dev/null || true
+          ! gh api "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG" > /dev/null 2>&1 || { echo "::error::tag $TAG still exists"; exit 1; }
+          echo "removed $TAG"
