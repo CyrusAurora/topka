@@ -29,5 +29,11 @@
     "message": "slsa-framework/slsa-github-generator/",
     "reason": "won't fix",
     "comment": "Required: slsa-github-generator must be called by release tag (@v2.1.0), not a SHA; it verifies its own ref and slsa-verifier checks that tag in the builder id. Only these two jobs; every other action is SHA-pinned. See docs/release.md (Provenance)."
+  },
+  {
+    "rule": "js/http-to-file-access",
+    "path": "scripts/mock-webhook.ts",
+    "reason": "used in tests",
+    "comment": "Intended: the local stand-in for the alert webhook (127.0.0.1 only, drills and tests) exists to record what an alert sends, so it appends each received message to the file the operator named. See docs/security/codeql-triage.md."
   }
 ]

@@ -10,7 +10,8 @@ const { values } = parseArgs({ args: process.argv.slice(2), options: { "password
 const name = values["password-env"] ?? "STAGING_PASSWORD";
 const password = process.env[name] ?? "";
 if (!password) {
-  console.error(`anonymize: set ${name} (the one password every account on the copy gets)`);
+  // The variable is named in the usage line, not echoed from the input (nothing derived from it is printed).
+  console.error("anonymize: set the password variable (STAGING_PASSWORD, or the one --password-env names): the one password every account on the copy gets");
   process.exit(2);
 }
 try {

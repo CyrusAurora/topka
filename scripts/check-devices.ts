@@ -64,7 +64,7 @@ async function main() {
   if (!url.endsWith("/")) url += "/";
   const password = values["password-env"] ? process.env[values["password-env"]] : undefined;
   if (values.email && !password) {
-    console.error(`--email needs the password in $${values["password-env"] ?? "(set --password-env)"}`);
+    console.error("--email needs the password in the variable --password-env names");
     process.exit(2);
   }
   const signedIn = Boolean(values.email);
