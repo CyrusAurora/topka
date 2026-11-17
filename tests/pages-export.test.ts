@@ -4,7 +4,7 @@
 import "./setup.ts";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -158,4 +158,18 @@ test("pagesFiles: a project only an older issue names still gets an alias; empty
   assert.ok(!JSON.stringify(files).includes("secret-article"));
   assert.deepEqual(projectAliases([{ id: "x", slug: "y", target: "z" }]).get("x"), { id: "demo-1", slug: "demo-1", target: "z" });
   assert.equal(publicIssue(issues[0]!, projectAliases([{ id: "p-now", slug: "s", target: "now" }])).items[0]!.score, null);
+});
+
+test("pages-check refuses a data directory with a link or an unexpected file, and passes a clean one", async () => {
+  const dir = path.join(tmp, "check");
+  mkdirSync(path.join(dir, "issues"), { recursive: true });
+  writeFileSync(path.join(dir, "meta.json"), JSON.stringify({ schema: 1 }));
+  writeFileSync(path.join(dir, "issues", "2026-11-17.json"), JSON.stringify({ date: "2026-11-17" }));
+  const check = path.join(ROOT, "scripts/pages-check.ts");
+  await run(process.execPath, [check, dir], { env });
+  symlinkSync(path.join(dir, "meta.json"), path.join(dir, "today.json"));
+  await assert.rejects(run(process.execPath, [check, dir], { env }), (e: { stdout?: string; stderr?: string }) => /not a regular file/.test(`${e.stdout}${e.stderr}`));
+  rmSync(path.join(dir, "today.json"));
+  writeFileSync(path.join(dir, "notes.txt"), "x");
+  await assert.rejects(run(process.execPath, [check, dir], { env }), (e: { stdout?: string; stderr?: string }) => /unexpected file name/.test(`${e.stdout}${e.stderr}`));
 });

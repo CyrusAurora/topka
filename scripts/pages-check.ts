@@ -1,7 +1,7 @@
 // Re-checks an online-demo data directory before it is published (the Pages workflow runs it on the
 // pages-data branch): only the expected file names, valid JSON, and nothing the leak scan refuses.
 //   node scripts/pages-check.ts DIR      exit 0 clean (or no data yet), 1 refused
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { leakScan } from "@topka/contracts/pages-scan";
 
@@ -16,15 +16,17 @@ if (!existsSync(dir)) {
 }
 const files: Record<string, string> = {};
 const walk = (d: string) => {
-  for (const name of readdirSync(d)) {
-    const p = join(d, name);
-    if (name === ".git") continue;
-    if (statSync(p).isDirectory()) walk(p);
-    else files[relative(dir, p)] = readFileSync(p, "utf8");
+  for (const entry of readdirSync(d, { withFileTypes: true })) {
+    if (entry.name === ".git") continue;
+    const p = join(d, entry.name);
+    if (entry.isDirectory()) walk(p);
+    else if (entry.isFile()) files[relative(dir, p)] = readFileSync(p, "utf8");
+    else problems.push(`${relative(dir, p)}: not a regular file`);
   }
 };
+const problems: string[] = [];
 walk(dir);
-const problems = leakScan(files);
+problems.push(...leakScan(files));
 for (const [path, text] of Object.entries(files)) {
   try {
     JSON.parse(text);

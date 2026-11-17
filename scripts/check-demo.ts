@@ -108,7 +108,11 @@ async function main() {
       // Sources show when a card is opened.
       await page.click("[aria-expanded]", { timeout: 5_000 }).catch(() => fail(`${lang} today: could not open a card`));
       await page.waitForTimeout(300);
-      const sources = await page.$$eval("a[target=_blank]", (as) => as.map((a) => (a as HTMLAnchorElement).href).filter((h) => !/github\.com\/CyrusAurora\/topka/.test(h)));
+      const sources = await page.$$eval("a[target=_blank]", (as) => as.map((a) => (a as HTMLAnchorElement).href).filter((h) => {
+        // The demo bar's own links (the repository) are not sources.
+        const u = new URL(h);
+        return !(u.hostname === "github.com" && u.pathname.toLowerCase().startsWith("/cyrusaurora/topka"));
+      }));
       if (sources.length === 0) fail(`${lang} today: no source links`);
       for (const h of sources) if (!/^https?:\/\//.test(h)) fail(`${lang} today: source link ${h} is not http(s)`);
       await noCjk("today");
