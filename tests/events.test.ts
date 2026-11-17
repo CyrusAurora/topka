@@ -26,15 +26,25 @@ type Rel = "SAME_OCCURRENCE" | "SAME_STORY" | "UNRELATED";
 let relation: Rel = "SAME_OCCURRENCE";
 /** What the pair prompt answers when it differs from the batch answer. */
 let pairRelation: Rel | null = null;
-/** Answer every candidate of a batch prompt, not only the first. */
+/** Answer every candidate of a batch prompt that carries `marker`, not only the first. */
 let answerAll = false;
+/**
+ * The model only recognises candidates whose text carries the current test's own text. The test
+ * database is shared by every test file (and may keep rows of earlier runs), and lexical recall
+ * scores by the overlap coefficient, so a short report of another test that shares one bigram with
+ * this test's text is recalled too; a stub that answered "the first" or "every" candidate tied this
+ * test's stories to it (the flaky [14, 5, "related"] link).
+ */
+let marker = "";
 const provider = await stub(async (_hit, req) => {
   asked.open();
   await hold.promise;
   const body = JSON.parse(req.body) as { messages: Array<{ content: string }> };
   const user = body.messages[1]!.content;
   const pair = user.includes("报道 A");
-  const ids = answerAll ? [...user.matchAll(/【候选 (C\d+)】/g)].map((m) => m[1]!) : ["C1"];
+  const blocks = user.split(/(?=【候选 C\d+】)/).slice(1).map((b) => ({ id: /【候选 (C\d+)】/.exec(b)![1]!, text: b }));
+  const own = blocks.filter((b) => b.text.includes(marker || FACT_TITLE)).map((b) => b.id);
+  const ids = answerAll ? own : own.slice(0, 1);
   const answer = pair
     ? { a: "发布", b: "发布", relation: pairRelation ?? relation, difference: "", confidence: 0.95 }
     : { query: "发布新模型", decisions: ids.map((id) => ({ id, relation, confidence: 0.95, note: "" })) };
@@ -136,7 +146,7 @@ test("a report waiting for a regroup is not evidence for others, and its own tur
   hold = gate();
   hold.open();
   // Text no other report shares (the test database may keep rows of earlier runs; recall is lexical here).
-  const text = Array.from({ length: 16 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join("");
+  const text = (marker = randomText());
   const waiting = await report("waiting", text, text);
   const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id, title, first_report_at, latest_at) VALUES (${randomUUID()}, ${text}, now(), now()) RETURNING id`;
   const [fact] = await sql<{ id: number }[]>`INSERT INTO facts (public_id, story_id, title) VALUES (${`fw-${T}`}, ${story!.id}, ${text}) RETURNING id`;
@@ -164,7 +174,7 @@ test("a report waiting for a regroup is not evidence for others, and its own tur
 test("a development attaches to the story's earliest fact that still holds reports", async () => {
   hold = gate();
   hold.open();
-  const text = Array.from({ length: 16 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join("");
+  const text = (marker = randomText());
   // A story whose first fact was emptied (a regroup, a detach, or a merge carried it over).
   const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id, title, first_report_at, latest_at) VALUES (${randomUUID()}, ${text}, now(), now()) RETURNING id`;
   await sql`INSERT INTO facts (public_id, story_id, title) VALUES (${`fe-${T}`}, ${story!.id}, 'emptied')`;
@@ -196,7 +206,7 @@ async function storyWithRoot(text: string, suffix: string) {
 test("a story's root is the fact reported first, not the one with the lowest number", async () => {
   hold = gate();
   hold.open();
-  const early = randomText(), late = randomText();
+  const early = (marker = randomText()), late = randomText();
   const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id, title, first_report_at, latest_at) VALUES (${randomUUID()}, ${early}, now(), now()) RETURNING id`;
   // Created first (lower id), reported later: a fact carried over from a merged or imported story.
   const [later] = await sql<{ id: number }[]>`INSERT INTO facts (public_id, story_id, title) VALUES (${`ft-late-${T}`}, ${story!.id}, ${late}) RETURNING id`;
@@ -218,7 +228,7 @@ test("a story's root is the fact reported first, not the one with the lowest num
 test("two stories a report ties together merge when both models see one story in their roots", async () => {
   hold = gate();
   hold.open();
-  const text = randomText();
+  const text = (marker = randomText());
   const older = await storyWithRoot(`${text}甲`, "older");
   const newer = await storyWithRoot(`${text}乙`, "newer");
   relation = "SAME_STORY";
@@ -241,7 +251,7 @@ test("two stories a report ties together merge when both models see one story in
 test("two stories stay apart when their roots are different events, whatever the report ties them with", async () => {
   hold = gate();
   hold.open();
-  const text = randomText();
+  const text = (marker = randomText());
   const one = await storyWithRoot(`${text}甲`, "one");
   const two = await storyWithRoot(`${text}乙`, "two");
   relation = "SAME_STORY";
@@ -262,7 +272,7 @@ test("two stories stay apart when their roots are different events, whatever the
 test("a story whose reports all moved away keeps its address: it redirects to where the last one went", async () => {
   hold = gate();
   hold.open();
-  const text = randomText();
+  const text = (marker = randomText());
   const old = await storyWithRoot(text, "moving");
   // A second report of the old story, about something no other report mentions.
   const other = randomText();
@@ -287,7 +297,7 @@ test("a story whose reports all moved away keeps its address: it redirects to wh
 test("stories that reports keep tying together without merging list each other as related", async () => {
   hold = gate();
   hold.open();
-  const text = randomText();
+  const text = (marker = randomText());
   const one = await storyWithRoot(`${text}甲`, "related-one");
   const two = await storyWithRoot(`${text}乙`, "related-two");
   const links = async () =>

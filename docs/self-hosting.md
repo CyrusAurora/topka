@@ -496,6 +496,8 @@ backups, `/data` in the container), and `caddy` (certificates). `docker compose 
 - In the admin UI: per-step model call counts and token usage; budget usage under Settings →
   Budget; SelectBench for editorial calibration.
 - Logs: `docker compose logs -f --tail 100 api worker web`.
+- Alerts to a Feishu group (or any compatible webhook): set `ALERT_WEBHOOK_URL`, restart, run
+  `npm run alerts:test`. See [alerts.md](alerts.md).
 
 ## Troubleshooting
 

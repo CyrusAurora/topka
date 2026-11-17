@@ -137,6 +137,18 @@ Named presets bypass the free guard and are billed by their provider.
 | `SEARCH_MAX_QUEUE` | `8` | No | Queued publication searches. |
 | `SELECTED_VISIBLE_AFTER_SECONDS` | `180` | No | Delay before a selected item becomes visible. |
 | `ALERT_QUIET_MINUTES` | `360` | No | Alert when no new content arrived for this long. |
+| `ALERT_SOURCE_FAILS` | `3` | No | Fetches in a row that count a source as failing; 3+ such sources (or a quarter) raise a collection alert. |
+
+## Operations alerts to a webhook
+
+See [alerts.md](alerts.md). All off unless `ALERT_WEBHOOK_URL` is set.
+
+| Variable | Default | Required | Description |
+| --- | --- | --- | --- |
+| `ALERT_WEBHOOK_URL` | empty | No | Receiver of Feishu custom-bot JSON (a Feishu/Lark group bot address or any compatible relay). |
+| `ALERT_WEBHOOK_SECRET` | empty | No | Signing secret of a Feishu bot with signature verification on. |
+| `ALERT_WEBHOOK_DEDUPE_MINUTES` | `30` | No | The same text is not sent twice within this window. |
+| `ALERT_WEBHOOK_MAX_PER_HOUR` | `20` | No | Rolling hourly cap; held-back messages are counted in the next one. |
 
 ## History analysis
 

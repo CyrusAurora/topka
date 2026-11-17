@@ -7,6 +7,7 @@ import path from "node:path";
 import { beijingDate, beijingTime } from "@topka/contracts/time";
 import { config, credential } from "../config.ts";
 import { sql } from "../db.ts";
+import { sendWebhookAlert } from "./webhook.ts";
 
 const API = "https://open.feishu.cn/open-apis";
 
@@ -106,18 +107,36 @@ export function formatRecovery(title: string, since: Date, now: number): { title
   return { title: `✅ 已恢复：${title}`, lines: [`持续 ${duration(now - since.getTime())}（${beijingStamp(since)} 起）`] };
 }
 
-/** Operations alert: the alert chat, falling back to the internal feedback chat — never a content group. */
-export async function sendAlert(title: string, lines: string[]): Promise<"sent" | "disabled"> {
+/**
+ * Operations alert: the alert webhook (ALERT_WEBHOOK_URL, notify/webhook.ts) and/or the alert chat
+ * of the message app, falling back to the internal feedback chat — never a content group.
+ * "failed" means a configured outlet did not take it (the caller keeps it open and tries again);
+ * "skipped" means the webhook's dedupe or rate limit held it back on purpose.
+ */
+export async function sendAlert(title: string, lines: string[], now = Date.now()): Promise<"sent" | "skipped" | "disabled" | "failed"> {
   // Production needs no label; any other environment that has sending on says which one it is.
   const text = `${config.environmentName === "production" ? "" : `【${config.environmentName}】`}${title}\n${lines.join("\n")}`;
-  if (!feishuInternalEnabled()) {
-    console.log(JSON.stringify({ level: "warn", msg: "alert (not sent: FEISHU_INTERNAL_ENABLED is off)", title, lines }));
+  const hook = await sendWebhookAlert(text, now);
+  let chat: "sent" | "disabled" | "failed" = "disabled";
+  if (feishuInternalEnabled()) {
+    const chatId = credential("integrations", "FEISHU_ALERT_CHAT_ID") ?? credential("integrations", "FEISHU_INTERNAL_CHAT_ID");
+    if (chatId) {
+      try {
+        await sendToChat(chatId, "text", { text });
+        chat = "sent";
+      } catch (e) {
+        console.log(JSON.stringify({ level: "error", msg: "alert chat failed", error: (e as Error).message }));
+        chat = "failed";
+      }
+    }
+  }
+  if (hook === "disabled" && chat === "disabled") {
+    console.log(JSON.stringify({ level: "warn", msg: "alert (not sent: no ALERT_WEBHOOK_URL and FEISHU_INTERNAL_ENABLED is off)", title, lines }));
     return "disabled";
   }
-  const chat = credential("integrations", "FEISHU_ALERT_CHAT_ID") ?? credential("integrations", "FEISHU_INTERNAL_CHAT_ID");
-  if (!chat) return "disabled";
-  await sendToChat(chat, "text", { text });
-  return "sent";
+  if (hook === "failed" || chat === "failed") return hook === "sent" || chat === "sent" ? "sent" : "failed";
+  if (hook === "sent" || chat === "sent") return "sent";
+  return "skipped";
 }
 
 /** A screenshot that still cannot be uploaded this long after the feedback is given up: the text goes without it. */

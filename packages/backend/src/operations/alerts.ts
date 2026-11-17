@@ -3,7 +3,8 @@
 //   now    — readers are affected and it has not healed: sent at once, repeated hourly, recovery reported.
 //   today  — money at risk or only the owner can act: sent at once, repeated at most daily, recovery reported.
 //   digest — follow-ups without reader impact: one 09:00 message a day, meant to be handed to the AI.
-// Delivery goes through sendAlert (ops chat, internal-chat fallback; off unless FEISHU_INTERNAL_ENABLED).
+// Delivery goes through sendAlert: the alert webhook (ALERT_WEBHOOK_URL, Feishu-compatible) and/or the ops chat
+// (internal-chat fallback; off unless FEISHU_INTERNAL_ENABLED). An alert or recovery no outlet took is retried next run.
 import { beijingDate, beijingTime } from "@topka/contracts/time";
 import { sql } from "../db.ts";
 import { beijingDay, beijingStamp, duration, formatAlert, formatRecovery, sendAlert, type Finding, type Level } from "../notify/feishu.ts";
@@ -39,6 +40,30 @@ export async function collectFindings(now = Date.now()): Promise<Finding[]> {
         action: "转给 AI 立即处理",
         detail: `articles.discovered_at 超过 ${Math.round(QUIET_MS / 60_000)} 分钟没有新值（ALERT_QUIET_MINUTES）；查 sources.schedule、出网代理与采集失败`,
         since: last?.at ?? undefined,
+      });
+    }
+  }
+  // Fetches failing across many sources at once (an egress proxy, DNS, a blocked address): the site
+  // keeps showing what it has, but those sources add nothing. Single flaky feeds go to the weekly
+  // source-health report instead; this needs a share of the scheduled sources failing in a row.
+  if (collecting()) {
+    const minFails = Number(process.env.ALERT_SOURCE_FAILS || 3);
+    const [c] = await sql<{ scheduled: number; failing: number; since: Date | null; errors: string | null }[]>`
+      SELECT count(*)::int AS scheduled,
+             count(*) FILTER (WHERE fail_count >= ${minFails})::int AS failing,
+             min(coalesce(last_ok_at, created_at)) FILTER (WHERE fail_count >= ${minFails}) AS since,
+             string_agg(DISTINCT left(coalesce(last_error, '?'), 80), '；') FILTER (WHERE fail_count >= ${minFails}) AS errors
+      FROM sources WHERE enabled AND kind IN ('rss', 'web_list', 'json_list', 'x_search')`;
+    if (c!.failing > 0 && (c!.failing >= 3 || c!.failing / c!.scheduled >= 0.25)) {
+      out.push({
+        key: "content.fetch",
+        level: "now",
+        title: "很多信源连续抓取失败",
+        impact: `${c!.scheduled} 个信源里有 ${c!.failing} 个连续 ${minFails} 次以上没抓到，这些来源的新内容进不了网站`,
+        heals: "网络或来源恢复后会自动继续抓取",
+        action: "转给 AI 处理",
+        detail: `sources.fail_count ≥ ${minFails}（ALERT_SOURCE_FAILS）；错误：${(c!.errors ?? "").slice(0, 300)}`,
+        since: c!.since ?? undefined,
       });
     }
   }
@@ -258,7 +283,8 @@ export async function checkAlerts(now = Date.now()) {
     if (open && now - Date.parse(open.sentAt) <= REPEAT_MS[level]) continue;
     const since = open ? new Date(open.since) : (f.since ?? new Date(now));
     const msg = formatAlert(f, since, now, !!open);
-    await sendAlert(msg.title, msg.lines);
+    // Not taken by a configured outlet: stays unsent, so the next run (10 minutes) tries again.
+    if ((await sendAlert(msg.title, msg.lines, now)) === "failed") continue;
     state[f.key] = { title: f.title, level, since: since.toISOString(), sentAt: new Date(now).toISOString() };
     sent.push(f.key);
   }
@@ -267,7 +293,8 @@ export async function checkAlerts(now = Date.now()) {
     // Entries without a level predate this scheme (2026-09-29) and close without a message.
     if (state[key]!.level) {
       const msg = formatRecovery(state[key]!.title, new Date(state[key]!.since), now);
-      await sendAlert(msg.title, msg.lines);
+      // A recovery nobody received is kept open and announced on the next run.
+      if ((await sendAlert(msg.title, msg.lines, now)) === "failed") continue;
       sent.push(`${key}:recovered`);
     }
     delete state[key];
