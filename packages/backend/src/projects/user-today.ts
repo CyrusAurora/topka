@@ -147,6 +147,7 @@ export async function buildUserToday(userId: string, opts: { now?: Date; cards?:
       SELECT p.*, l.project_id, greatest(p.listed_at, coalesce(p.visible_after, p.listed_at)) AS entered_at
       FROM publications p JOIN linked l ON l.source_id = p.source_id JOIN articles a ON a.id = p.article_id
       WHERE p.visibility = 'public' AND p.in_scope AND p.eligible AND (NOT p.selected OR p.visible_after <= ${now})
+        AND NOT EXISTS (SELECT 1 FROM article_withdrawal_state w WHERE w.article_id = p.article_id AND w.withdrawn)
         AND (NOT p.backfill OR (a.backfill_reason = 'first-import' AND p.published_at > ${new Date(now.getTime() - RECENT_IMPORT_HOURS * 3_600_000)} AND p.published_at <= ${now}))
     ), scored AS (
       SELECT x.*, sc.score AS project_score, coalesce(sc.score::numeric, x.score) AS effective

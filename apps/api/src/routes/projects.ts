@@ -19,6 +19,20 @@ import { AckRejected, acknowledgeToday, buildToday } from "@topka/backend/projec
 import { acknowledgeUserToday, markItem } from "@topka/backend/projects/user-today";
 import { buildUserIssue, isIssueDate, issueCount, listPastIssues, readIssue, recordOpened } from "@topka/backend/projects/issues";
 import { sql } from "@topka/backend/db";
+import { articleHistory, userFollowsArticle } from "@topka/backend/content/withdrawals";
+
+/** Why a confirmation was not kept, for API clients (the web page says it in the reader's language). */
+const ACK_DETAIL: Record<string, string> = {
+  "snapshot-required": "确认要带上看到的那一期（snapshotId）。",
+  "unknown-snapshot": "没有这一期，请刷新后再确认。",
+  "project-mismatch": "这一期不是这个项目的，请刷新后再确认。",
+  "revision-mismatch": "项目已经改版，请刷新看新一版再确认。",
+  "ack-seq-mismatch": "在别处已经确认过了，请刷新后再确认。",
+  "result-not-acknowledgeable": "这一期还不能确认：有必需的来源没查到，或有内容还没评估。",
+  "titles-not-shown": "还有卡片没展示，看完全部再确认。",
+  "checkpoint-not-behind": "这一期已经确认过了。",
+  "command-required": "确认要带上一个新的 commandId。",
+};
 
 /** The empty-goal refusal, verbatim from the handover's guided creation. */
 const GOAL_PURPOSE_REQUIRED = "目标和方向都要有，回去补一句描述再来。";
@@ -120,18 +134,55 @@ export function registerProjects(app: FastifyInstance) {
     return buildToday(project, project.ownerId, { record: true });
   });
 
-  // "看完了": the checkpoint moves to the `until` of the payload the reader saw, never backwards.
+  // "看完了": the reader confirms the snapshot they were shown (master design 3.3). The body names the
+  // snapshot, the ackSeq it was built on, the cards shown and a commandId; the answer is a receipt.
+  // A refusal says which rule failed (code) so the page can say why; the checkpoint has not moved.
   app.post("/api/projects/:projectId/today/ack", async (req, reply) => {
     reply.header("Cache-Control", "no-store");
     const project = await ownedProject(req);
     if (!project) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "没有这个项目。" });
-    const through = new Date(String(bodyOf(req).through ?? ""));
+    const b = bodyOf(req);
+    const shownIds = Array.isArray(b.shownIds) ? b.shownIds.filter((x): x is string => typeof x === "string").slice(0, 100) : [];
     try {
-      return { checkpoint: await acknowledgeToday(project.ownerId, project.id, through) };
+      const receipt = await acknowledgeToday(project.ownerId, project, {
+        snapshotId: typeof b.snapshotId === "string" ? b.snapshotId : "",
+        ackSeq: Number.isSafeInteger(b.ackSeq) ? (b.ackSeq as number) : -1,
+        shownIds,
+        commandId: typeof b.commandId === "string" ? b.commandId.slice(0, 200) : "",
+      });
+      return { checkpoint: receipt };
     } catch (error) {
       if (!(error instanceof AckRejected)) throw error;
-      return sendProblem(req, reply, { status: 400, code: error.reason.replace("-", "_"), detail: "确认的时间不对，请刷新后再确认。" });
+      const status = error.reason === "snapshot-required" ? 400 : error.reason === "unknown-snapshot" ? 404 : 409;
+      return sendProblem(req, reply, { status, code: error.reason.replaceAll("-", "_"), detail: ACK_DETAIL[error.reason] ?? "这次确认没有记住，请刷新后再确认。" });
     }
+  });
+
+  // Mark a linked source as required for this project (or not): an unchecked required source keeps
+  // the brief from being confirmed (partial coverage). Owner only; an unlinked source is a 404.
+  app.put("/api/projects/:projectId/sources/:sourceId", async (req, reply) => {
+    reply.header("Cache-Control", "no-store");
+    const project = await ownedProject(req);
+    if (!project) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "没有这个项目。" });
+    const required = bodyOf(req).required;
+    if (typeof required !== "boolean") return sendProblem(req, reply, { status: 400, code: "bad_required", detail: "required 只能是 true 或 false。" });
+    const sourceId = String((req.params as { sourceId?: string }).sourceId ?? "");
+    const updated = await sql`UPDATE project_sources SET required = ${required} WHERE project_id = ${project.id} AND source_id = ${sourceId}`;
+    if (!updated.count) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "这个项目没有关注这个来源。" });
+    return { sourceId, required };
+  });
+
+  // The ledger history of one observation the user follows: its versions, withdrawal records and
+  // refused conflicting reports (titles and excerpts; full text follows the source's licence).
+  app.get("/api/me/items/:articleId/history", async (req, reply) => {
+    reply.header("Cache-Control", "no-store");
+    const user = await sessionOf(req);
+    if (!user) return sendProblem(req, reply, { status: 401, code: "unauthorized", detail: "请先登录。" });
+    const articleId = String((req.params as { articleId?: string }).articleId ?? "");
+    if (!/^[a-zA-Z0-9_-]{1,80}$/.test(articleId) || !(await userFollowsArticle(user.id, articleId))) {
+      return sendProblem(req, reply, { status: 404, code: "not_found", detail: "没有这条内容。" });
+    }
+    return { history: await articleHistory(articleId) };
   });
 
   // The user's own today across all their projects (今日: the fixed issue v3).

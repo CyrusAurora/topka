@@ -6,7 +6,7 @@
 // the project label is what the issue's own items carry.
 import { createElement, useCallback, useEffect, useState, type FC, type ReactElement } from "react";
 import { useT, useUiPrefs } from "../../lib/i18n.ts";
-import { cardMeta, hostOf, masthead, type CardRow, type IssueCard } from "./view.ts";
+import { cardMeta, hostOf, ledgerLabel, masthead, type CardRow, type IssueCard } from "./view.ts";
 
 export interface MagazineIssueProps {
   date: string;
@@ -147,6 +147,7 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
     summary: item.summary,
     tag: item.tag,
     read: readSet.has(item.id),
+    ledger: ledgerLabel(item, locale),
   }));
 
   const body: ReactElement = items.length === 0
@@ -175,7 +176,7 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
             },
               createElement("span", { className: "m-num", "aria-hidden": "true" }, row.no),
               createElement("div", { className: "m-body" },
-                createElement("div", { className: "m-t" }, row.title),
+                createElement("div", { className: "m-t" }, row.title, row.ledger ? createElement("span", { className: "m-ledger", "data-ledger": row.ledger }, ` · ${row.ledger}`) : null),
                 row.core ? createElement("div", { className: "m-why" }, row.core) : null,
                 createElement("div", { className: "m-meta" },
                   createElement("span", { className: "m-src" }, cardMeta(item, multiProjects, new Date(), locale, timeZone)),

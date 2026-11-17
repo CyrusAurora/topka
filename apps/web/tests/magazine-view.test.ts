@@ -87,3 +87,25 @@ test("MagazineToday shows three cards without the internal scores; signed-out is
   assert.ok(hrefs.includes("/login") && hrefs.includes("/register"), "signed out: both doors are offered");
   await page2.teardown();
 });
+
+test("a corrected or retracted observation carries its ledger chip on the card, in both languages", async () => {
+  const issue = {
+    ...issuePayload.issue!,
+    items: [
+      { ...issuePayload.issue!.items[0]!, ledger: "corrected" as const },
+      { ...issuePayload.issue!.items[1]!, ledger: "retracted-material" as const },
+      { ...issuePayload.issue!.items[2]!, ledger: "current" as const },
+    ],
+  };
+  const view: TodayView = { phase: "ready", day: "2026-10-27", projects: issuePayload.projects, issue, opened: [], archive: [], notice: "" };
+  const zhRows = cardRows(view, new Date("2026-10-27T08:00:00+08:00"));
+  assert.deepEqual(zhRows.map((r) => r.ledger), ["来源已更正", "已撤回", ""]);
+  const enRows = cardRows(view, new Date("2026-10-27T08:00:00+08:00"), "en");
+  assert.deepEqual(enRows.map((r) => r.ledger), ["Corrected by the source", "Retracted", ""]);
+  const page = await mount();
+  await page.render(createElement(MagazineToday, { fetchImpl: stubFetch(() => ({ body: { ...issuePayload, issue } })).fetch }));
+  await page.render(createElement(MagazineToday, { fetchImpl: stubFetch(() => ({ body: { ...issuePayload, issue } })).fetch }));
+  assert.equal(page.container.querySelectorAll("[data-ledger]").length, 2, page.container.textContent);
+  assert.ok(includes(page.container, "来源已更正") && includes(page.container, "已撤回"));
+  await page.teardown();
+});

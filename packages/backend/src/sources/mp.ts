@@ -1,7 +1,7 @@
 // WeChat official accounts. Dajiala (极致了, a paid service) supplies each account's latest posts and
 // article bodies; every enabled account is checked once per source interval.
 import { sql } from "../db.ts";
-import { upsertMaterial } from "../content/materials.ts";
+import { recordMaterial } from "../content/materials.ts";
 import { enqueue, QUEUES } from "../jobs/queue.ts";
 import { queueProcessing } from "../jobs/content.ts";
 import { stripTags } from "../lib/text.ts";
@@ -76,7 +76,7 @@ export async function checkMpAccount(sourceId: string, reason: "schedule" | "man
       // Mode 1 bodies are light HTML (paragraphs and image tags).
       const html = body?.content ? sanitizeBody(body.content, p.url) : null;
       const text = body?.content ? stripTags(body.content.replace(/<\/p>|<br\s*\/?>/gi, "\n")).replace(/\n{3,}/g, "\n\n").trim() : null;
-      const res = await upsertMaterial({
+      const res = await recordMaterial({
         sourceId,
         url: p.url,
         title: p.title,
@@ -100,7 +100,7 @@ export async function checkMpAccount(sourceId: string, reason: "schedule" | "man
       if (known) await sql`UPDATE articles SET raw = raw #- '{dajiala,bodyRetry}' WHERE id = ${known.id}`;
       if (res.created || res.revised) {
         created += res.created ? 1 : 0;
-        await queueProcessing(res.articleId);
+        await queueProcessing(res.articleId!);
       }
     }
     const cursor = { ...(source.cursor ?? {}), lastCheckedAt: new Date().toISOString(), lastPostTime: posts[0]?.post_time ?? source.cursor?.lastPostTime ?? null, remainMoney: history.remainMoney };

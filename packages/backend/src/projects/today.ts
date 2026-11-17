@@ -6,9 +6,23 @@
 // flagged quiet, so a reader can be told the day was quiet. Reading never moves the checkpoint; only acknowledgeToday does,
 // and only forward. Nothing qualifying is a first-class result ("无重要变化"), never an error.
 // The same payload is what the snapshot export writes.
+//
+// The checkpoint follows master design 3.3 (D12, the 010 semantics): every payload is an immutable
+// snapshot (project_brief_snapshots, content-addressed id) with a top result from the decision table
+// in @topka/contracts/brief (snapshot failed → partial coverage → importance not assessed → updates →
+// no important change; offline or signed out is the client's own first row). Only the last two may be
+// confirmed; a confirmation names the snapshot, the ackSeq it was built on, the cards it showed and a
+// commandId, runs the rejection checks in the documented order, and returns a receipt (the same
+// command always the same one). Withdrawn observations are no current evidence and never enter.
+import { createHash } from "node:crypto";
 import { instanceSetup } from "./instance-setup.ts";
 import { sql, type Db } from "../db.ts";
 import type { OwnedProject } from "../publication/project-owner.ts";
+import { ledgerStates, type LedgerView } from "../content/withdrawals.ts";
+import {
+  acknowledgementAllowed, coverageSatisfied, decideAck, evaluateBrief,
+  type AckRejection, type BriefResult, type CoverageEntry, type CoverageStatus,
+} from "@topka/contracts/brief";
 
 export const TODAY_SCHEMA_VERSION = 2;
 /** Without a checkpoint, "today" is the last 24 hours; an old checkpoint looks back at most 7 days. */
@@ -35,7 +49,8 @@ export function noChangeDetail(basis: "checkpoint" | "default" | "capped"): stri
 }
 export const TODAY_NOTICE = "全部内容仅为发布方声明、未独立核验；中文标题和摘要由模型生成，是分析，不是证据，以原文为准。";
 
-export type TodayResult = "updates-available" | "no-important-change";
+/** The server's results: every row of the table except the client-only offline-or-auth. */
+export type TodayResult = Exclude<BriefResult, "offline-or-auth">;
 
 export interface TodayItem {
   id: string;
@@ -57,6 +72,9 @@ export interface TodayItem {
   genericScore: number | null;
   /** The event (story) the card stands for; null while ungrouped. */
   storyId: string | null;
+  /** current or corrected (a withdrawn observation is never a card). */
+  ledger: LedgerView["state"];
+  revision: number;
 }
 
 export interface TodayPayload {
@@ -66,13 +84,19 @@ export interface TodayPayload {
   generatedAt: string;
   /** Left-open, right-closed: listedAt > since and <= until. `until` is what an acknowledgement sends back. */
   window: { since: string; until: string; basis: "checkpoint" | "default" | "capped" };
-  checkpoint: { readThrough: string | null };
+  checkpoint: { readThrough: string | null; ackSeq: number; receiptId: string | null };
+  /** What a confirmation names; id null when the snapshot could not be stored (snapshot-failed). */
+  snapshot: { id: string | null; ackSeq: number; acknowledgementAllowed: boolean };
   /**
    * linked: bound to the project; active: switched on and not paused; scheduled: the active ones the
    * worker fetches (not `external`); collectionOn: COLLECT_ENABLED; analysisOn: a real model analyses
    * new articles. The page explains a gap between them.
    */
   sources: { linked: number; active: number; scheduled: number; collectionOn: boolean; analysisOn: boolean };
+  /** The coverage certificate: satisfied when every required source was checked recently. */
+  coverage: { satisfied: boolean; sources: CoverageEntry[] };
+  /** Collected from the linked sources in the window but not assessed yet. */
+  unassessed: number;
   result: TodayResult;
   emptyState: { title: string; detail: string } | null;
   items: TodayItem[];
@@ -92,9 +116,42 @@ export interface TodayPayload {
 const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : null);
 
 export async function readCheckpoint(userId: string, projectId: string, db: Db = sql): Promise<Date | null> {
-  const [row] = await db<{ read_through: Date }[]>`
-    SELECT read_through FROM project_read_checkpoints WHERE user_id = ${userId} AND project_id = ${projectId}`;
-  return row?.read_through ?? null;
+  return (await readCheckpointRow(userId, projectId, db)).readThrough;
+}
+
+interface CheckpointRow { readThrough: Date | null; ackSeq: number; snapshotId: string | null; receiptId: string | null }
+
+async function readCheckpointRow(userId: string, projectId: string, db: Db, lock = false): Promise<CheckpointRow> {
+  const [row] = await db<{ read_through: Date | null; ack_seq: number; snapshot_id: string | null; receipt_id: string | null }[]>`
+    SELECT read_through, ack_seq, snapshot_id, receipt_id FROM project_read_checkpoints
+    WHERE user_id = ${userId} AND project_id = ${projectId} ${lock ? db`FOR UPDATE` : db``}`;
+  return { readThrough: row?.read_through ?? null, ackSeq: Number(row?.ack_seq ?? 0), snapshotId: row?.snapshot_id ?? null, receiptId: row?.receipt_id ?? null };
+}
+
+/** A source counts as checked when its last successful check is within two intervals (at least an hour). */
+export function coverageStatus(s: { paused: boolean; enabled: boolean; health: string; lastOkAt: Date | null; intervalMinutes: number }, now: Date): CoverageStatus {
+  if (s.paused || !s.enabled) return "paused";
+  if (!s.lastOkAt) return "never-checked";
+  if (s.health === "failing") return "failing";
+  const fresh = Math.max(2 * s.intervalMinutes, 60) * 60_000;
+  return now.getTime() - s.lastOkAt.getTime() > fresh ? "stale" : "checked";
+}
+
+export async function projectCoverage(projectId: string, now: Date, db: Db = sql): Promise<CoverageEntry[]> {
+  const rows = await db<{ source_id: string; name: string; required: boolean; paused: boolean; enabled: boolean; health: string; last_ok_at: Date | null; interval_minutes: number }[]>`
+    SELECT ps.source_id, s.name, ps.required, ps.paused, s.enabled, s.health, s.last_ok_at, s.interval_minutes
+    FROM project_sources ps JOIN sources s ON s.id = ps.source_id WHERE ps.project_id = ${projectId}
+    ORDER BY ps.required DESC, s.name, s.id`;
+  return rows.map((r) => {
+    const status = coverageStatus({ paused: r.paused, enabled: r.enabled, health: r.health, lastOkAt: r.last_ok_at, intervalMinutes: r.interval_minutes }, now);
+    // checkedAtUtc is the last successful check; a source that never had one has none.
+    return { sourceId: r.source_id, name: r.name, required: r.required, status, checkedAtUtc: iso(r.last_ok_at) };
+  });
+}
+
+/** brief-snapshot-v1: + the first 32 hex digits of the SHA-256 of the snapshot's content. */
+export function snapshotIdFor(content: unknown): string {
+  return `brief-snapshot-v1:${createHash("sha256").update(JSON.stringify(content)).digest("hex").slice(0, 32)}`;
 }
 
 /** First-import items published within this many hours count as today's news. */
@@ -108,7 +165,10 @@ export async function buildToday(project: OwnedProject, userId: string, opts: { 
   const db = opts.db ?? sql;
   const now = opts.now ?? new Date();
   const limit = opts.cards ?? todayCardCount();
-  const checkpoint = await readCheckpoint(userId, project.id, db);
+  const cp = await readCheckpointRow(userId, project.id, db);
+  const checkpoint = cp.readThrough;
+  // Left-open, right-closed: (since, until]. Anything entering after `until` belongs to the next window.
+  const until = now;
   const floor = new Date(now.getTime() - MAX_WINDOW_DAYS * 86_400_000);
   let since: Date;
   let basis: TodayPayload["window"]["basis"];
@@ -133,7 +193,9 @@ export async function buildToday(project: OwnedProject, userId: string, opts: { 
     ), listed AS (
       SELECT p.*, greatest(p.listed_at, coalesce(p.visible_after, p.listed_at)) AS entered_at
       FROM publications p JOIN articles a ON a.id = p.article_id
-      WHERE p.visibility = 'public' AND p.eligible AND (NOT p.selected OR p.visible_after <= ${now})
+      WHERE p.visibility = 'public' AND p.eligible AND (NOT p.selected OR p.visible_after <= ${until})
+        -- A withdrawn observation is no current evidence (its record stays readable).
+        AND NOT EXISTS (SELECT 1 FROM article_withdrawal_state w WHERE w.article_id = p.article_id AND w.withdrawn)
         -- From a linked source, or listed by one too: a broad feed may have stored the same URL first.
         AND (p.source_id IN (SELECT source_id FROM linked)
              OR EXISTS (SELECT 1 FROM article_discoveries d JOIN linked l ON l.source_id = d.source_id WHERE d.article_id = p.article_id))
@@ -146,7 +208,7 @@ export async function buildToday(project: OwnedProject, userId: string, opts: { 
       FROM listed x
       LEFT JOIN project_scores ps ON ps.project_id = ${project.id} AND ps.article_id = x.article_id
       LEFT JOIN stories st ON st.id = x.story_id
-      WHERE x.entered_at > ${since} AND x.entered_at <= ${now}
+      WHERE x.entered_at > ${since} AND x.entered_at <= ${until}
     ), ranked AS (
       -- One card per event: the event's best-scored report stands for it.
       SELECT y.*, row_number() OVER (PARTITION BY coalesce('s:' || y.story, 'a:' || y.article_id)
@@ -161,6 +223,7 @@ export async function buildToday(project: OwnedProject, userId: string, opts: { 
     ORDER BY r.effective DESC NULLS LAST, r.entered_at DESC, r.article_id
     LIMIT ${limit}`;
   const candidates = rows[0]?.candidates ?? 0;
+  const ledger = await ledgerStates(rows.map((r) => r.id), db);
   const items: TodayItem[] = rows.map((r) => {
     const generic = r.generic === null ? null : Number(r.generic);
     const score = r.project_score ?? generic;
@@ -168,6 +231,7 @@ export async function buildToday(project: OwnedProject, userId: string, opts: { 
       id: r.id, title: r.title, originalTitle: r.original_title && r.original_title !== r.title ? r.original_title : null, summary: r.summary,
       url: r.url, source: { id: r.source_id, name: r.source_name }, publishedAt: iso(r.published_at), listedAt: iso(r.listed_at)!,
       selected: r.selected, score, scoreBasis: r.project_score !== null ? "project" : generic !== null ? "generic" : null, genericScore: generic, storyId: r.story,
+      ledger: ledger.get(r.id)?.state ?? "current", revision: ledger.get(r.id)?.revision ?? 1,
     };
   });
   // Over the cards that carry a score (an unscored card neither lifts nor sinks the day).
@@ -185,17 +249,46 @@ export async function buildToday(project: OwnedProject, userId: string, opts: { 
     JOIN project_sources ps ON ps.source_id = a.source_id AND ps.project_id = ${project.id} AND NOT ps.paused
     JOIN sources s ON s.id = a.source_id AND s.enabled
     LEFT JOIN publications p ON p.article_id = a.id
-    WHERE p.article_id IS NULL AND a.processing_state = 'new' AND a.created_at > ${since} AND a.created_at <= ${now}`;
+    WHERE p.article_id IS NULL AND a.processing_state = 'new' AND a.created_at > ${since} AND a.created_at <= ${until}
+      -- Only what could become a card: history never does, a first import only when recent.
+      AND (NOT a.backfill OR (a.backfill_reason = 'first-import' AND a.published_at > ${new Date(now.getTime() - RECENT_IMPORT_HOURS * 3_600_000)}))
+      AND NOT EXISTS (SELECT 1 FROM article_withdrawal_state w WHERE w.article_id = a.id AND w.withdrawn)`;
+  const unassessed = pending?.n ?? 0;
+  const coverage = await projectCoverage(project.id, now, db);
+  const satisfied = coverageSatisfied(coverage);
 
-  const result: TodayResult = items.length > 0 ? "updates-available" : "no-important-change";
+  const conditions = { offlineOrAuth: false, snapshotFailed: false, coverageSatisfied: satisfied, unassessed, updates: items.length };
+  let result = evaluateBrief(conditions) as TodayResult;
+  // The snapshot: what this reader was shown, stored before it is shown. Same content, same id.
+  const content = {
+    userId, projectId: project.id, revision: project.currentRevision, ackSeq: cp.ackSeq, since: since.toISOString(), until: until.toISOString(), basis,
+    coverage, itemIds: items.map((i) => i.id), unassessed, result,
+  };
+  let snapshotId: string | null = snapshotIdFor(content);
+  try {
+    await db`
+      INSERT INTO project_brief_snapshots (snapshot_id, user_id, project_id, revision, ack_seq, window_since, window_until, basis, coverage, item_ids,
+        unassessed, top_result, acknowledgement_allowed)
+      VALUES (${snapshotId}, ${userId}, ${project.id}, ${project.currentRevision}, ${cp.ackSeq}, ${since}, ${until}, ${basis}, ${db.json(coverage as never)},
+        ${content.itemIds}, ${unassessed}, ${result}, ${acknowledgementAllowed(result)})
+      ON CONFLICT (snapshot_id) DO NOTHING`;
+  } catch (error) {
+    // Nothing to confirm against: the brief is still shown, read-only.
+    console.error(`brief snapshot for ${project.id} not stored: ${error instanceof Error ? error.message : String(error)}`);
+    snapshotId = null;
+    result = evaluateBrief({ ...conditions, snapshotFailed: true }) as TodayResult;
+  }
   return {
     schemaVersion: TODAY_SCHEMA_VERSION,
     kind: "project-today",
     project: { id: project.id, slug: project.slug, target: project.target, purpose: project.purpose },
     generatedAt: now.toISOString(),
-    window: { since: since.toISOString(), until: now.toISOString(), basis },
-    checkpoint: { readThrough: iso(checkpoint) },
+    window: { since: since.toISOString(), until: until.toISOString(), basis },
+    checkpoint: { readThrough: iso(checkpoint), ackSeq: cp.ackSeq, receiptId: cp.receiptId },
+    snapshot: { id: snapshotId, ackSeq: cp.ackSeq, acknowledgementAllowed: acknowledgementAllowed(result) },
     sources: { linked: counts?.linked ?? 0, active: counts?.active ?? 0, scheduled: counts?.scheduled ?? 0, ...instanceSetup() },
+    coverage: { satisfied, sources: coverage },
+    unassessed,
     result,
     emptyState: result === "no-important-change" ? { title: NO_CHANGE_TITLE, detail: noChangeDetail(basis) } : null,
     items,
@@ -203,37 +296,84 @@ export async function buildToday(project: OwnedProject, userId: string, opts: { 
     candidates,
     quietDay: cardsMean === null || cardsMean < QUIET_DAY_MEAN,
     cardsMean,
-    awaitingAnalysis: pending?.n ?? 0,
+    awaitingAnalysis: unassessed,
     notice: TODAY_NOTICE,
   };
 }
 
+/** Why a confirmation was refused: a rule of the table, or a request that names no stored snapshot. */
+export type AckReason = AckRejection | "snapshot-required" | "unknown-snapshot" | "invalid-through" | "future-through";
+
 export class AckRejected extends Error {
-  readonly reason: "invalid-through" | "future-through";
-  constructor(reason: AckRejected["reason"]) {
+  readonly reason: AckReason;
+  constructor(reason: AckReason) {
     super(reason);
     this.reason = reason;
   }
 }
 
+export interface AckInput {
+  snapshotId: string;
+  ackSeq: number;
+  shownIds: string[];
+  commandId: string;
+}
+
+export interface AckResult {
+  receiptId: string;
+  ackSeq: number;
+  readThrough: string;
+  snapshotId: string;
+  /** The same confirmation again: nothing moved, the stored receipt. */
+  idempotent: boolean;
+  /** Kept for older clients: the checkpoint moved. */
+  advanced: boolean;
+}
+
 /**
- * The reader confirms having read up to `through` (the window.until of the payload they saw). The
- * checkpoint only moves forward: an older or equal `through` leaves it where it is (idempotent).
+ * "看完了": the reader confirms the snapshot they were shown. The checks run in the order of 3.3
+ * (decideAck), inside one transaction holding the checkpoint row; on success the checkpoint moves to
+ * the snapshot's window end with ackSeq + 1, and the confirmation is logged. Any failure leaves the
+ * checkpoint where it was. Reading, marking, switching the language never come here.
  */
-export async function acknowledgeToday(userId: string, projectId: string, through: Date, opts: { now?: Date; db?: Db } = {}) {
+export async function acknowledgeToday(userId: string, project: OwnedProject, input: AckInput, opts: { db?: typeof sql } = {}): Promise<AckResult> {
+  if (!input.snapshotId) throw new AckRejected("snapshot-required");
   const db = opts.db ?? sql;
-  const now = opts.now ?? new Date();
-  if (Number.isNaN(through.getTime())) throw new AckRejected("invalid-through");
-  // A little clock skew between the page and the server is fine; a checkpoint in the future is not.
-  if (through.getTime() > now.getTime() + 60_000) throw new AckRejected("future-through");
-  const at = through.getTime() > now.getTime() ? now : through;
-  const [row] = await db<{ read_through: Date; acks: number; advanced: boolean }[]>`
-    WITH prev AS (SELECT read_through FROM project_read_checkpoints WHERE user_id = ${userId} AND project_id = ${projectId})
-    INSERT INTO project_read_checkpoints (user_id, project_id, read_through) VALUES (${userId}, ${projectId}, ${at})
-    ON CONFLICT (user_id, project_id) DO UPDATE SET
-      read_through = greatest(project_read_checkpoints.read_through, EXCLUDED.read_through),
-      acks = project_read_checkpoints.acks + CASE WHEN EXCLUDED.read_through > project_read_checkpoints.read_through THEN 1 ELSE 0 END,
-      updated_at = CASE WHEN EXCLUDED.read_through > project_read_checkpoints.read_through THEN now() ELSE project_read_checkpoints.updated_at END
-    RETURNING read_through, acks, (SELECT read_through FROM prev) IS DISTINCT FROM read_through AS advanced`;
-  return { readThrough: row!.read_through.toISOString(), advanced: row!.advanced };
+  return db.begin(async (tx) => {
+    await tx`INSERT INTO project_read_checkpoints (user_id, project_id) VALUES (${userId}, ${project.id}) ON CONFLICT DO NOTHING`;
+    const cp = await readCheckpointRow(userId, project.id, tx, true);
+    const [snap] = await tx<{ snapshot_id: string; project_id: string; revision: number; ack_seq: number; acknowledgement_allowed: boolean; window_until: Date; item_ids: string[] }[]>`
+      SELECT snapshot_id, project_id, revision, ack_seq, acknowledgement_allowed, window_until, item_ids
+      FROM project_brief_snapshots WHERE snapshot_id = ${input.snapshotId} AND user_id = ${userId}`;
+    if (!snap) throw new AckRejected("unknown-snapshot");
+    const commandId = input.commandId.trim();
+    // The same command for the same snapshot, at any time later: its receipt again.
+    if (commandId) {
+      const [prior] = await tx<{ snapshot_id: string; receipt_id: string; ack_seq: number; read_through: Date }[]>`
+        SELECT snapshot_id, receipt_id, ack_seq, read_through FROM project_checkpoint_acks
+        WHERE user_id = ${userId} AND project_id = ${project.id} AND command_id = ${commandId}`;
+      if (prior && prior.snapshot_id === snap.snapshot_id && snap.project_id === project.id) {
+        return { receiptId: prior.receipt_id, ackSeq: Number(prior.ack_seq), readThrough: prior.read_through.toISOString(), snapshotId: prior.snapshot_id, idempotent: true, advanced: false };
+      }
+      if (prior) throw new AckRejected("command-required");
+    }
+    const decision = decideAck(
+      { snapshotId: snap.snapshot_id, projectId: snap.project_id, revision: snap.revision, ackSeq: Number(snap.ack_seq), acknowledgementAllowed: snap.acknowledgement_allowed, until: snap.window_until.toISOString(), itemIds: snap.item_ids },
+      { ackSeq: cp.ackSeq, snapshotId: cp.snapshotId, readThrough: iso(cp.readThrough), receiptId: cp.receiptId },
+      { projectId: project.id, currentRevision: project.currentRevision, ackSeq: Number(input.ackSeq), shownIds: input.shownIds, commandId },
+    );
+    if (decision.kind === "reject") throw new AckRejected(decision.reason);
+    if (decision.kind === "idempotent") {
+      return { receiptId: decision.receiptId, ackSeq: cp.ackSeq, readThrough: iso(cp.readThrough)!, snapshotId: snap.snapshot_id, idempotent: true, advanced: false };
+    }
+    const ackSeq = cp.ackSeq + 1;
+    await tx`
+      UPDATE project_read_checkpoints SET ack_seq = ${ackSeq}, read_through = ${snap.window_until}, snapshot_id = ${snap.snapshot_id},
+        receipt_id = ${decision.receiptId}, command_id = ${commandId}, revision = ${snap.revision}, acks = acks + 1, updated_at = now()
+      WHERE user_id = ${userId} AND project_id = ${project.id}`;
+    await tx`
+      INSERT INTO project_checkpoint_acks (user_id, project_id, ack_seq, snapshot_id, command_id, receipt_id, read_through)
+      VALUES (${userId}, ${project.id}, ${ackSeq}, ${snap.snapshot_id}, ${commandId}, ${decision.receiptId}, ${snap.window_until})`;
+    return { receiptId: decision.receiptId, ackSeq, readThrough: snap.window_until.toISOString(), snapshotId: snap.snapshot_id, idempotent: false, advanced: true };
+  });
 }

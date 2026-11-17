@@ -188,7 +188,10 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
 
   // Passed for a following project only (battery, earnings…): its projects see it, the public does not.
   const inScope = typeof f.inScope === "boolean" ? (f.inScope as boolean) : analysis?.in_scope ?? true;
-  const eligible = isPoolEligible({ participationMode: source.participation_mode, relevance, title, summary });
+  // A withdrawn observation (article_withdrawals) leaves the pool: no new feed entry, the sync ledger
+  // removes it, projects stop seeing it as current evidence. Its detail page stays, as retracted material.
+  const [withdrawal] = await tx<{ withdrawn: boolean }[]>`SELECT withdrawn FROM article_withdrawal_state WHERE article_id = ${articleId}`;
+  const eligible = !withdrawal?.withdrawn && isPoolEligible({ participationMode: source.participation_mode, relevance, title, summary });
   const selected = inScope && isSelectable(eligible, judgedSelected, source.tier);
   const reason = selected ? pickString(f.reason, analysis?.reason_zh ?? null) : null;
   const hasXPost = !!article.x_post;

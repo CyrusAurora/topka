@@ -1,7 +1,7 @@
 // Collection run for one source: fetch listing → filter → store material → enqueue processing.
 // A failed fetch never advances the success cursor; the source's health reflects consecutive failures.
 import { sql } from "../db.ts";
-import { identityKeyFor, upsertMaterial } from "../content/materials.ts";
+import { countOutcome, emptyLedgerCounts, identityKeyFor, recordMaterial, type LedgerCounts } from "../content/materials.ts";
 import { enqueue, QUEUES } from "../jobs/queue.ts";
 import { queueProcessing } from "../jobs/content.ts";
 import { BudgetExceededError } from "../providers/receipts.ts";
@@ -82,9 +82,10 @@ const DAY_MS = 86_400_000;
 /** A listing title that is no headline: a label that swallowed its summary, or a call to action. */
 const needsTitle = (title: string) => title.length > 100 || /^(read more|learn more|continue reading|more|阅读全文|阅读更多|查看详情|了解更多)$/i.test(title.trim());
 
-async function store(sourceId: string, candidates: Candidate[], backfill: string | null): Promise<{ created: number; revised: number }> {
+async function store(sourceId: string, candidates: Candidate[], backfill: string | null): Promise<{ created: number; revised: number; ledger: LedgerCounts }> {
   let created = 0;
   let revised = 0;
+  const ledger = emptyLedgerCounts();
   const seen = new Set<string>();
   for (const c of candidates) {
     const material = { ...c, sourceId, via: "fetch" as const, backfill };
@@ -93,13 +94,14 @@ async function store(sourceId: string, candidates: Candidate[], backfill: string
     const key = identityKeyFor(material);
     if (seen.has(key)) continue;
     seen.add(key);
-    const res = await upsertMaterial(material);
+    const res = await recordMaterial(material);
+    countOutcome(ledger, res);
     if (res.created) created += 1;
     if (res.revised) revised += 1;
     // Extraction first when the source wants full text and none came with the listing, else analysis.
-    if (res.created || res.revised) await queueProcessing(res.articleId);
+    if (res.created || res.revised) await queueProcessing(res.articleId!);
   }
-  return { created, revised };
+  return { created, revised, ledger };
 }
 
 export async function collectSource(sourceId: string, opts: { force?: boolean } = {}): Promise<CollectResult> {
@@ -224,7 +226,10 @@ export async function collectSource(sourceId: string, opts: { force?: boolean } 
       }
     }
 
-    ({ created, revised } = await store(sourceId, candidates, firstImport ? "first-import" : null));
+    const stored = await store(sourceId, candidates, firstImport ? "first-import" : null);
+    ({ created, revised } = stored);
+    // The run's four ledger outcomes (created / changed / existing / conflict / failed) go with its detail.
+    detail = { ...(detail ?? {}), ledger: stored.ledger };
 
     if (firstImport) nextCursor.initializedAt = new Date().toISOString();
     nextCursor.lastOkAt = new Date().toISOString();
@@ -341,7 +346,7 @@ export async function collectXShard(key: string, sourceIds: string[]): Promise<{
         next_fetch_at = now() + make_interval(mins => ${minutes})
       WHERE id = ${m.id}`;
     await sql`UPDATE fetch_runs SET status = 'ok', finished_at = now(), found_count = ${mine.length}, new_count = ${stored.created},
-                detail = ${sql.json(detail as never)} WHERE id = ${runs.get(m.id)!}`;
+                detail = ${sql.json({ ...detail, ledger: stored.ledger } as never)} WHERE id = ${runs.get(m.id)!}`;
   }
   return { key, status: "ok", accounts: members.length, found, created };
 }

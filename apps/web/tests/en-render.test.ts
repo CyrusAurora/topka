@@ -103,6 +103,19 @@ test("Project today: the API's Chinese empty state and notice give way to Englis
     ["not found", () => ({ status: 404, body: {} })],
     ["signed out", () => ({ status: 401, body: {} })],
     ["failed", () => ({ status: 500, body: {} })],
+    ["offline", () => { throw new TypeError("Failed to fetch"); }],
+    ["snapshot failed", () => ({ body: { ...empty, result: "snapshot-failed", snapshot: { id: null, ackSeq: 0, acknowledgementAllowed: false } } })],
+    ["abstained", () => ({ body: { ...empty, result: "abstained-impact", unassessed: 2 } })],
+    [
+      "partial coverage, corrected",
+      (url) => ({
+        body: url.endsWith("/today") ? {
+          ...items, result: "partial-coverage", items: items.items.map((i) => ({ ...i, ledger: "corrected" })),
+          checkpoint: { readThrough: "2026-10-20T04:00:00.000Z", ackSeq: 1, receiptId: "receipt-00016c83" },
+          coverage: { satisfied: false, sources: [{ sourceId: "s1", name: "Example", required: true, status: "never-checked", checkedAtUtc: null }] },
+        } : {},
+      }),
+    ],
   ];
   for (const [label, handler] of cases) await expectEnglish(`project today ${label}`, createElement(TodayPage, { projectId: "pabc", fetchImpl: stubFetch(handler).fetch }));
 });
