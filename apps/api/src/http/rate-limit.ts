@@ -19,6 +19,8 @@ export const LIMITS = {
   file: { max: 240, timeWindow: minute },
   /** The image proxy: a page shows many images, each a signed request that may fetch upstream. */
   image: { max: 900, timeWindow: minute },
+  /** A reader's discovery lead: stored and checked against saved observations, never fetched. */
+  lead: { max: 30, timeWindow: minute },
 } as const;
 
 /** What a refused request carries to the error handler: the seconds until the window frees. */

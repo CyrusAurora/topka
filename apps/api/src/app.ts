@@ -11,6 +11,7 @@ import { registerAdminAuth } from "./routes/admin-auth.ts";
 import { registerAdmin } from "./routes/admin.ts";
 import { registerAccounts } from "./routes/accounts.ts";
 import { registerProjects } from "./routes/projects.ts";
+import { registerDiscovery } from "./routes/discovery.ts";
 import { registerAssistant } from "./routes/assistant.ts";
 import { registerUserKeys } from "./routes/user-keys.ts";
 import { registerSourceHealth } from "./routes/source-health.ts";
@@ -80,6 +81,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   registerAdmin(app);
   registerAccounts(app);
   registerProjects(app);
+  registerDiscovery(app);
   registerAssistant(app);
   registerUserKeys(app);
   registerSourceHealth(app);

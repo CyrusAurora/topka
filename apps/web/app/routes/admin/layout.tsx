@@ -37,6 +37,7 @@ function buildNav(t: Messages): NavEntry[] {
       items: [
         { to: "/admin/content", label: n.navContent },
         { to: "/admin/sources", label: n.navSources, count: "sources", tone: "bad" },
+        { to: "/admin/discovery", label: n.navDiscovery },
         ...(FEATURES.codexResetMonitor ? [{ to: "/admin/monitor", label: n.navMonitor, count: "monitor" as const, tone: "accent" as const }] : []),
         { to: "/admin/feedback", label: n.navFeedback, count: "feedback", tone: "accent" },
       ],

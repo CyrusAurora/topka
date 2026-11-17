@@ -124,6 +124,7 @@ Named presets bypass the free guard and are billed by their provider.
 | --- | --- | --- | --- |
 | `COLLECT_ENABLED` | `false` | No | Safety valve for all source collection. |
 | `MODEL_CALLS_ENABLED` | `false` | No | Safety valve for all model calls. |
+| `DISCOVERY_ENABLED` | `true` | No | Read the discovery channels (free directory and pack RSS feeds) into pending signals; also off while `COLLECT_ENABLED=false`. Signals never become observations or reach a model. See [discovery](discovery.md). |
 | `DEMO_SEED` | `false` | No | Docker Compose only: `true` makes the `setup` service load the offline demo (`scripts/demo.ts`) after migrate and seed, and turns on the built-in demo model while no real model is connected. Safe to leave on. `init-env.ts --demo` sets it. See [the tutorial](tutorial.en.md). |
 | `LLM_DEMO` | on when `DEMO_SEED=true` and no real model | No | Built-in demo model: rule-based answers for Chat and card copy, labelled "Demo model" in the UI. `true` forces it on, `false` off. Never used for article analysis. |
 | `DEMO_PASSWORD` | random | No | Password for the demo reader `demo@example.com`; unset means a random one printed once. |

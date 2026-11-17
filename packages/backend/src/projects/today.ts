@@ -18,6 +18,7 @@ import { createHash } from "node:crypto";
 import { instanceSetup } from "./instance-setup.ts";
 import { sql, type Db } from "../db.ts";
 import type { OwnedProject } from "../publication/project-owner.ts";
+import { promotedFor } from "../discovery/signals.ts";
 import { ledgerStates, type LedgerView } from "../content/withdrawals.ts";
 import {
   acknowledgementAllowed, coverageSatisfied, decideAck, evaluateBrief,
@@ -75,6 +76,8 @@ export interface TodayItem {
   /** current or corrected (a withdrawn observation is never a card). */
   ledger: LedgerView["state"];
   revision: number;
+  /** Channel signals this observation confirmed (promotion lineage); absent when there are none. */
+  confirmedSignals?: Array<{ channelName: string; url: string; kind: "directory" | "pack" | "user-lead" }>;
 }
 
 export interface TodayPayload {
@@ -224,6 +227,7 @@ export async function buildToday(project: OwnedProject, userId: string, opts: { 
     LIMIT ${limit}`;
   const candidates = rows[0]?.candidates ?? 0;
   const ledger = await ledgerStates(rows.map((r) => r.id), db);
+  const lineage = await promotedFor(rows.map((r) => r.id), db);
   const items: TodayItem[] = rows.map((r) => {
     const generic = r.generic === null ? null : Number(r.generic);
     const score = r.project_score ?? generic;
@@ -232,6 +236,7 @@ export async function buildToday(project: OwnedProject, userId: string, opts: { 
       url: r.url, source: { id: r.source_id, name: r.source_name }, publishedAt: iso(r.published_at), listedAt: iso(r.listed_at)!,
       selected: r.selected, score, scoreBasis: r.project_score !== null ? "project" : generic !== null ? "generic" : null, genericScore: generic, storyId: r.story,
       ledger: ledger.get(r.id)?.state ?? "current", revision: ledger.get(r.id)?.revision ?? 1,
+      ...(lineage.get(r.id) ? { confirmedSignals: lineage.get(r.id) } : {}),
     };
   });
   // Over the cards that carry a score (an unscored card neither lifts nor sinks the day).

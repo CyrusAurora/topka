@@ -152,6 +152,7 @@ docker compose up -d
 
 - **`/admin/sources`** 最值得看：这两个信源排到最上面，显示上次成功抓取的时间和最近 7 天的条数。旁边的 `/admin/runs` 列的是定时任务（巡检、翻译、热榜），不是每次抓取。
 - **`/admin/content`** 打开就是最新的文章；搜索框可以按 id、网址或标题找。文章页有一张“观测账本”卡片：历次版本、被拒收的报告，以及记录撤回、恢复的按钮（见 [ledger.md](ledger.md)）。
+- **`/admin/discovery`** 是发现渠道：目录订阅源读到的线索、读者给的线索，以及晋升门的结果。线索不是证据，只有来源里保存了同一链接的原文才晋升；项目页底部「待证实的风声」和 `/discover` 给读者看（见 [discovery.md](discovery.md)）。
 - **`docker compose logs -f worker`**：每次抓到新东西（或抓取失败）打一行，比如：
 
   ```text

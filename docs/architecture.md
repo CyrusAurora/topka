@@ -101,6 +101,9 @@ agents in [AGENTS.md](../AGENTS.md)):
   (`0059`); every write answers `created` / `existing` / `conflict` / `failed`, refusals and
   withdrawals are their own records, and a project brief is confirmed only through the checkpoint
   decision table in `packages/contracts/src/brief.ts`. See [ledger.md](ledger.md).
+- **Leads are not evidence.** Discovery signals (`discovery_signals`) are promoted only when a saved
+  editorial observation has the same URL identity (pure gate in `packages/contracts/src/discovery.ts`);
+  they never enter briefs or issues. See [discovery.md](discovery.md).
 - **Source traceability.** Every selected item links to the original; full-text display is
   per-source (`site_fulltext`), default off.
 

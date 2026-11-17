@@ -5,6 +5,7 @@ import { credential } from "@topka/backend/config";
 import { ensureQueue, recordRun } from "@topka/backend/jobs/queue";
 import { sweepUnprocessed } from "@topka/backend/jobs/content";
 import { scoreDiscoveredForProjects } from "@topka/backend/projects/discovered";
+import { collectDiscoveryChannels, runPromotionGate } from "@topka/backend/discovery/signals";
 import { translatePending } from "@topka/backend/editorial/translate";
 import { adaptIntervals, scheduleDueSources } from "@topka/backend/sources/collect";
 import { scheduleMpReconcile } from "@topka/backend/sources/mp";
@@ -41,6 +42,9 @@ export const SCHEDULES: Scheduled[] = [
   // Full-text translations of newly selected items (model calls; off with MODEL_CALLS_ENABLED=false).
   // Reports a broad feed stored first and a project's source listed too: scored for that project.
   { name: "projects.discovered", cron: "3,18,33,48 * * * *", run: () => scoreDiscoveredForProjects() },
+  // Discovery channels (free RSS; docs/discovery.md): read hourly into pending signals; the promotion
+  // gate also runs on its own, so a signal is promoted soon after the observation that confirms it.
+  { name: "discovery.gate", cron: "9,39 * * * *", run: () => runPromotionGate() },
   { name: "content.translate", cron: "*/5 * * * *", run: () => translatePending() },
   { name: "hot.rank", cron: "*/5 * * * *", run: () => computeHotRanking() },
   { name: "hot.snapshot", cron: "2 * * * *", run: () => snapshotHeat() },
@@ -85,6 +89,7 @@ export const SCHEDULES: Scheduled[] = [
     ? [
         { name: "sources.schedule", cron: "* * * * *", run: () => scheduleDueSources() },
         { name: "sources.adapt-intervals", cron: "20 4 * * *", run: adaptIntervals },
+        { name: "discovery.channels", cron: "26 * * * *", run: () => collectDiscoveryChannels() },
         // WeChat official accounts (paid), each once per its interval.
         { name: "sources.mp-reconcile", cron: "*/15 * * * *", run: () => scheduleMpReconcile() },
       ]

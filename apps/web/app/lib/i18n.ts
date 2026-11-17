@@ -21,6 +21,7 @@ import * as adminRuns from "./locales/adminRuns.ts";
 import * as adminSources from "./locales/adminSources.ts";
 import * as adminConfig from "./locales/adminConfig.ts";
 import * as problems from "./locales/problems.ts";
+import * as discover from "./locales/discover.ts";
 export const SUPPORTED_UI_LOCALES = ["zh-CN", "en"] as const;
 export type UiLocale = (typeof SUPPORTED_UI_LOCALES)[number];
 
@@ -110,6 +111,7 @@ const ZH_MESSAGES = {
   adminSources: adminSources.zh,
   adminConfig: adminConfig.zh,
   problems: problems.zh,
+  discover: discover.zh,
 };
 /** The dictionary's shape; every locale has exactly these keys (tests/i18n.test.ts). */
 export type Messages = Shape<typeof ZH_MESSAGES>;
@@ -131,6 +133,7 @@ const EN_MESSAGES: Messages = {
   adminSources: adminSources.en,
   adminConfig: adminConfig.en,
   problems: problems.en,
+  discover: discover.en,
 };
 
 export function messages(locale: UiLocale): Messages {

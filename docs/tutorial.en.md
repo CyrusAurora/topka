@@ -211,6 +211,10 @@ turned off back on: `sources:list -- --enabled` shows the same 2 before and afte
 - **`/admin/content`** opens on the newest articles; the search box looks one up by id, URL or title. An article's page has an
   "Observation ledger" card: its versions, refused reports, and buttons to record a withdrawal or
   reinstatement ([ledger.md](ledger.md)).
+- **`/admin/discovery`** shows the discovery channels: leads from directory feeds and from readers,
+  and what the promotion gate decided. A lead is not evidence; it is promoted only when a source saves
+  the original at the same link. Readers see them under "Unconfirmed signals" on a project page and
+  on `/discover` ([discovery.md](discovery.md)).
 - **`docker compose logs -f worker`** prints one line per fetch that stored something new (or failed):
 
   ```text

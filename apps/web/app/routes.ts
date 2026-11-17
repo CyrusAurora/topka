@@ -19,6 +19,7 @@ export default [
   route("projects", "routes/projects.tsx"),
   route("projects/new", "routes/projects-new.tsx"),
   route("archive", "routes/archive.tsx"),
+  route("discover", "routes/discover.tsx"),
   route("issue/:date", "routes/issue.tsx"),
   route("chat", "routes/chat.tsx"),
   route("settings", "routes/settings.tsx"),
@@ -39,6 +40,7 @@ export default [
     route("admin/selectbench/:runId", "routes/admin/selectbench-run.tsx"),
     route("admin/settings", "routes/admin/settings.tsx"),
     route("admin/audit", "routes/admin/audit.tsx"),
+    route("admin/discovery", "routes/admin/discovery.tsx"),
   ]),
   // Last: an unknown path is a 404 drawn after the root loader (reader language, not the site's).
   route("*", "routes/not-found.tsx"),

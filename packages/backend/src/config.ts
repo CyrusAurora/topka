@@ -106,6 +106,8 @@ export const config = {
   environmentName: projectEnv("ENVIRONMENT") || (isProduction ? "production" : "development"),
   // Model calls are live unless explicitly disabled (tests, replays).
   modelCallsEnabled: bool("MODEL_CALLS_ENABLED", true),
+  // Discovery channels (free RSS, no keys): read the directory and pack feeds into pending signals.
+  discoveryEnabled: bool("DISCOVERY_ENABLED", true),
   devAdmin: env.DEV_AUTH_ROLE === "admin" ? { displayName: env.DEV_AUTH_DISPLAY_NAME || "Dev Admin" } : null,
   /** The admin password (at least 12 characters). Feishu sign-in below is optional. */
   adminPassword: env.ADMIN_PASSWORD || null,

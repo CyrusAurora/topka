@@ -14,6 +14,8 @@ import { ChatPage } from "../app/features/chat/chat.ts";
 import { SettingsPage } from "../app/features/settings/settings.ts";
 import { GuidedCreation } from "../app/features/projects/guided-creation.ts";
 import { ProjectsOverview } from "../app/features/projects/overview.ts";
+import { DiscoverPage } from "../app/features/discover/discover-view.ts";
+import { SignalsAwaitingSection } from "../app/features/discover/signals.ts";
 import { buttonByText, click, mount, stubFetch, type StubHandler } from "./harness.ts";
 
 const ATTRS = ["aria-label", "placeholder", "title", "alt"];
@@ -195,4 +197,44 @@ test("API problems: Chinese pages keep the API's detail; English pages say it in
   assert.equal(problemMessage("en", { code: "made_up", detail: "某个新错误" }, "Could not sign in."), "Could not sign in.", "an unknown code falls back to the page's own message");
   assert.equal(problemMessage("en", { code: "x", detail: "Already English" }, "f"), "Already English");
   assert.equal(problemMessage("en", null, "f"), "f");
+});
+
+test("Discovery: the /discover page and the project's unconfirmed-signals block are English in every state", async () => {
+  const sig = (n: number, extra: Record<string, unknown> = {}) => ({
+    id: `s${n}`, kind: "directory", channelName: "Directory A", url: `https://example.org/${n}`, title: `Lead ${n}`, note: "Seen on a forum",
+    discoveredAt: "2026-11-17T01:00:00.000Z", projectId: null, invalidUrl: false, duplicates: 1, ...extra,
+  });
+  const pending = { items: [sig(1), sig(2, { kind: "user-lead", channelName: "reader", invalidUrl: true, url: "ftp://x" }), sig(3, { kind: "pack", channelName: "Pack B" })], total: 30, hidden: 10, cap: 20 };
+  const promoted = [{ ...sig(9), promotedAt: "2026-11-17T02:00:00.000Z", observation: { id: "obs1", title: "Original", url: "https://example.org/9", sourceName: "Src" } }];
+  const view = {
+    catalog: { feedCount: 1, enabled: true, lastRunAt: "2026-11-17T03:00:00.000Z", total: 2, feeds: [
+      { id: "f1", name: "Feed one", feedUrl: null, active: true, lastRead: { at: "2026-11-17T03:00:00.000Z", ok: false, found: 0, error: "HTTP 500" } },
+      { id: "f2", name: "Feed two", feedUrl: null, active: false, lastRead: null }] },
+    pending, promoted, projects: [{ id: "p1", slug: "p1", target: "Robots" }],
+  };
+  const cases: Array<[string, StubHandler]> = [
+    ["ready", () => ({ body: view })],
+    ["empty", () => ({ body: { ...view, catalog: { ...view.catalog, enabled: false, lastRunAt: null }, pending: { items: [], total: 0, hidden: 0, cap: 20 }, promoted: [], projects: [] } })],
+    ["signed out", () => ({ status: 401, body: { code: "unauthorized", detail: "请先登录。" } })],
+    ["failed", () => ({ status: 500, body: { detail: "服务暂时不可用" } })],
+  ];
+  for (const [label, handler] of cases) await expectEnglish(`discover ${label}`, createElement(DiscoverPage, { fetchImpl: stubFetch(handler).fetch }));
+  const sections: Array<[string, StubHandler]> = [
+    ["list", () => ({ body: { pending, promoted } })],
+    ["empty", () => ({ body: { pending: { items: [], total: 0, hidden: 0, cap: 20 }, promoted: [] } })],
+    ["failed", () => ({ status: 500, body: { detail: "服务暂时不可用" } })],
+  ];
+  for (const [label, handler] of sections) await expectEnglish(`signals ${label}`, createElement(SignalsAwaitingSection, { projectId: "p1", fetchImpl: stubFetch(handler).fetch }));
+  // A refused lead: the API's Chinese detail is never shown, the page says it in English.
+  await expectEnglish("signals refused lead", createElement(SignalsAwaitingSection, {
+    projectId: "p1",
+    fetchImpl: stubFetch((_url, init) => (init?.method === "POST" ? { status: 400, body: { code: "too_many", detail: "这个项目的待证线索已经太多" } } : { body: { pending, promoted } })).fetch,
+  }), async (root) => {
+    const form = root.querySelector("[data-lead-form]") as HTMLElement;
+    const input = form.querySelector("input") as HTMLInputElement;
+    const { type } = await import("./harness.ts");
+    await type(input, "https://example.org/x");
+    await click(buttonByText(form, messages("en").discover.leadSubmit));
+    await act(async () => { await new Promise((r) => setTimeout(r, 10)); });
+  });
 });

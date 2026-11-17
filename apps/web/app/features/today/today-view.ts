@@ -13,6 +13,7 @@ import { acknowledgementAllowed, evaluateBrief, type BriefResult, type CoverageE
 import { intlLocale, messages, useT, useUiPrefs, type UiLocale } from "../../lib/i18n.ts";
 import { MODEL_DOC_URL, SOURCES_DOC_URL } from "../../lib/docs-links.ts";
 import { zh } from "../../lib/locales/today.ts";
+import { SignalsAwaitingSection } from "../discover/signals.ts";
 
 export interface TodayItemView {
   id: string;
@@ -26,6 +27,8 @@ export interface TodayItemView {
   selected: boolean;
   score?: number | null;
   ledger?: "current" | "corrected";
+  /** Channel signals this observation confirmed (promotion lineage). */
+  confirmedSignals?: Array<{ channelName: string; url: string; kind: "directory" | "pack" | "user-lead" }>;
 }
 
 export interface TodayView {
@@ -261,6 +264,10 @@ export const TodayPage: FC<TodayPageProps> = (props) => {
                   ? createElement("button", { type: "button", onClick: () => void toggleVersions(item.id), className: "underline" }, versions ? t.today.hideVersions : t.today.showVersions)
                   : null,
               ),
+              item.confirmedSignals?.length
+                ? createElement("p", { "data-confirmed-signal": item.id, className: "mt-1.5 text-[12px] text-ink-4" },
+                    item.confirmedSignals.map((c) => t.discover.confirmedCard(c.kind === "user-lead" ? t.discover.channelLead : c.channelName)).join(" · "))
+                : null,
               versions === "loading" ? createElement("p", { role: "status", className: "mt-2 text-[12px] text-ink-4" }, t.today.versionsLoading) : null,
               versions === "failed" ? createElement("p", { role: "alert", className: "mt-2 text-[12px] text-hot" }, t.today.versionsFailed) : null,
               versions && typeof versions === "object"
@@ -326,5 +333,7 @@ export const TodayPage: FC<TodayPageProps> = (props) => {
     v ? createElement("p", { className: "mt-0.5 text-[12.5px] text-ink-3", "data-sources-line": "" }, t.today.sourcesLine(v.sources.linked, v.sources.active, shortTime(v.window.since, locale, timeZone), v.window.basis)) : null,
     v ? sourcesNotice(v.sources, locale) : null,
     createElement("div", { className: "mt-5" }, body),
+    // Evidence above, unconfirmed signals below, kept apart (master design 2.2).
+    state.phase === "ready" ? createElement(SignalsAwaitingSection, { projectId: props.projectId, fetchImpl: props.fetchImpl }) : null,
   );
 };
