@@ -134,7 +134,8 @@ What a user runs to check that a download or an image was built by this reposito
 workflow from the tagged source. `X.Y.Z` is the version; the tools are
 [slsa-verifier](https://github.com/slsa-framework/slsa-verifier) 2.7+, the
 [GitHub CLI](https://cli.github.com/) 2.49+ and
-[cosign](https://docs.sigstore.dev/cosign/system_config/installation/) 2.4+.
+[cosign](https://docs.sigstore.dev/cosign/system_config/installation/) 3.0+ (the signature is stored
+as an OCI referrer in the Sigstore bundle format, which cosign 2 does not find).
 
 <!-- doc-test: skip needs a published release (X.Y.Z is a placeholder); the release workflow's publish job runs these checks on every tag -->
 ```bash
@@ -189,6 +190,11 @@ image versions its run pushed (the image, its platform manifests, signature and 
 refuses a tag without a `-<label>`, a full release, and any image version in the run's time window
 carrying another tag. Entries in Sigstore's transparency log are permanent; they name the tag and
 digest, nothing else.
+
+The first rehearsal, `v0.2.0-slsatest.1` on 2026-11-17, passed every command above (slsa-verifier for
+the four files and the image, with a wrong tag, a changed file and another repository refused; `gh
+attestation verify` online and offline; cosign 3.1) and was removed with the cleanup workflow (12 image
+versions, the release and the tag); `:latest` and `:0.2.0` were untouched.
 
 ## 6. Once, after the repository is public
 

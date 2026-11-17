@@ -55,6 +55,6 @@ jobs:
       - name: Release and tag
         run: |
           gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
-          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG" 2>/dev/null || true
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG" > /dev/null 2>&1 || true
           ! gh api "repos/$GITHUB_REPOSITORY/git/refs/tags/$TAG" > /dev/null 2>&1 || { echo "::error::tag $TAG still exists"; exit 1; }
           echo "removed $TAG"

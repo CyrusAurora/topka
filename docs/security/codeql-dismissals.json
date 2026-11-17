@@ -22,5 +22,12 @@
     "path": "packages/backend/src/providers/llm.ts",
     "reason": "won't fix",
     "comment": "Intended: prompt templates shipped in the repo (industry/prompts/*.md) are the body of the model request. No user file or secret is read on this path. See docs/security/codeql-triage.md."
+  },
+  {
+    "rule": "actions/unpinned-tag",
+    "path": ".github/workflows/release.yml",
+    "message": "slsa-framework/slsa-github-generator/",
+    "reason": "won't fix",
+    "comment": "Required: slsa-github-generator must be called by release tag (@v2.1.0), not a SHA; it verifies its own ref and slsa-verifier checks that tag in the builder id. Only these two jobs; every other action is SHA-pinned. See docs/release.md (Provenance)."
   }
 ]

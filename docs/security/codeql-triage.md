@@ -73,18 +73,19 @@ address: behind a reverse proxy set `TRUST_PROXY=true` on the web server (see
 
 ## Open alerts and their dismissals
 
-After this triage the scan reports four alerts, none a vulnerability. On the day the public
+After this triage the scan reports four alerts, none a vulnerability (plus, since the SLSA release jobs of 2026-11-17, two `actions/unpinned-tag` alerts that are required by design). On the day the public
 repository first runs code scanning, dismiss them with the reasons in
 [`codeql-dismissals.json`](codeql-dismissals.json) (the alert numbers are only known then, so the
-loop matches each open alert by rule and file):
+loop matches each open alert by rule and file, and by a part of its message where an entry gives one):
 
 <!-- doc-test: skip dismisses code-scanning alerts with an admin token -->
 ```bash
 REPO=CyrusAurora/topka
 gh api "repos/$REPO/code-scanning/alerts?state=open&per_page=100" --paginate \
-  --jq '.[] | [.number, .rule.id, .most_recent_instance.location.path] | @tsv' |
-while IFS=$'\t' read -r n rule path; do
-  d=$(jq -c --arg r "$rule" --arg p "$path" '.[] | select(.rule == $r and .path == $p)' docs/security/codeql-dismissals.json)
+  --jq '.[] | [.number, .rule.id, .most_recent_instance.location.path, .most_recent_instance.message.text] | @tsv' |
+while IFS=$'\t' read -r n rule path msg; do
+  d=$(jq -c --arg r "$rule" --arg p "$path" --arg m "$msg" \
+    'first(.[] | select(.rule == $r and .path == $p and ((.message // "") as $s | $m | contains($s))))' docs/security/codeql-dismissals.json)
   if [ -z "$d" ]; then echo "NOT TRIAGED: #$n $rule $path"; continue; fi
   gh api -X PATCH "repos/$REPO/code-scanning/alerts/$n" -f state=dismissed \
     -f dismissed_reason="$(jq -r .reason <<<"$d")" -f dismissed_comment="$(jq -r .comment <<<"$d")" > /dev/null
@@ -102,3 +103,4 @@ add it here with its reason, before dismissing anything else.
 | `js/clear-text-logging` | `scripts/init-env.ts` | won't fix | The setup command prints the admin password it just generated, once, to the operator's own terminal; it is also in the 0600 `.env`. Not a server log. |
 | `js/clear-text-logging` | `scripts/demo.ts` | won't fix | The local demo seeder prints the demo account's password (generated, or the operator's own `DEMO_PASSWORD`) once to the terminal that ran it. |
 | `js/file-access-to-http` | `packages/backend/src/providers/llm.ts` | won't fix | The prompt templates shipped in `industry/prompts/` are the body of the model request by design; no user file or secret is read on this path. |
+| `actions/unpinned-tag` (two alerts: the `provenance-files` and `provenance-image` jobs) | `.github/workflows/release.yml` | won't fix | slsa-github-generator's reusable workflows must be called by release tag (`@v2.1.0`), not a commit SHA: the generator checks the ref it was called at, and `slsa-verifier` checks that tag in the provenance's builder id ([release.md](../release.md#provenance-slsa-build-level-3)). The entry carries a `message` match (`slsa-framework/slsa-github-generator/`), so an unpinned action of any other kind in that file is not dismissed by it. Every other action is pinned by SHA. |
