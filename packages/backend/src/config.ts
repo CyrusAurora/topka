@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parseEnv } from "node:util";
 import { SITE } from "@topka/industry/site";
+import { siteAddress } from "@topka/contracts/address";
 
 export const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 
@@ -80,7 +81,7 @@ export const config = {
   webPort: int("WEB_PORT", 3000),
   apiBaseUrl: str("API_BASE_URL", "http://127.0.0.1:3001"),
   // Every generated absolute link uses this address, whatever Host a request arrives with.
-  siteUrl: str("SITE_URL", SITE.defaultUrl).replace(/\/+$/, ""),
+  siteUrl: siteAddress(env, SITE.defaultUrl),
   selectedVisibleAfterSeconds: int("SELECTED_VISIBLE_AFTER_SECONDS", 180),
   egressProxyUrl: env.EGRESS_PROXY_URL || null,
   allowPrivateNetworkFetch: bool("ALLOW_PRIVATE_NETWORK_FETCH", false),

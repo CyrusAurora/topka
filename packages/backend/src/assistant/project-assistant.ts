@@ -14,6 +14,8 @@ import { createProject, ProjectRejected } from "../projects/create-project.ts";
 import { listUserProjects } from "../projects/user-today.ts";
 import type { IntakeBrief } from "./intake-core.cjs";
 import { inert, inertLine } from "../lib/untrusted.ts";
+import { readerLang, REPLIES } from "./replies.ts";
+import type { OutputLanguage } from "../accounts/locale.ts";
 
 export const ASSISTANT_PROMPT_VERSION = promptVersion("project-assistant");
 export const MAX_TURN_CALLS = 2;
@@ -139,12 +141,13 @@ const clean = (s: string | undefined, max: number) => (s ?? "").replace(/\s+/g, 
 
 /** Handles one chat message. Never throws for model trouble: the user gets an honest reply. */
 /** What the person reads when the free models cannot answer now: always a reply, never silence. */
-export const QUOTA_DAY_REPLY = "今天的免费额度用完了，明早 8 点后再试。";
-export function quotaReply(error: BudgetExceededError): string {
-  if (/NO_FREE_MODEL/.test(error.message)) return "现在没有可用的免费模型，过一会儿再发一次。";
+export const QUOTA_DAY_REPLY = REPLIES.zh.quotaDay;
+export function quotaReply(error: BudgetExceededError, lang: OutputLanguage = "zh"): string {
+  const r = REPLIES[lang];
+  if (/NO_FREE_MODEL/.test(error.message)) return r.noFreeModel;
   // Daily windows reset at 00:00 UTC = 08:00 Beijing; short waits are the per-minute / per-hour limits.
-  if (error.retryAfterSeconds > 3600) return QUOTA_DAY_REPLY;
-  return error.retryAfterSeconds > 120 ? "模型这会儿太忙，十分钟后再发一次。" : "模型这会儿有点忙，等一分钟再发一次。";
+  if (error.retryAfterSeconds > 3600) return r.quotaDay;
+  return error.retryAfterSeconds > 120 ? r.busyLong : r.busyShort;
 }
 
 export async function handleTurn(userId: string, text: string, opts: { clientId?: string; db?: Db } = {}): Promise<TurnResult> {
@@ -167,12 +170,13 @@ export async function handleTurn(userId: string, text: string, opts: { clientId?
              calls = calls + ${calls}, receipt_ids = receipt_ids || ${receiptIds}::bigint[] WHERE id = ${turnId}`;
     return { turnId, status, reply, card };
   };
-  if (!userText) return finish("done", "说说你想跟踪什么，或者想改、想删哪个项目。", "reply", null, 0, []);
+  const say = REPLIES[await readerLang(userId, db)];
+  if (!userText) return finish("done", say.emptyAssistant, "reply", null, 0, []);
 
   const [{ n }] = await db<{ n: number }[]>`
     SELECT count(*)::int AS n FROM assistant_turns WHERE user_id = ${userId} AND calls > 0
       AND created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'`;
-  if (n >= dailyTurnLimit()) return finish("deferred", "今天的对话次数用完了，明早 8 点后再试。", null, null, 0, []);
+  if (n >= dailyTurnLimit()) return finish("deferred", say.turnsUsed, null, null, 0, []);
 
   const projects = await listUserProjects(userId, db);
   const catalog = await sourceCatalog(db);
@@ -188,6 +192,7 @@ export async function handleTurn(userId: string, text: string, opts: { clientId?
     // What the reader typed cannot forge these section labels or end a fence.
     history.length ? `【最近对话】\n${history.map((h) => `用户：${inert(h.user_text)}\n助手：${inert(h.reply_text ?? "")}`).join("\n")}` : "",
     `【用户这次说】\n${inert(userText)}`,
+    say === REPLIES.en ? "【回答语言】en：reply 以及提议里的 purpose、focus、exclusions 用英文写；行业术语保留原文。" : "",
   ].filter(Boolean).join("\n\n");
 
   let answer: z.infer<typeof AnswerSchema> | null = null;
@@ -206,27 +211,27 @@ export async function handleTurn(userId: string, text: string, opts: { clientId?
       answer = res.data;
     } catch (error) {
       if (error instanceof ModelOutputError) continue;
-      if (error instanceof BudgetExceededError) return finish("deferred", quotaReply(error), null, null, calls - 1, receiptIds);
-      return finish("failed", "这次没想明白，换个说法再试一次？", null, null, calls, receiptIds);
+      if (error instanceof BudgetExceededError) return finish("deferred", quotaReply(error, say === REPLIES.en ? "en" : "zh"), null, null, calls - 1, receiptIds);
+      return finish("failed", say.failed, null, null, calls, receiptIds);
     }
   }
-  if (!answer) return finish("failed", "这次没想明白，换个说法再试一次？", null, null, calls, receiptIds);
+  if (!answer) return finish("failed", say.failed, null, null, calls, receiptIds);
 
   const ref = answer.projectRef === null || answer.projectRef === undefined ? null : String(answer.projectRef).replace(/^#?/, "#");
   const refProject = ref ? projects[projects.findIndex((_, i) => projectKey(i) === ref)] ?? null : null;
   const reply = clean(answer.reply, 160);
 
   if (answer.action === "propose_delete") {
-    if (!refProject) return finish("done", reply || "要删除哪个项目？说一下它的对象。", "reply", null, calls, receiptIds);
+    if (!refProject) return finish("done", reply || say.whichDelete, "reply", null, calls, receiptIds);
     const row = await newProposal(userId, "delete", refProject.id, null, db);
-    return finish("done", reply || `确认删除「${refProject.target}」吗？`, answer.action, await cardOf(row, db), calls, receiptIds);
+    return finish("done", reply || say.confirmDelete(refProject.target), answer.action, await cardOf(row, db), calls, receiptIds);
   }
   if (answer.action === "propose_create" || answer.action === "propose_update") {
     const p = answer.proposal;
-    if (answer.action === "propose_update" && !refProject) return finish("done", reply || "要改哪个项目？说一下它的对象。", "reply", null, calls, receiptIds);
+    if (answer.action === "propose_update" && !refProject) return finish("done", reply || say.whichUpdate, "reply", null, calls, receiptIds);
     const base = refProject ? { target: refProject.target, purpose: refProject.purpose, focus: refProject.focus, exclusions: refProject.exclusions, sourceIds: await projectSources(refProject.id, db) } : null;
     const target = clean(p?.target, 40) || base?.target || "";
-    if (!target) return finish("done", reply || "想跟踪的对象是什么？", "reply", null, calls, receiptIds);
+    if (!target) return finish("done", reply || say.whatTarget, "reply", null, calls, receiptIds);
     const asked = [...new Set((p?.sourceIds ?? []).map((s) => s.trim()).filter(Boolean))].slice(0, 60);
     const valid = asked.length
       ? new Set((await db<{ id: string }[]>`SELECT id FROM sources WHERE id IN ${db(asked)} AND kind <> 'external' AND participation_mode = 'editorial'`).map((r) => r.id))
@@ -234,15 +239,15 @@ export async function handleTurn(userId: string, text: string, opts: { clientId?
     const picked = asked.filter((id) => valid.has(id)).slice(0, MAX_SOURCES);
     const payload: ProposalPayload = {
       target,
-      purpose: clean(p?.purpose, 120) || base?.purpose || `跟踪${target}的重要进展`,
+      purpose: clean(p?.purpose, 120) || base?.purpose || say.defaultPurpose(target),
       focus: clean(p?.focus, 120),
       exclusions: clean(p?.exclusions, 120),
       sourceIds: picked.length ? picked : base?.sourceIds ?? [],
     };
     const row = await newProposal(userId, answer.action === "propose_create" ? "create" : "update", refProject?.id ?? null, payload, db);
-    return finish("done", reply || "我整理成了下面的提议，确认后才会生效。", answer.action, await cardOf(row, db), calls, receiptIds);
+    return finish("done", reply || say.proposed, answer.action, await cardOf(row, db), calls, receiptIds);
   }
-  return finish("done", reply || "我可以帮你新建、修改或删除跟踪项目，直接说就行。", "reply", null, calls, receiptIds);
+  return finish("done", reply || say.help, "reply", null, calls, receiptIds);
 }
 
 /** The red card for deleting a project picked from the list: no model call. */
@@ -266,13 +271,9 @@ export type ConfirmOutcome =
 /** What a closed card says, and why its buttons are gone. Cards stay open for a day. */
 export type CardState = "applied" | "superseded" | "cancelled" | "expired" | "failed" | "gone";
 export const CARD_TTL_HOURS = 24;
-const CLOSED_MESSAGE: Record<CardState, string> = {
-  applied: "这张卡片已经确认过了。",
-  superseded: "这张卡片已被后面的新卡片替换，请在最新那张上确认。",
-  cancelled: "这张卡片已经放弃了。想改就直接说。",
-  expired: `这张卡片已过期（超过 ${CARD_TTL_HOURS} 小时没确认），再说一次就会出新卡片。`,
-  failed: "这张卡片没能生效，再说一次试试。",
-  gone: "这个项目已经不在了。",
+const closedMessage = (state: CardState, lang: OutputLanguage = "zh"): string => {
+  const c = REPLIES[lang].closed;
+  return state === "expired" ? c.expired(CARD_TTL_HOURS) : c[state];
 };
 async function closedState(userId: string, proposalId: string, db: Db): Promise<CardState | null> {
   const [cur] = await db<{ status: string; expired: boolean }[]>`
@@ -284,15 +285,17 @@ async function closedState(userId: string, proposalId: string, db: Db): Promise<
 
 /** 确认: applies the user's own open proposal, once (the claim is atomic; a second tap finds it applied). */
 export async function confirmProposal(userId: string, proposalId: string, db: Sql = sql): Promise<ConfirmOutcome> {
-  if (!/^[0-9a-f-]{36}$/.test(proposalId)) return { ok: false, reason: "not-found", message: "找不到这张卡片。" };
+  const lang = await readerLang(userId, db);
+  const say = REPLIES[lang];
+  if (!/^[0-9a-f-]{36}$/.test(proposalId)) return { ok: false, reason: "not-found", message: say.notFound };
   const [row] = await db<{ kind: ProposalCard["kind"]; project_id: string | null; payload: ProposalPayload }[]>`
     UPDATE project_proposals SET status = 'applied', decided_at = now()
     WHERE id = ${proposalId} AND user_id = ${userId} AND status = 'proposed' AND created_at > now() - make_interval(hours => ${CARD_TTL_HOURS})
     RETURNING kind, project_id, payload`;
   if (!row) {
     const state = await closedState(userId, proposalId, db);
-    if (!state) return { ok: false, reason: "not-found", message: "找不到这张卡片。" };
-    return { ok: false, reason: "not-open", message: CLOSED_MESSAGE[state], state };
+    if (!state) return { ok: false, reason: "not-found", message: say.notFound };
+    return { ok: false, reason: "not-open", message: closedMessage(state, lang), state };
   }
   const settle = (projectId: string | null, failed = false) =>
     db`UPDATE project_proposals SET status = ${failed ? "failed" : "applied"}, result = ${db.json({ projectId } as never)} WHERE id = ${proposalId}`;
@@ -301,10 +304,10 @@ export async function confirmProposal(userId: string, proposalId: string, db: Sq
       const [p] = await db<{ target: string }[]>`DELETE FROM tracking_projects WHERE id = ${row.project_id} AND owner_id = ${userId} RETURNING target`;
       if (!p) {
         await settle(row.project_id, true);
-        return { ok: false, reason: "gone", message: "这个项目已经不在了。" };
+        return { ok: false, reason: "gone", message: say.closed.gone };
       }
       await settle(row.project_id);
-      return { ok: true, kind: "delete", projectId: row.project_id!, message: `已删除「${p.target}」。` };
+      return { ok: true, kind: "delete", projectId: row.project_id!, message: say.deleted(p.target) };
     }
     const p = row.payload;
     const existing = p.sourceIds.length ? await db<{ id: string }[]>`SELECT id FROM sources WHERE id IN ${db(p.sourceIds)}` : [];
@@ -314,11 +317,11 @@ export async function confirmProposal(userId: string, proposalId: string, db: Sq
         const { project, created } = await createProject({ ownerId: userId, target: p.target, purpose: p.purpose, sources: sourceIds.map((sourceId) => ({ sourceId, required: false })) }, db);
         await db`UPDATE tracking_projects SET focus = ${p.focus}, exclusions = ${p.exclusions}, updated_at = now() WHERE id = ${project.id}`;
         await settle(project.id);
-        return { ok: true, kind: "create", projectId: project.id, message: created ? `已创建「${project.target}」，新内容分析后会出现在今日。` : `「${project.target}」已经存在，已按这张卡片更新关注重点和排除。` };
+        return { ok: true, kind: "create", projectId: project.id, message: created ? say.created(project.target) : say.existed(project.target) };
       } catch (error) {
         if (!(error instanceof ProjectRejected)) throw error;
         await settle(null, true);
-        return { ok: false, reason: "rejected", message: "对象和目标都要有，再说一次？" };
+        return { ok: false, reason: "rejected", message: say.rejected };
       }
     }
     // update: the same project id; a changed target or purpose is a new revision.
@@ -342,10 +345,10 @@ export async function confirmProposal(userId: string, proposalId: string, db: Sq
     });
     if (!outcome) {
       await settle(row.project_id, true);
-      return { ok: false, reason: "gone", message: "这个项目已经不在了。" };
+      return { ok: false, reason: "gone", message: say.closed.gone };
     }
     await settle(row.project_id);
-    return { ok: true, kind: "update", projectId: row.project_id!, message: `已更新「${p.target}」。` };
+    return { ok: true, kind: "update", projectId: row.project_id!, message: say.updated(p.target) };
   } catch (error) {
     await settle(row.project_id, true);
     throw error;
@@ -358,7 +361,8 @@ export async function cancelProposal(userId: string, proposalId: string, db: Db 
   if (!/^[0-9a-f-]{36}$/.test(proposalId)) return { ok: false, state: null, message: "" };
   const rows = await db`UPDATE project_proposals SET status = 'cancelled', decided_at = now()
     WHERE id = ${proposalId} AND user_id = ${userId} AND status = 'proposed' AND created_at > now() - make_interval(hours => ${CARD_TTL_HOURS}) RETURNING id`;
-  if (rows.length) return { ok: true, state: "cancelled", message: "好的，说说要怎么改。" };
+  const lang = await readerLang(userId, db);
+  if (rows.length) return { ok: true, state: "cancelled", message: REPLIES[lang].cancelled };
   const state = await closedState(userId, proposalId, db);
-  return { ok: false, state, message: state ? CLOSED_MESSAGE[state] : "" };
+  return { ok: false, state, message: state ? closedMessage(state, lang) : "" };
 }

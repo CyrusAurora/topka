@@ -54,7 +54,7 @@ test("embodied pack media filters keep embodied titles and drop the rest", () =>
     ],
   );
   check(
-    "rss:b1cb6e48a245d864e9b4daa06167dfc9",
+    "rss-the-decoder-robotics",
     [
       "Toyota is betting $6.4 billion a year on humanoid robots and factory automation",
       "Nvidia open-sources Flora to make robot video labeling 125x cheaper than GPT-6 Astra",

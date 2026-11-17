@@ -83,7 +83,15 @@ test("no Chinese text in the web app's source outside the zh dictionaries (comme
 });
 
 // Deliberate changes to the Chinese copy made together with the move (old piece → why).
-const ZH_CHANGED: Record<string, string> = {};
+const ZH_CHANGED: Record<string, string> = {
+  // Trial 2026-11-10: the project page counted "N 个来源 · 自 X 起" next to a different source count.
+  "个来源 · 自": "project page now says 「关联 N 个信源 · 开着 M 个」 and which time window it shows",
+  "起": "same line as above",
+  // Trial 2026-11-10: the reminder hard-coded 台北时间 whatever zone the reader picked.
+  "每天 08:00（台北时间）固定的 3 件会出现在一个只属于你的 Atom 订阅地址里：放进任意 RSS 阅读器（Feedly、Inoreader、NetNewsWire、Reeder…），新一期一到就提醒你。不发邮件、不推送。": "now names the reader's own time zone",
+  // Trial 2026-11-10: three different collection-frequency claims; the wizard now states the real one.
+  "采集每天早晚各跑一次，新动态会进简报。": "replaced by the per-source interval wording (15 minutes to a few hours)",
+};
 
 test("the Chinese copy is unchanged: every Chinese piece the UI had is still in the source", () => {
   const before: string[] = JSON.parse(readFileSync(new URL("./fixtures/zh-CN-copy.json", import.meta.url), "utf8"));

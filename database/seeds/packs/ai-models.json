@@ -1,0 +1,330 @@
+{
+  "id": "ai-models",
+  "packId": "ai-models",
+  "label": "AI 模型跟踪",
+  "labelEn": "AI models",
+  "note": "AI models pack: official model blogs, open-model labs and the inference/runtime projects that ship them. Public feed URLs only.",
+  "sources": [
+    {
+      "id": "rss-openai-news",
+      "name": "OpenAI News",
+      "publisher": "OpenAI",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://openai.com/news/rss.xml",
+        "_topka": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "rss-google-deepmind",
+      "name": "Google DeepMind",
+      "publisher": "Google DeepMind",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://deepmind.google/blog/rss.xml",
+        "_topka": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "rss-mistral",
+      "name": "Mistral AI",
+      "publisher": "Mistral AI",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://mistral.ai/rss.xml",
+        "_topka": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "eu"
+      ]
+    },
+    {
+      "id": "rss-microsoft-research",
+      "name": "Microsoft Research",
+      "publisher": "Microsoft",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.microsoft.com/en-us/research/feed/",
+        "_topka": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方",
+        "研究"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "rss-hugging-face",
+      "name": "Hugging Face Blog",
+      "publisher": "Hugging Face",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://huggingface.co/blog/feed.xml",
+        "_topka": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方",
+        "开源"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "rss-qwen-blog",
+      "name": "Qwen Blog",
+      "publisher": "Alibaba Qwen",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://qwenlm.github.io/blog/index.xml"
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "cn"
+      ]
+    },
+    {
+      "id": "github-deepseek-v3",
+      "name": "DeepSeek-V3 commits",
+      "publisher": "DeepSeek",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/deepseek-ai/DeepSeek-V3/commits/main.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "cn"
+      ]
+    },
+    {
+      "id": "github-modelscope",
+      "name": "ModelScope Releases",
+      "publisher": "Alibaba ModelScope",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/modelscope/modelscope/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "cn"
+      ]
+    },
+    {
+      "id": "github-transformers",
+      "name": "Transformers Releases",
+      "publisher": "Hugging Face",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/huggingface/transformers/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "github-ollama",
+      "name": "Ollama Releases",
+      "publisher": "Ollama",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/ollama/ollama/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "github-llama-cpp",
+      "name": "llama.cpp Releases",
+      "publisher": "ggml",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/ggml-org/llama.cpp/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "github-vllm",
+      "name": "vLLM Releases",
+      "publisher": "vLLM project",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/vllm-project/vllm/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "github-sglang",
+      "name": "SGLang Releases",
+      "publisher": "SGLang project",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/sgl-project/sglang/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    }
+  ]
+}

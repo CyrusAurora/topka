@@ -10,6 +10,7 @@ import { assertOpenRouterQuota, auditFreeResponse, benchModel, freeCandidates, f
 import { benchedSeconds, benchProvider, benchRoute, candidateModels, chainOn, classifyRejection, isBenched, providerOrder, routeFor, type ProviderId } from "./free-chain.ts";
 import { opencodeCliComplete } from "./opencode-cli.ts";
 import { benchChatRoute, chatRouteBenched, interactiveChatRoutes, type ChatRouteCompleteInput, type ChatRouteCompletion } from "./chat-routes.ts";
+import { DEMO_MODEL_ID, DEMO_PURPOSES, demoComplete, demoModelOn } from "./demo-model.ts";
 
 export type Route = {
   provider: string;
@@ -213,11 +214,19 @@ async function userKeyRoute(userId: string): Promise<(Route & { model: string })
 export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): Promise<ChatJsonResult<z.infer<S>>> {
   const spec = MODELS[opts.model];
   if (!spec) throw new Error(`Unknown model ${opts.model}`);
-  if (!config.modelCallsEnabled) throw new Error("Model calls are disabled (MODEL_CALLS_ENABLED=false)");
+  // The built-in demo model (demo-model.ts) answers its few purposes when no real model is set up; it
+  // is free and offline, so the MODEL_CALLS_ENABLED valve does not apply to it.
+  const demo = spec.key === "default" && DEMO_PURPOSES.has(opts.purpose) && demoModelOn();
+  if (!config.modelCallsEnabled && !demo) throw new Error("Model calls are disabled (MODEL_CALLS_ENABLED=false)");
   // BYOK: the interactive path prefers the user's own key (user → instance → fail); a
   // user with a stored key never spends the instance's budget on their chat turns.
-  const userRoute = opts.userId ? await userKeyRoute(opts.userId) : null;
+  const userRoute = config.modelCallsEnabled && opts.userId ? await userKeyRoute(opts.userId) : null;
   if (userRoute) return chatJsonWith(opts, spec, userRoute.model, false, userRoute);
+  if (demo) {
+    return chatJsonWith(opts, spec, DEMO_MODEL_ID, false, {
+      provider: "demo", service: "demo", baseUrl: "demo", apiKey: "demo", transport: "plugin", complete: demoComplete(opts.purpose),
+    });
+  }
   // A plugin may register an interactive chat route (e.g. a free quota of its own) that answers before
   // the configured chain. The first enabled route that is not benched gets the call.
   if (spec.key === "default" && INTERACTIVE_PURPOSES.has(opts.purpose)) {

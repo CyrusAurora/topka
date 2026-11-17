@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { ProjectRejected, createProject } from "@topka/backend/projects/create-project";
 import { UnknownSourcesError } from "@topka/backend/projects/bind-sources";
 import { listSourcePacks } from "@topka/backend/projects/packs";
+import { instanceSetup } from "@topka/backend/projects/instance-setup";
 import { parseRegionFilter } from "@topka/backend/sources/regions";
 import { loadPackPrefs, savePackPrefs } from "@topka/backend/projects/pack-prefs";
 import { resolveSession, SESSION_COOKIE } from "@topka/backend/accounts/session";
@@ -69,7 +70,7 @@ export function registerProjects(app: FastifyInstance) {
     const user = await sessionOf(req);
     if (!user) return sendProblem(req, reply, { status: 401, code: "unauthorized", detail: "请先登录。" });
     const regions = parseRegionFilter((req.query as { regions?: string } | undefined)?.regions);
-    return { packs: await listSourcePacks(sql, regions.length ? { regions } : undefined) };
+    return { packs: await listSourcePacks(sql, regions.length ? { regions } : undefined), instance: instanceSetup() };
   });
 
   app.post("/api/projects", async (req, reply) => {

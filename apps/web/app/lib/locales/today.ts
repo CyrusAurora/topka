@@ -14,14 +14,21 @@ export const zh = {
   ackFinePrint: "确认只是记住这一期的位置，不表示同意任何分析。",
   ackFailed: "没能记住位置，请稍后再试。",
   noImportantChange: "无重要变化",
-  noChangeDetail: "自上次阅读以来，关注的来源里没有达到重要更新条件的新内容。这不表示什么都没发生。",
+  noChangeDetail: (basis?: string) =>
+    `${basis === "checkpoint" ? "自上次阅读以来，关注的来源里" : basis === "capped" ? "最近 7 天里，关注的来源" : "最近 24 小时里，关注的来源"}没有达到重要更新条件的新内容。这不表示什么都没发生。`,
   notice: "全部内容仅为发布方声明、未独立核验；中文标题和摘要由模型生成，是分析，不是证据，以原文为准。",
   selectedSuffix: " · 精选",
   analysisBadge: "分析",
   viewOriginal: "看原文出处",
   awaitingAnalysis: (n: number) => `另有 ${n} 条新采集的内容还没分析，分析后才会出现在这里。`,
   projectFallback: "项目",
-  sourcesLine: (purpose: string, active: number, since: string) => `${purpose} · ${active} 个来源 · 自 ${since} 起`,
+  sourcesLine: (linked: number, active: number, since: string, basis?: string) =>
+    `关联 ${linked} 个信源 · 开着 ${active} 个 · ${basis === "checkpoint" ? `你上次看过（${since}）以后的更新` : basis === "capped" ? `最多往回 7 天（${since} 起）的更新` : `最近 24 小时（${since} 起）的更新`}`,
+  sourcesOff: (off: number, linked: number) => `${linked} 个信源里有 ${off} 个在这个实例上还关着，不会采集，这个项目暂时不会从它们那里收到内容。管理员可以在后台「信源」里打开。`,
+  collectionOff: "这个实例还没开采集（.env 里 COLLECT_ENABLED=false），所有信源都不会抓取。管理员把它改成 true，再运行 docker compose up -d。",
+  sourcesHowTo: "怎么打开信源和采集",
+  analysisOff: "这个实例还没接模型（或 MODEL_CALLS_ENABLED=false），新文章能采到，但不会被分析，所以不会出卡片。内置演示模型只回答对话，不分析文章。",
+  modelHowTo: "怎么接模型（含免费和本地方案）",
 };
 
 /** "1 source", "2 sources". */
@@ -40,7 +47,8 @@ export const en: Shape<typeof zh> = {
   ackFinePrint: "Confirming only saves your place in this issue; it does not mean you agree with any analysis.",
   ackFailed: "Could not save your reading position. Try again shortly.",
   noImportantChange: "No important changes",
-  noChangeDetail: "Nothing new in the sources you follow has met the important-update bar since you last read. That does not mean nothing happened.",
+  noChangeDetail: (basis?: string) =>
+    `Nothing new in the sources you follow has met the important-update bar ${basis === "checkpoint" ? "since you last read" : basis === "capped" ? "in the last 7 days" : "in the last 24 hours"}. That does not mean nothing happened.`,
   notice: "Everything here is what the publishers say, not independently verified; titles and summaries are written by a model: analysis, not evidence. The original prevails.",
   selectedSuffix: " · Selected",
   analysisBadge: "Analysis",
@@ -50,5 +58,11 @@ export const en: Shape<typeof zh> = {
       ? "1 more newly collected item is waiting for analysis; it will appear here once analyzed."
       : `${n} more newly collected items are waiting for analysis; they will appear here once analyzed.`,
   projectFallback: "Project",
-  sourcesLine: (purpose: string, active: number, since: string) => `${purpose} · ${n_(active, "source")} · since ${since}`,
+  sourcesLine: (linked: number, active: number, since: string, basis?: string) =>
+    `${n_(linked, "source")} linked · ${active} switched on · ${basis === "checkpoint" ? `updates since you last read (${since})` : basis === "capped" ? `updates from the last 7 days (since ${since})` : `updates from the last 24 hours (since ${since})`}`,
+  sourcesOff: (off: number, linked: number) => `${off} of the ${n_(linked, "source")} ${off === 1 ? "is" : "are"} switched off on this site, so nothing is collected from ${off === 1 ? "it" : "them"} and this project gets no items from ${off === 1 ? "it" : "them"} yet. An admin can switch sources on in Admin → Sources.`,
+  collectionOff: "Collection is off on this site (COLLECT_ENABLED=false in .env), so no source is fetched. An admin sets it to true and runs docker compose up -d.",
+  sourcesHowTo: "How to switch sources and collection on",
+  analysisOff: "No model is connected on this site (or MODEL_CALLS_ENABLED=false): new articles are collected but not analysed, so no cards appear. The built-in demo model only answers Chat; it does not analyse articles.",
+  modelHowTo: "How to connect a model (free and local options included)",
 };

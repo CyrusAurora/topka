@@ -12,7 +12,7 @@ deprecated fallback; the process logs a one-time warning when it uses one.
 
 | Variable | Default | Required | Description |
 | --- | --- | --- | --- |
-| `SITE_URL` | `http://localhost:3000` | Yes in production | Public site address used for links, RSS, share images and MCP. |
+| `SITE_URL` | follows `PORT` (`http://localhost:<port>`); `https://SITE_DOMAIN` when that is set | Behind a reverse proxy or domain | Public site address used for links, RSS, share images and MCP. Set it only when readers use a different address than the one `PORT` implies. |
 | `ADMIN_PASSWORD` | empty | Yes in production | Admin password for `/admin`, at least 12 characters. |
 | `SESSION_SECRET` | empty | Yes | Secret that signs sessions (`openssl rand -hex 32`). |
 | `IMG_PROXY_SIGN_SECRET` | empty | Yes | Secret that signs proxied image URLs (`openssl rand -hex 32`). |
@@ -32,7 +32,7 @@ deprecated fallback; the process logs a one-time warning when it uses one.
 | `API_PORT` | `3001` | No | API listen port. |
 | `WEB_HOST` | `127.0.0.1` | No | Web server listen host; compose sets `0.0.0.0`. |
 | `WEB_PORT` | `3000` | No | Web server listen port. |
-| `PORT` | `127.0.0.1:3000` (compose), `3000` (without Docker) | No | With docker compose: the host address the web container is published on; the default is this machine only, `PORT=3000` opens every interface. Without Docker: fallback web port when `WEB_PORT` is unset. |
+| `PORT` | `127.0.0.1:3000` | No | The one place to change the port. With docker compose: the host address the web container is published on; `127.0.0.1:…` is this machine only, `0.0.0.0:3000` opens every interface. Without Docker: the web port when `WEB_PORT` is unset. The site address (`SITE_URL`) follows it. |
 | `API_BASE_URL` | `http://127.0.0.1:3001` | No | Where the web server reaches the API. |
 | `LOCAL_ROUTER_URL` | `http://127.0.0.1:3000` | No | Where local image rendering reaches the web server. |
 | `TRUST_PROXY` | `false` | No | Read the client address from `X-Forwarded-For` behind a reverse proxy. |
@@ -124,7 +124,8 @@ Named presets bypass the free guard and are billed by their provider.
 | --- | --- | --- | --- |
 | `COLLECT_ENABLED` | `false` | No | Safety valve for all source collection. |
 | `MODEL_CALLS_ENABLED` | `false` | No | Safety valve for all model calls. |
-| `DEMO_SEED` | `false` | No | Docker Compose only: `true` makes the `setup` service load the offline demo (`scripts/demo.ts`) after migrate and seed. See [the tutorial](tutorial.en.md). |
+| `DEMO_SEED` | `false` | No | Docker Compose only: `true` makes the `setup` service load the offline demo (`scripts/demo.ts`) after migrate and seed, and turns on the built-in demo model while no real model is connected. Safe to leave on. `init-env.ts --demo` sets it. See [the tutorial](tutorial.en.md). |
+| `LLM_DEMO` | on when `DEMO_SEED=true` and no real model | No | Built-in demo model: rule-based answers for Chat and card copy, labelled "Demo model" in the UI. `true` forces it on, `false` off. Never used for article analysis. |
 | `DEMO_PASSWORD` | random | No | Password for the demo reader `demo@example.com`; unset means a random one printed once. |
 | `COLLECT_KINDS` | `rss,web_list,json_list,x_search` | No | Source kinds the scheduler fetches. |
 | `COLLECT_SKIP_JINA` | `false` | No | Skip the Jina Reader fallback. |

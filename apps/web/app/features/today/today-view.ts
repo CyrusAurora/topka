@@ -4,7 +4,8 @@
 // /api/projects/:id/today with the visitor's session; a plain .ts factory for the node --test
 // component tests, the route file is a thin shell around it.
 import { createElement, useCallback, useEffect, useState, type FC, type ReactElement } from "react";
-import { intlLocale, useT, useUiPrefs, type UiLocale } from "../../lib/i18n.ts";
+import { intlLocale, messages, useT, useUiPrefs, type UiLocale } from "../../lib/i18n.ts";
+import { MODEL_DOC_URL, SOURCES_DOC_URL } from "../../lib/docs-links.ts";
 import { zh } from "../../lib/locales/today.ts";
 
 export interface TodayItemView {
@@ -22,9 +23,9 @@ export interface TodayItemView {
 
 export interface TodayView {
   project: { id: string; slug: string; target: string; purpose: string };
-  window: { since: string; until: string };
+  window: { since: string; until: string; basis?: "checkpoint" | "default" | "capped" };
   checkpoint: { readThrough: string | null };
-  sources: { linked: number; active: number };
+  sources: { linked: number; active: number; scheduled?: number; collectionOn?: boolean; analysisOn?: boolean };
   result: "updates-available" | "no-important-change";
   emptyState: { title: string; detail: string } | null;
   items: TodayItemView[];
@@ -58,6 +59,24 @@ export interface TodayPageProps {
 }
 
 type Phase = "loading" | "ready" | "signed-out" | "not-found" | "failed";
+
+/** Why a project may stay empty: some of its sources are off, or the site does not collect at all. */
+export function sourcesNotice(sources: TodayView["sources"], locale: UiLocale = "zh-CN"): ReactElement | null {
+  const t = messages(locale).today;
+  const off = Math.max(0, sources.linked - sources.active);
+  // Only for sources the worker would fetch: the demo's imported (`external`) sources need neither.
+  const fetched = (sources.scheduled ?? 0) > 0 || off > 0;
+  const collectionOff = sources.collectionOn === false && fetched;
+  const analysisOff = sources.analysisOn === false && fetched;
+  if (!off && !collectionOff && !analysisOff) return null;
+  const lines = [off ? t.sourcesOff(off, sources.linked) : null, collectionOff ? t.collectionOff : null, analysisOff ? t.analysisOff : null].filter((x): x is string => !!x);
+  const link = (href: string, text: string, attr: string) => createElement("a", { href, target: "_blank", rel: "noopener noreferrer", className: "mr-4 mt-1.5 inline-block underline", [attr]: "" }, text);
+  return createElement("div", { role: "note", className: "mt-3 rounded-2xl bg-bg-sunk px-4 py-3 text-[12.5px] leading-relaxed text-ink-2", "data-sources-notice": "" },
+    ...lines.map((line, i) => createElement("p", { key: i, className: i ? "mt-1.5" : undefined }, line)),
+    off || collectionOff ? link(SOURCES_DOC_URL, t.sourcesHowTo, "data-sources-doc") : null,
+    analysisOff ? link(MODEL_DOC_URL, t.modelHowTo, "data-model-doc") : null,
+  );
+}
 
 export const TodayPage: FC<TodayPageProps> = (props) => {
   const t = useT();
@@ -115,7 +134,7 @@ export const TodayPage: FC<TodayPageProps> = (props) => {
     const list = v.result === "no-important-change"
       ? createElement("section", { role: "status", "aria-label": zhOr(v.emptyState?.title, t.today.noImportantChange), className: "rounded-2xl border border-line bg-surface px-4 py-6 text-center" },
           createElement("div", { className: "text-[16px] font-semibold text-ink" }, zhOr(v.emptyState?.title, t.today.noImportantChange)),
-          createElement("p", { className: "mt-2 text-[13.5px] leading-relaxed text-ink-3" }, zhOr(v.emptyState?.detail, t.today.noChangeDetail)),
+          createElement("p", { className: "mt-2 text-[13.5px] leading-relaxed text-ink-3" }, zhOr(v.emptyState?.detail, t.today.noChangeDetail(v.window?.basis))),
         )
       : createElement("ol", { className: "flex flex-col gap-3" },
           v.items.map((item, i) =>
@@ -151,7 +170,9 @@ export const TodayPage: FC<TodayPageProps> = (props) => {
   return createElement("div", { className: "mx-auto w-full max-w-[560px] px-4 py-6 sm:py-10" },
     createElement("div", { className: "text-[12px] text-ink-4" }, t.today.title),
     createElement("h1", { className: "text-[18px] font-semibold text-ink" }, v?.project.target ?? t.today.projectFallback),
-    v ? createElement("p", { className: "mt-0.5 text-[13px] text-ink-3" }, t.today.sourcesLine(v.project.purpose, v.sources.active, shortTime(v.window.since, locale, timeZone))) : null,
+    v ? createElement("p", { className: "mt-0.5 text-[13px] text-ink-2" }, v.project.purpose) : null,
+    v ? createElement("p", { className: "mt-0.5 text-[12.5px] text-ink-3", "data-sources-line": "" }, t.today.sourcesLine(v.sources.linked, v.sources.active, shortTime(v.window.since, locale, timeZone), v.window.basis)) : null,
+    v ? sourcesNotice(v.sources, locale) : null,
     createElement("div", { className: "mt-5" }, body),
   );
 };

@@ -1,4 +1,4 @@
-# docker compose up -d --build     → http://localhost:3000   (the admin is at /admin)
+# docker compose up -d --build     → http://localhost:3000, or the port set by PORT in .env   (the admin is at /admin)
 # docker compose --profile https up -d --build   → HTTPS for SITE_DOMAIN through Caddy
 name: topka
 
@@ -74,7 +74,7 @@ services:
       WEB_HOST: 0.0.0.0
       WEB_PORT: "3000"
     # Loopback only by default: the plain-HTTP site (and its /admin login) is not reachable from other
-    # machines until you choose so. PORT=3000 publishes it on every interface; with the https profile
+    # machines until you choose so. PORT=0.0.0.0:3000 publishes it on every interface; with the https profile
     # Caddy fronts it and the default stays right.
     ports:
       - "${PORT:-127.0.0.1:3000}:3000"
@@ -97,6 +97,16 @@ services:
     depends_on:
       - web
 
+  # Optional local model (free, no account): COMPOSE_PROFILES=ollama in .env, then
+  # `docker compose exec ollama ollama pull qwen2.5:7b`; see docs/self-hosting.md#without-a-paid-key.
+  # Reached only inside the stack (http://ollama:11434/v1); no host port is published.
+  ollama:
+    image: ollama/ollama:0.40.16
+    profiles: ["ollama"]
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama
+
   # Pinned to a dated build by digest ("latest" changes daily); docs/release.md step 1 bumps it.
   rsshub:
     image: diygod/rsshub:2026-11-10@sha256:6ce545753185ed7c5c1043c452992c878098fe6e58accb3510d576ad79f6b16c
@@ -106,3 +116,4 @@ volumes:
   db: {}
   data: {}
   caddy: {}
+  ollama: {}

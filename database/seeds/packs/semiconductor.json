@@ -1,0 +1,251 @@
+{
+  "id": "semiconductor",
+  "packId": "semiconductor",
+  "label": "半导体与算力",
+  "labelEn": "Semiconductors & compute",
+  "note": "Semiconductors and compute pack: chip vendors, accelerator software and trade press. Public feed URLs only.",
+  "sources": [
+    {
+      "id": "rss-nvidia-blog",
+      "name": "NVIDIA Blog",
+      "publisher": "NVIDIA",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://blogs.nvidia.com/feed/",
+        "_topka": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "rss-nvidia-newsroom",
+      "name": "NVIDIA Newsroom",
+      "publisher": "NVIDIA",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://nvidianews.nvidia.com/releases.xml"
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "rss-amd-press",
+      "name": "AMD Press Releases",
+      "publisher": "AMD",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://ir.amd.com/news-events/press-releases/rss"
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "github-rocm",
+      "name": "ROCm Releases",
+      "publisher": "AMD",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/ROCm/ROCm/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "github-triton",
+      "name": "Triton Releases",
+      "publisher": "OpenAI",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/triton-lang/triton/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "rss-ieee-spectrum-semis",
+      "name": "IEEE Spectrum Semiconductors",
+      "publisher": "IEEE",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://spectrum.ieee.org/feeds/topic/semiconductors.rss"
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "rss-semianalysis",
+      "name": "SemiAnalysis",
+      "publisher": "SemiAnalysis",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://semianalysis.com/feed/"
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "rss-eetimes",
+      "name": "EE Times",
+      "publisher": "EE Times",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://www.eetimes.com/feed/"
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "rss-semiconductor-digest",
+      "name": "Semiconductor Digest",
+      "publisher": "Semiconductor Digest",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://www.semiconductor-digest.com/feed/"
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "rss-servethehome",
+      "name": "ServeTheHome",
+      "publisher": "ServeTheHome",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://www.servethehome.com/feed/"
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    }
+  ]
+}
