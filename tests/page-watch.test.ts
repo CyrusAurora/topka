@@ -86,7 +86,7 @@ test("a watched page stores nothing on its first run, then only links that appea
   assert.deepEqual(await stored(), ["five", "four", "three"], "the link over the cap is taken on the next run");
   assert.match(seenHeaders["user-agent"] ?? "", /^\S+ page watch\/1\.0 \(\+[^ )]+\/about\)$/, "named, no browser disguise, no \"bot\" or URL scheme");
   assert.doesNotMatch(seenHeaders["user-agent"] ?? "", /bot|https?:/i);
-  assert.equal(seenHeaders["accept-language"], "en");
+  assert.equal(seenHeaders["accept-language"], "*", "no language preference (fetch's own \"*\"): the site's default rendering");
   const [row] = await sql<{ cursor: { watchSeen: string[] } }[]>`SELECT cursor FROM sources WHERE id = ${ID}`;
   assert.equal(row!.cursor.watchSeen.length, 5);
 });

@@ -59,7 +59,7 @@ that appear on it.
   "Pricing", …), not an image, script or feed file; in page order, at most `watchMaxLinks` (40).
 - The first run only records the page and stores nothing. Later runs store the links not seen on
   earlier runs, at most `watchMaxNew` (5) per run; new links over the cap are taken on the next run.
-- The page is requested in English under the site's own name (`Topka page watch/1.0 (+<site>/about)`):
+- The page is requested with no language preference (the site's default rendering) under the site's own name (`Topka page watch/1.0 (+<site>/about)`):
   no browser disguise, and none of the "bot" or URL markers that corporate bot rules refuse.
 - The page gives no dates; `detail` reads the date from each new article's page (its metadata or
   JSON-LD), otherwise the article is dated when it was found.

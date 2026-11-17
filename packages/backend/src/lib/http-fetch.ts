@@ -95,7 +95,7 @@ export async function guardedFetch(input: string, opts: GuardedFetchOptions = {}
   for (let hop = 0; ; hop++) {
     const res = await undiciFetch(url, {
       method: opts.method ?? "GET",
-      headers: { "user-agent": DEFAULT_UA, "accept-language": "zh-CN,zh;q=0.9,en;q=0.8", ...(opts.headers ?? {}) },
+      headers: requestHeaders(opts.headers),
       body: opts.body,
       redirect: "manual",
       dispatcher: isBridge(url) ? (bridgeAgent ??= new Agent()) : dispatcherFor(proxied(url, route)),
@@ -126,6 +126,13 @@ export async function guardedFetch(input: string, opts: GuardedFetchOptions = {}
       text: () => decodeBody(body, res.headers.get("content-type")),
     };
   }
+}
+
+/** The default agent and language, then the caller's headers; a header given as "" is not sent at all. */
+function requestHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const merged: Record<string, string> = { "user-agent": DEFAULT_UA, "accept-language": "zh-CN,zh;q=0.9,en;q=0.8", ...extra };
+  for (const [k, v] of Object.entries(merged)) if (v === "") delete merged[k];
+  return merged;
 }
 
 /** DNS lookup cannot be cancelled, but a timed-out lookup must never continue into a fetch. */

@@ -191,12 +191,13 @@ export function fromHtml(html: string, base: string, source: SourceRow): Candida
  * How a page watch introduces itself. Sites watched this way are often corporate pages behind bot rules
  * that refuse any agent naming "bot" or carrying a URL (the legacy collector's plain
  * "<name>/0.1 (page watch)" got through): the site's own name, no browser disguise, the about address
- * without its scheme. English, as a client without a language preference gets: a Chinese rendering of an English
- * site has headlines shorter than the 12 characters the watch keeps.
+ * without its scheme. No language preference (fetch then sends "*", as the legacy collector's did): the default rendering
+ * (zh-CN turned bytedance.com's English labels into Chinese ones under the 12-character floor; "en"
+ * turned elsewhere.news's Chinese posts into English pages at other addresses).
  */
 const PAGE_WATCH_HEADERS = () => ({
   "user-agent": `${SITE.organization.name} page watch/1.0 (+${config.siteUrl.replace(/^https?:\/\//, "")}/about)`,
-  "accept-language": "en",
+  "accept-language": "",
 });
 
 /** Link labels that are site chrome, not posts (page_watch). */
