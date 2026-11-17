@@ -28,8 +28,10 @@ not ceremonial:
 - nomination by a current maintainer, with no objection from the others within seven days.
 
 A new maintainer gets triage and merge rights on the areas they have worked in, and is added to
-`MAINTAINERS.md` and `.github/CODEOWNERS` in the same pull request that grants the rights. Access
-and the written record change together, never one without the other.
+`MAINTAINERS.md` in the same pull request that grants the rights. Access and the written record
+change together, never one without the other. While there is one maintainer there is no
+`.github/CODEOWNERS` (it would only request that one person's review on every pull request); it comes
+back, listing each maintainer's areas, when a second maintainer joins.
 
 ## How disagreement is resolved
 

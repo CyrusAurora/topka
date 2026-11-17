@@ -55,6 +55,8 @@ Upgrading runs migrations `0061`, `0062` and `0063`.
 
 ### Changed
 
+- Dependabot opens at most one PR per ecosystem a month, each grouping all updates (majors included);
+  `.github/CODEOWNERS` is gone while there is one maintainer (`MAINTAINERS.md` is the record).
 - `POST /api/projects/:projectId/today/ack` takes `{snapshotId, ackSeq, shownIds, commandId}` instead
   of `{through}`; refusals carry a `code`.
 - `POST /api/ingest/items` no longer skips items without a usable URL silently (they are refused as
