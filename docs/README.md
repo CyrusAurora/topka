@@ -7,6 +7,8 @@ Start here:
 - [Tutorial](tutorial.en.md) ([简体中文](tutorial.md)) — from zero to a card on screen in about 30
   minutes, no API key, no GPU (offline demo data, then two real sources), with the output to expect at
   every step and a table of the usual snags.
+- [Online demo](online-demo.md) — the static demo on GitHub Pages: what is real, what is the demo
+  model, what is published and what never is, how it updates.
 - The project README, in [Chinese](../README.md) (primary: the UI and the generated content are
   Chinese-first) and [English](../README.en.md).
 

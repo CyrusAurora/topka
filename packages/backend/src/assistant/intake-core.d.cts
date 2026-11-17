@@ -23,9 +23,13 @@ declare namespace core {
 }
 declare const core: {
   VERSION: number; MAX_QUESTIONS: number; SESSION_TTL_MS: number; OTHER: string; CONFIRM_YES: string; CONFIRM_NO: string; RESTART: string; UNAVAILABLE: string;
-  TEXT: Record<"zh" | "en", { other: string; yes: string; no: string; restarted: string; whatsWrong: string; unavailable: string; join: string }>;
+  TEXT: Record<"zh" | "en", { other: string; yes: string; no: string; restarted: string; cancelled: string; whatsWrong: string; unavailable: string; join: string }>;
   unavailableIn(lang: string | null | undefined): string;
   routeOf(text: string): "manage" | "intake";
+  /** "取消" / "never mind": ends an unfinished interview. */
+  isCancel(text: string): boolean;
+  /** "帮我跟踪…" / "Track …": a new request, not an answer to the open question. */
+  isNewAsk(text: string): boolean;
   /** `lang` ("en" or Chinese otherwise) applies when this turn starts a new session. */
   planTurn(session: core.IntakeSession | null, text: string, now: number, lang?: string | null): core.IntakePlan;
   buildUser(mode: core.IntakeMode, session: core.IntakeSession, ctx?: core.IntakeContext): string;

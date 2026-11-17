@@ -251,7 +251,7 @@ export const TodayPage: FC<TodayPageProps> = (props) => {
               item.originalTitle ? createElement("div", { className: "mt-0.5 text-[12.5px] text-ink-4" }, item.originalTitle) : null,
               item.summary
                 ? createElement("p", { className: "mt-2 text-[13.5px] leading-relaxed text-ink-2" },
-                    createElement("span", { className: "mr-1 rounded bg-surface-2 px-1 text-[11px] text-ink-4" }, t.today.analysisBadge), item.summary)
+                    createElement("span", { className: "mr-1 rounded bg-surface-2 px-1 text-[11px] text-ink-4" }, t.today.analysisBadge), " ", item.summary)
                 : null,
               createElement("div", { className: "mt-2 flex flex-wrap gap-x-2 text-[12px] text-ink-4" },
                 createElement("span", null, item.source.name),

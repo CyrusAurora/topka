@@ -69,10 +69,10 @@ curl -s "http://$(docker compose port web 3000)/api/health"
 ```
 
 ```text
-{"ok":true,"db":"ok","ms":1,"release":"dev"}
+{"app":"topka","version":"0.2.0","ok":true,"db":"ok","ms":1,"release":"0.2.0"}
 ```
 
-刚启动时可能先拿到空响应，等几秒再试。
+`"app":"topka"` 说明答话的是 Topka，不是这台机器上别的服务。刚启动时可能先拿到空响应，等几秒再试。
 
 ### 3. 拿到演示密码
 
@@ -98,7 +98,7 @@ docker compose up -d
 docker compose exec api npm run demo:seed     # 打印 demo: password …（from DEMO_PASSWORD）
 ```
 
-或者不改 `.env`，只对这一次生效：`docker compose exec -e DEMO_PASSWORD=至少10个字符 api npm run demo:seed`。`.env` 里不是 `DEMO_SEED=true` 的站点，也可以用 `demo:seed` 补上演示数据。
+或者不改 `.env`，只对这一次生效：`docker compose exec -e DEMO_PASSWORD=至少10个字符 api npm run demo:seed`。注意它只管这一次：如果 `.env` 里也写着 `DEMO_PASSWORD`，下次 `docker compose up -d` 时 `setup` 会按 `.env` 里的值把密码改回去。想一直用新密码，就写进 `.env`（上面三步）。`.env` 里不是 `DEMO_SEED=true` 的站点，也可以用 `demo:seed` 补上演示数据。
 
 ### 4. 登录，看一眼
 
@@ -129,16 +129,15 @@ docker compose exec api npm run demo:seed     # 打印 demo: password …（from
 docker compose exec api npm run sources:only -- --id rss-hugging-face --id rss-github-ai
 ```
 
-输出里有这两行：
+输出是这一行：
 
 ```text
-.env not found. Continuing without it.
-保持打开 2 个（新打开 2），关闭其余 0 个
+保持打开 2 个（新打开 2），关闭其余 3 个
 ```
 
-第一行是正常的：容器里的配置来自 Compose，而不是读 `.env` 文件，所以在容器里跑任何 `npm run` 都会先打这一行。后面可能还跟着几行 `npm notice`，说有新版 npm，也不用管。
+关掉的 3 个是演示自带的 3 个虚构信源（`--demo` 时它们是开着的）。没用 `--demo` 的话这里是「关闭其余 0 个」。演示的今日和往期不受影响，演示项目页会显示它的信源关着。
 
-全部信源的列表在后台 <http://localhost:3000/admin/sources>，命令行里 `docker compose exec api npm run sources:list` 会打出每个 id。启动时导入了主题包和自带的信源列表，一共大约 400 个，全部是关的；`sources:only` 打开指定的这几个，把其他的都关掉。
+全部信源的列表在后台 <http://localhost:3000/admin/sources>，命令行里 `docker compose exec api npm run sources:list` 会打出每个 id。启动时导入了主题包和自带的信源列表，一共三百多个（确切数字在 `setup` 日志的 `sources:` 那一行），除了演示的 3 个都是关的；`sources:only` 打开指定的这几个，把其他的都关掉。
 
 **2. 打开采集，重启：**
 
@@ -147,7 +146,7 @@ sed -i 's/^COLLECT_ENABLED=false/COLLECT_ENABLED=true/' .env
 docker compose up -d
 ```
 
-端口在 `.env` 的 `PORT` 里，这里什么都不用加。这次重启时 `setup` 会再跑一遍演示脚本，只刷新演示自己的数据。
+端口在 `.env` 的 `PORT` 里，这里什么都不用加。这次重启时 `setup` 会再跑一遍演示脚本，只刷新演示自己的数据，不会把你刚关掉的演示信源再打开：`sources:list -- --enabled` 前后都是这 2 个。
 
 **3. 几分钟内看它干活：**
 
@@ -175,7 +174,7 @@ Compose 还会起一个 `rsshub` 容器（约 470 MB），给自带的微博信�
 
 建好后项目页会写明：关联了几个信源、实例上开着几个；还关着的信源、没开的采集、没接的模型，页面上都会写出来，并链到对应文档。项目只挑信源，不会替管理员打开它们：要它进内容，按第二部分打开这些信源。
 
-**用「对话」。** 打开「对话」，说一句想跟踪什么，比如「帮我跟踪人形机器人」。没接模型时，顶上写着「演示模型」：它按固定规则问两个问题（最关心哪类变化、不想看到什么），把需求整理成一个问题请你确认，再给出一张跟踪卡片；点确认就建好项目。说「删除人形机器人这个项目」会出一张删除卡片，同样要你确认。演示模型只用来走通流程，回答是固定的，也不分析文章。
+**用「对话」。** 打开「对话」，说一句想跟踪什么，比如「帮我跟踪人形机器人」。没接模型时，顶上写着「演示模型」：它按固定规则问两个问题（最关心哪类变化、不想看到什么），把需求整理成一个问题请你确认，再给出一张跟踪卡片；点确认就建好项目。说「删除人形机器人这个项目」会出一张删除卡片，同样要你确认。问到一半也可以改主意：说「取消」就结束这次问答、什么都不建；换一句「帮我跟踪……」就按新话题从头问；说「删除……」直接出删除卡片。演示模型只用来走通流程，回答是固定的，也不分析文章。
 
 **接一个不花钱的真实模型（可选）。** 两条路，具体每一行见 [self-hosting.md 的 Without a paid key](self-hosting.md#without-a-paid-key)：
 

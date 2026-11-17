@@ -709,6 +709,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+a.m-host {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a.m-host:hover {
+  color: var(--mag-ink);
+}
 .m-copy {
   border: 1px solid var(--mag-hair);
   background: #FBFAF7;
@@ -1032,6 +1039,23 @@
 }
 .settings-row .v { font-size: 12.5px; color: var(--mag-ink3); }
 .settings-row .v.warn { color: var(--mag-acc); }
+/* Settings → Projects: one row per project (name left, "Project Today ›" right), hairlines between. */
+.settings-projs { display: flex; flex-direction: column; }
+.settings-proj-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  font-size: 13px;
+  color: var(--mag-ink);
+  border-bottom: 1px solid var(--mag-hair);
+}
+.settings-proj-row:last-child { border-bottom: 0; }
+.settings-proj-row > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-proj-row .v { flex: none; font-size: 12.5px; color: var(--mag-ink3); }
+.settings-proj-row .v::after { content: " ›"; }
+.settings-proj-row:hover .v { color: var(--mag-acc); }
 .settings-note {
   font-size: 11.5px;
   color: var(--mag-ink3);

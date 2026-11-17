@@ -159,11 +159,13 @@ try {
   }
 
   // Sources: invented, example.org only. `external` means items arrive by import and the worker never
-  // schedules a fetch, so they can be switched on: the demo project then reads like a live one.
+  // schedules a fetch, so they can be switched on: the demo project then reads like a live one. They are
+  // switched on when first added only: a re-run (every `docker compose up` with DEMO_SEED=true) keeps
+  // whatever the operator chose since, so `sources:only` stays true across restarts.
   for (const s of SOURCES) {
     await sql`INSERT INTO sources (id, name, kind, config, tier, participation_mode, enabled, next_fetch_at)
               VALUES (${s.id}, ${s.name}, 'external', ${sql.json({ url: `https://example.org/topka-demo/${s.id}.xml` })}, 'T1', 'editorial', true, NULL)
-              ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, kind = 'external', enabled = true, next_fetch_at = NULL`;
+              ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, kind = 'external', next_fetch_at = NULL`;
   }
 
   // The reader, through the real registration code path (open mode: the demo needs no invite).

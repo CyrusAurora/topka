@@ -5,6 +5,7 @@
 // Backend: GET /api/me/today (UserIssuePayload) and GET /api/me/issues (archive). No model call here —
 // everything the reader sees was fixed at 08:00 UTC+8.
 
+import { createElement } from "react";
 import { messages, type UiLocale } from "../../lib/i18n.ts";
 
 /** The card shape every issue carries (UserIssuePayload.issue). */
@@ -56,6 +57,15 @@ export interface MagazineIssuePayload {
   opened?: string[];
   archive?: Array<{ date: string; no: number; titles: string[] }>;
   notice?: string;
+  /** The language the cards were written in, when the payload says (the online demo's exported issues). */
+  contentLang?: string;
+  /** Replaces the "updates every morning" line, in the page's language (the online demo, which does not update on a clock). */
+  footNote?: string;
+}
+
+/** The `lang` attribute for written content: set only when it differs from the page's language. */
+export function contentLangAttr(contentLang: string | null | undefined, locale: UiLocale): string | undefined {
+  return contentLang && contentLang !== locale ? contentLang : undefined;
 }
 
 /** Calendar day in the server's own time zone, the day the masthead shows. */
@@ -131,6 +141,9 @@ export interface TodayView {
   opened: string[];
   archive: Array<{ date: string; no: number; titles: string[] }>;
   notice: string;
+  contentLang?: string;
+  /** Replaces the "updates every morning" line, in the page's language (the online demo, which does not update on a clock). */
+  footNote?: string;
 }
 
 /** The card the page renders. Scores are deliberately absent from this shape: the rule is enforced
@@ -206,4 +219,24 @@ export function archiveRows(archive: ArchiveEntryRow[], locale: UiLocale = "zh-C
       titles: a.titles,
     };
   });
+}
+
+/** The card's source domain, linking the original in a new tab when the address is a web address. */
+export function sourceLink(url: string, host: string, label: string): ReturnType<typeof createElement> {
+  return /^https?:\/\//i.test(url)
+    ? createElement("a", { className: "m-host", href: url, target: "_blank", rel: "noopener noreferrer nofollow", title: label, "aria-label": label, "data-source-link": "" }, `${host} ↗`)
+    : createElement("span", { className: "m-host" }, host);
+}
+
+const CJK_TEXT = /[\u3400-\u9fff]/;
+/** lang for a piece of data (a source or project name) on a page in another language: Chinese text on an English page. */
+export function textLang(text: string, locale: UiLocale): string | undefined {
+  return locale === "en" && CJK_TEXT.test(text) ? "zh-CN" : undefined;
+}
+
+/** The card's meta line with its names marked by language: "source · when[ · project]". */
+export function metaNodes(source: string, when: string, project: string | null, locale: UiLocale): Array<ReturnType<typeof createElement> | string> {
+  const out: Array<ReturnType<typeof createElement> | string> = [createElement("span", { key: "s", lang: textLang(source, locale) }, source), ` · ${when}`];
+  if (project) out.push(" · ", createElement("span", { key: "p", lang: textLang(project, locale) }, project));
+  return out;
 }

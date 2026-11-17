@@ -29,7 +29,7 @@ test("TOPKA_RELEASE wins when set", () => {
   assert.ok(isRelease(releaseName()));
 });
 
-test("/api/health reports that release", async () => {
+test("/api/health says it is Topka, and reports that release", async () => {
   await import("./setup.ts");
   const { closeDb } = await import("@topka/backend/db");
   const { buildApp } = await import("../apps/api/src/app.ts");
@@ -37,8 +37,12 @@ test("/api/health reports that release", async () => {
   try {
     const res = await app.inject({ method: "GET", url: "/api/health" });
     assert.equal(res.statusCode, 200);
-    const body = res.json() as { ok: boolean; release: string };
+    const body = res.json() as { app: string; version: string; ok: boolean; release: string };
     assert.equal(body.ok, true);
+    // Someone curling a port can tell Topka from whatever else answers there.
+    assert.equal(body.app, "topka");
+    assert.match(body.version, /^\d+\.\d+\.\d+/);
+    assert.ok(body.release.startsWith(body.version), body.release);
     assert.equal(body.release, releaseName());
     assert.ok(isRelease(body.release), body.release);
   } finally {

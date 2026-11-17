@@ -39,6 +39,18 @@ export function projectEnv(name: string): string | undefined {
 }
 
 let release: string | undefined;
+let pkg: { name: string; version: string } | undefined;
+
+/** The root package.json's name and version ("topka", "0.2.0"): what /api/health says it is. */
+export function appInfo(): { name: string; version: string } {
+  if (pkg) return pkg;
+  try {
+    const j = JSON.parse(readFileSync(path.join(REPO_ROOT, "package.json"), "utf8")) as { name?: unknown; version?: unknown };
+    return (pkg = { name: String(j.name || "topka"), version: String(j.version || "unknown") });
+  } catch {
+    return (pkg = { name: "topka", version: "unknown" });
+  }
+}
 
 /**
  * What /api/health and the process heartbeats report as the running release: TOPKA_RELEASE when the
@@ -49,10 +61,7 @@ export function releaseName(): string {
   const set = projectEnv("RELEASE");
   if (set) return set;
   if (release !== undefined) return release;
-  let version = "unknown";
-  try {
-    version = String(JSON.parse(readFileSync(path.join(REPO_ROOT, "package.json"), "utf8")).version || "unknown");
-  } catch {}
+  const version = appInfo().version;
   let sha = "";
   try {
     sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: REPO_ROOT, encoding: "utf8", timeout: 2000, stdio: ["ignore", "pipe", "ignore"] }).trim();

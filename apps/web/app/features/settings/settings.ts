@@ -345,12 +345,15 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
           createElement("span", {
             className: "v",
             "data-testid": "locale-current",
+            // A language's own name is written in that language.
+            lang: v.account?.locale === "en" ? "en" : "zh-CN",
           }, v.account?.locale === "en" ? t.localeEn : t.localeZh),
         ),
         createElement("div", { className: "settings-actions" },
           createElement("button", {
             type: "button",
             "data-testid": "locale-zh",
+            lang: "zh-CN",
             onClick: () => void setPrefs({ locale: "zh-CN" }),
             disabled: localeState.kind === "sending",
             className: v.account?.locale !== "en" ? "primary" : "",
@@ -358,6 +361,7 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
           createElement("button", {
             type: "button",
             "data-testid": "locale-en",
+            lang: "en",
             onClick: () => void setPrefs({ locale: "en" }),
             disabled: localeState.kind === "sending",
             className: v.account?.locale === "en" ? "primary" : "",

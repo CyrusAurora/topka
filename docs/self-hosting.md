@@ -60,7 +60,7 @@ the check follows `PORT` and never reaches another service that happens to hold 
 
 ```bash
 docker compose ps                                         # db healthy; api, worker, web running; setup exited (0)
-curl -s "http://$(docker compose port web 3000)/api/health"   # {"ok":true,"db":"ok",…}
+curl -s "http://$(docker compose port web 3000)/api/health"   # {"app":"topka",…,"ok":true,"db":"ok",…}
 ```
 
 Right after `up` returns, the first request can come back empty; wait a few seconds and repeat.
@@ -514,7 +514,6 @@ backups, `/data` in the container), and `caddy` (certificates). `docker compose 
 | Weibo sources fail | They go through the `rsshub` container (`http://rsshub:1200`); without Docker there is none | Switch them off when running without Docker |
 | `/api/me/today` empty after login | No project; or no analysed candidate in the window; or the issue was cut at 08:00 before any candidate was ready | An empty day is not refilled; the next cut is tomorrow 08:00 UTC+8 |
 | Per-user BYOK cannot be entered or stops working | `KEY_ENCRYPTION_SECRET` unset, or changed after keys were stored | Rotation does not re-encrypt: users re-enter their keys |
-| `npm run …` in a container first prints `.env not found. Continuing without it.` | Inside the container the settings come from Compose | Expected |
 
 ## Note on deployment in mainland China
 

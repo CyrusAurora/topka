@@ -8,6 +8,7 @@ import { messages, localeOf, useLocale, useT } from "../../lib/i18n";
 import { useAdminAction } from "../../features/admin/action";
 import { ago, bj, duration, num } from "../../features/admin/format";
 import { AdminPage, Badge, Button, Card, DataTable, Dot, Empty, Field, Json, ReasonDialog, Select, Stat, Time } from "../../features/admin/ui";
+import { requestsHint } from "../../features/admin/requests-hint";
 
 type Row = Record<string, any>;
 interface Runs {
@@ -18,7 +19,7 @@ interface Runs {
   queues: Array<{ name: string; state: string; n: number; oldest: string }>;
   failedJobs: Row[];
   lagging: Row[];
-  receipts: { counts: Record<string, number>; issues: Row[] };
+  receipts: { counts: Record<string, number>; kinds?: { paid: number; free: number; demo: number }; issues: Row[] };
   deliveries: Row[];
   errors: Row[];
   retrying: { count: number; next: string | null };
@@ -72,7 +73,7 @@ export default function RunsAdmin({ loaderData }: Route.ComponentProps) {
         />
         <Stat label={t.adminRuns.runs.backlogLabel} value={num(queued)} tone={queued > 500 ? "warn" : undefined} hint={t.adminRuns.runs.backlogHint} />
         <Stat label={t.adminRuns.runs.failingJobsLabel} value={num(failing.length)} tone={failing.length ? "bad" : "ok"} hint={t.adminRuns.runs.failingJobsHint} />
-        <Stat label={t.adminRuns.runs.unknownReceiptsLabel} value={num(r.receipts.issues.filter((x) => x.status === "unknown").length)} tone={r.receipts.issues.some((x) => x.status === "unknown") ? "bad" : "ok"} hint={t.adminRuns.runs.paidRequests7d(num(Object.values(r.receipts.counts).reduce((a, b) => a + b, 0)))} />
+        <Stat label={t.adminRuns.runs.unknownReceiptsLabel} value={num(r.receipts.issues.filter((x) => x.status === "unknown").length)} tone={r.receipts.issues.some((x) => x.status === "unknown") ? "bad" : "ok"} hint={requestsHint(r.receipts, t.adminRuns.runs, num)} />
         <Stat label={t.adminRuns.runs.unknownDeliveriesLabel} value={num(r.deliveries.filter((d) => d.status === "unknown").length)} tone={r.deliveries.some((d) => d.status === "unknown") ? "bad" : "ok"} />
       </div>
 
@@ -323,3 +324,4 @@ export default function RunsAdmin({ loaderData }: Route.ComponentProps) {
     </AdminPage>
   );
 }
+

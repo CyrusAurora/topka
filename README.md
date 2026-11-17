@@ -15,6 +15,8 @@
 
 **自己部署的情报工作台：说清楚要盯什么，每天从你指定的信源里挑出最值得看的几条，每条能点回原文。**
 
+**[在线体验 →](https://cyrusaurora.github.io/topka/)** 不用安装：看一个真实运行的 Topka 每天定稿的 3 条和往期；对话和建项目由浏览器里的演示模型回答。（[怎么做的](docs/online-demo.md)）
+
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
 docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
@@ -23,7 +25,7 @@ docker compose up -d --build
 
 <sub>三条命令装好，再用 `docker compose logs setup | grep demo:` 取演示密码，登录后就是上面那张图。用自带的虚构演示数据和内置演示模型，不需要 API key，不抓站，不花钱。</sub>
 
-[看效果](#看效果) · [先跑起来](#先跑起来不要-api-key) · [接上真实信源和模型](#接上真实信源和模型) · [它怎么工作](#它怎么工作) · [诚实边界](#诚实边界) · [排错](#排错)
+[在线体验](https://cyrusaurora.github.io/topka/) · [看效果](#看效果) · [先跑起来](#先跑起来不要-api-key) · [接上真实信源和模型](#接上真实信源和模型) · [它怎么工作](#它怎么工作) · [诚实边界](#诚实边界) · [排错](#排错)
 
 </div>
 
@@ -69,7 +71,7 @@ docker compose up -d --build
 确认起来了（问的是这个 stack 自己的端口，换了 `PORT` 也对；刚启动可能要等几秒）：
 
 ```bash
-curl -s "http://$(docker compose port web 3000)/api/health"   # {"ok":true,"db":"ok",…}
+curl -s "http://$(docker compose port web 3000)/api/health"   # {"app":"topka",…,"ok":true,"db":"ok",…}
 ```
 
 **3. 取演示密码并登录**
@@ -105,7 +107,7 @@ docker compose down -v   # 不玩了，连库一起清
 
 演示数据不会自己变。每天出新一期需要：**打开信源** + **接上模型**。两者默认关着。
 
-**信源。** 仓库约 400 个信源，装好时都在库里但全关（大部分来自迁移，所以 setup 日志里「新增」的数目远小于总数，日志也会写出库里一共多少个）。在 `/admin/sources` 打开，或：
+**信源。** 仓库自带三百多个信源（确切数字是 setup 日志里 `in the database` 前的那个数；后台的总数还会多出 `--demo` 的 3 个演示信源），装好时都在库里但全关（大部分来自迁移，所以日志里「added」的数目远小于总数）。在 `/admin/sources` 打开，或：
 
 ```bash
 docker compose exec api npm run sources:only -- --id rss-hugging-face --id rss-github-ai
@@ -185,7 +187,6 @@ docker compose up -d
 | 「新建项目」里某个方向包「暂不可用」 | 旧库升级后还没重启，包里的信源没导入 | 页面上写了原因和命令：`docker compose exec api npm run sources:seed -- --pack <名字>` |
 | 「对话」输入框是灰的 | 没接模型，也没开演示模型 | 页面上有文档链接；`.env` 设 `DEMO_SEED=true` 先体验，或接 Ollama / 免费模型 |
 | `demo:seed` 拒绝运行 | 库里已有别的用户或真实文章 | 确定要掺就加 `-- --force`，或 `docker compose down -v` 重来 |
-| 容器里 `npm run` 先打出 `.env not found` | 容器读 Compose 环境，不读文件 | 正常，忽略 |
 | 开了信源，几分钟还没新文章 | `COLLECT_ENABLED=false`，或改完没重启 | 改成 `true`，`docker compose up -d`；失败原因在 `/admin/sources` |
 | `docker compose logs` 每行前面有 `ESC[2K` | Docker Compose 自己在非终端输出里留的清行控制符，不是 Topka 打的 | 不影响 grep。Compose 2.26 上 `--ansi never`、`--no-log-prefix` 都去不掉；要干净的文本直接读容器日志：`docker logs $(docker compose ps -aq setup)` |
 | 有文章但没有新卡片 | 模型没接上或 `MODEL_CALLS_ENABLED=false` | 见[接上真实信源和模型](#接上真实信源和模型)；日志搜 `is not configured` |

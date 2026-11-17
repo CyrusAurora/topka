@@ -3,7 +3,7 @@
 // row reads that day (GET /api/me/issues/:date). Same page shell as 今日, a thin card list.
 import { createElement, useEffect, useState, type FC, type ReactElement } from "react";
 import { useT, useUiPrefs } from "../../lib/i18n.ts";
-import { archiveRows } from "./view.ts";
+import { archiveRows, contentLangAttr } from "./view.ts";
 
 export interface ArchiveEntryRow {
   date: string;
@@ -15,6 +15,7 @@ export interface ArchiveView {
   phase: "loading" | "signed-out" | "failed" | "ready";
   archive: ArchiveEntryRow[];
   issueCount: number;
+  contentLang?: string;
 }
 
 export interface MagazineArchiveProps {
@@ -41,11 +42,12 @@ export const ArchivePage: FC<MagazineArchiveProps> = (props) => {
           setView({ phase: "failed", archive: [], issueCount: 0 });
           return;
         }
-        const body = (await res.json()) as { archive?: ArchiveEntryRow[]; issueCount?: number };
+        const body = (await res.json()) as { archive?: ArchiveEntryRow[]; issueCount?: number; contentLang?: string };
         setView({
           phase: "ready",
           archive: Array.isArray(body.archive) ? body.archive : [],
           issueCount: Number(body.issueCount ?? 0),
+          contentLang: body.contentLang,
         });
       } catch {
         if (alive) setView({ phase: "failed", archive: [], issueCount: 0 });
@@ -82,7 +84,7 @@ export const ArchivePage: FC<MagazineArchiveProps> = (props) => {
         createElement("a", { key: row.date, href: `/issue/${row.date}`, className: "arch-item" },
           createElement("div", { className: "arch-date" }, row.label),
           createElement("div", { className: "arch-sub" }, row.sub),
-          createElement("div", { className: "arch-titles" }, row.titles.slice(0, 3).join(" · ")),
+          createElement("div", { className: "arch-titles", lang: contentLangAttr(view.contentLang, locale) }, row.titles.slice(0, 3).join(" · ")),
         ),
       ),
     );

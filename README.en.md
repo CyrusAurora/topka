@@ -15,6 +15,8 @@
 
 **A self-hosted intelligence brief: say what to watch, and each day it picks a few items from your sources that are worth reading, each linking back to the original.**
 
+**[Try it online →](https://cyrusaurora.github.io/topka/)** Nothing to install: the real daily picks and past issues of a running Topka; Chat and project creation are answered by the demo model in your browser. ([How it works](docs/online-demo.md))
+
 ```bash
 git clone https://github.com/CyrusAurora/topka.git && cd topka
 docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:24-trixie-slim node scripts/init-env.ts --demo
@@ -23,7 +25,7 @@ docker compose up -d --build
 
 <sub>Three commands to install, then `docker compose logs setup | grep demo:` for the demo password; after login you get the screenshot above. Invented demo data and a built-in demo model: no API key, no crawling, no cost.</sub>
 
-[See it](#see-it) · [Quick start](#quick-start-no-api-key) · [Real sources and a model](#real-sources-and-a-model) · [How it works](#how-it-works) · [Honest limits](#honest-limits) · [Troubleshooting](#troubleshooting)
+[Try it online](https://cyrusaurora.github.io/topka/) · [See it](#see-it) · [Quick start](#quick-start-no-api-key) · [Real sources and a model](#real-sources-and-a-model) · [How it works](#how-it-works) · [Honest limits](#honest-limits) · [Troubleshooting](#troubleshooting)
 
 </div>
 
@@ -69,7 +71,7 @@ The first build takes from half a minute to a quarter of an hour, depending on t
 Check it is up (this asks this stack's own port, so it stays right after a `PORT` change; give it a few seconds after start):
 
 ```bash
-curl -s "http://$(docker compose port web 3000)/api/health"   # {"ok":true,"db":"ok",…}
+curl -s "http://$(docker compose port web 3000)/api/health"   # {"app":"topka",…,"ok":true,"db":"ok",…}
 ```
 
 **3. Get the demo password and sign in**
@@ -105,7 +107,7 @@ docker compose down -v   # wipe including the database
 
 Demo data does not refresh. A new daily issue needs **sources on** and **a model**. Both are off by default.
 
-**Sources.** ~400 ship with the repo, all in the database but switched off (most come from migrations, so the setup log's "added" count is far below the total; the log prints the total too). Enable them in `/admin/sources`, or:
+**Sources.** A few hundred ship with the repo (the exact number is the one before `in the database` in the setup log; the admin total also counts the 3 demo sources with `--demo`), all in the database but switched off (most come from migrations, so the log's "added" count is far below the total). Enable them in `/admin/sources`, or:
 
 ```bash
 docker compose exec api npm run sources:only -- --id rss-hugging-face --id rss-github-ai
@@ -185,7 +187,6 @@ Diagrams: [docs/architecture.md](docs/architecture.md).
 | A pack shows "unavailable" in New project | An upgraded database has not restarted yet, so the pack's sources are not imported | The page names the reason and the command: `docker compose exec api npm run sources:seed -- --pack <name>` |
 | Chat input is greyed out | No model and no demo model | The page links the docs; set `DEMO_SEED=true` to try it, or connect Ollama / a free model |
 | `demo:seed` refuses | Other users or real articles already in the DB | Add `-- --force`, or `docker compose down -v` and start over |
-| `.env not found. Continuing without it.` inside a container | Containers take env from Compose, not the file | Harmless |
 | Sources on, still no new articles after a few minutes | `COLLECT_ENABLED=false`, or no restart after the change | Set `true`, `docker compose up -d`; failures show in `/admin/sources` |
 | `docker compose logs` lines start with `ESC[2K` | Docker Compose's own line-clear code in non-terminal output, not printed by Topka | Harmless for grep. On Compose 2.26 neither `--ansi never` nor `--no-log-prefix` removes it; for clean text read the container log directly: `docker logs $(docker compose ps -aq setup)` |
 | Articles exist, no new cards | No model, or `MODEL_CALLS_ENABLED=false` | See [Real sources and a model](#real-sources-and-a-model); search logs for `is not configured` |

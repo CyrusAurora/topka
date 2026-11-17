@@ -23,6 +23,7 @@ const TEXT = {
   zh: {
     other: OTHER, yes: CONFIRM_YES, no: CONFIRM_NO,
     restarted: "好，重新开始。你想跟踪或弄清楚什么？",
+    cancelled: "好，这次不建了。想跟踪别的，直接说。",
     whatsWrong: "哪里不对？直接说要改的地方，比如对象、时间范围或你真正关心的结果。",
     confirm: (q) => `我把你的需求整理成这个问题：\n「${q}」\n这样问对吗？`,
     next: (n) => `下一步：${n}`,
@@ -37,6 +38,7 @@ const TEXT = {
   en: {
     other: "Other", yes: "Yes, go with this", no: "Not quite, let me fix it",
     restarted: "OK, starting over. What do you want to track or figure out?",
+    cancelled: "OK, nothing was created. Tell me whenever you want to track something else.",
     whatsWrong: "What is off? Say what to change, such as the subject, the time span or the result you actually care about.",
     confirm: (q) => `I turned what you need into this question:\n"${q}"\nIs that right?`,
     next: (n) => `Next: ${n}`,
@@ -63,8 +65,18 @@ function routeOf(text) {
   const t = clip(text, 500);
   if (/^(修改|改一下|改改|删除|删掉|删了|移除|停掉|暂停|恢复)/.test(t)) return "manage";
   if (/(删掉|删除|移除)(这个|那个|我的)?(项目|跟踪)/.test(t)) return "manage";
+  // English: "Delete the humanoid robots project", "Remove …", "Stop tracking …", "Rename my … project".
+  if (/^(please\s+)?(delete|remove|drop|rename|pause|resume|stop tracking|stop following)\b/i.test(t)) return "manage";
+  if (/\b(delete|remove|rename|change|edit|update|pause)\b.*\b(project|tracker|tracking)\b/i.test(t)) return "manage";
   return "intake";
 }
+
+/** "Never mind" in the middle of an interview: the session ends, nothing is created. */
+const isCancel = (t) => /^(取消|算了|不用了|不建了|不要了|先不(建|用)了)[。！!.\s]*$/.test(t) || /^(cancel|never ?mind|forget it|stop|no thanks)[.!\s]*$/i.test(t);
+
+/** A sentence that starts a different tracking request rather than answering the question asked. */
+const isNewAsk = (t) => /^(请|麻烦)?(帮我|替我|给我|我想|我要)?(跟踪|追踪|关注|盯着?|监控)(一下)?\S{2,}/.test(t)
+  || /^(please\s+)?(help me\s+|i want to\s+|i'd like to\s+|can you\s+)?(track|follow|monitor|keep an eye on)\s+\S{2,}/i.test(t);
 
 function fresh(ask, now, lang) {
   const s = { v: VERSION, stage: "asking", ask: clip(ask, 500), turns: [], asked: 0, analysis: null, summary: null, corrections: [], card: null, startedAt: now, updatedAt: now };
@@ -75,6 +87,12 @@ function fresh(ask, now, lang) {
 function live(session, now) {
   return !!session && session.v === VERSION && session.stage !== "done" && now - (session.updatedAt || 0) < SESSION_TTL_MS;
 }
+
+/** The text is one of the chips the open question offered. */
+const isOption = (s, t) => {
+  const last = s.turns[s.turns.length - 1];
+  return !!last && last.a == null && Array.isArray(last.options) && last.options.includes(t);
+};
 
 const isYes = (t) => t === CONFIRM_YES || t === TEXT.en.yes || /^(对|是的?|没错|就是|确认|可以|好的?|行|嗯|ok|OK|yes)[。！!，,\s]*$/.test(t) || /^对[，,]?(就)?按(这个|这样)/.test(t)
   || /^(yes|yep|yeah|right|correct|exactly|sure|okay|ok|confirm(ed)?|go (ahead|with (it|this)))\b[.!,\s]*/i.test(t);
@@ -89,6 +107,11 @@ function planTurn(session, text, now, lang) {
     return { mode: "local", session: null, reply: { kind: "note", text: TEXT[lang === "en" ? "en" : "zh"].restarted } };
   }
   if (!live(session, now)) return { mode: "ask", session: fresh(t, now, lang) };
+  // A new intent first, before the sentence is taken as an answer to the open question.
+  if (session.stage !== "card" && isCancel(t)) return { mode: "local", session: null, reply: { kind: "note", text: T(session).cancelled } };
+  if ((session.stage === "asking" || session.stage === "confirm") && isNewAsk(t) && !isOption(session, t)) {
+    return { mode: "ask", session: fresh(t, now, session.lang === "en" ? "en" : lang) };
+  }
   const s = JSON.parse(JSON.stringify(session));
   s.updatedAt = now;
   if (s.stage === "asking") {
@@ -259,4 +282,4 @@ const UNAVAILABLE = TEXT.zh.unavailable;
 /** UNAVAILABLE in a reader language ("en" or anything else for Chinese). */
 const unavailableIn = (lang) => TEXT[lang === "en" ? "en" : "zh"].unavailable;
 
-module.exports = { VERSION, MAX_QUESTIONS, SESSION_TTL_MS, OTHER, CONFIRM_YES, CONFIRM_NO, RESTART, UNAVAILABLE, TEXT, unavailableIn, routeOf, planTurn, buildUser, parseJson, applyAnswer, finish, live, isYes, isQuestion, dropAdvice };
+module.exports = { isCancel, isNewAsk, VERSION, MAX_QUESTIONS, SESSION_TTL_MS, OTHER, CONFIRM_YES, CONFIRM_NO, RESTART, UNAVAILABLE, TEXT, unavailableIn, routeOf, planTurn, buildUser, parseJson, applyAnswer, finish, live, isYes, isQuestion, dropAdvice };

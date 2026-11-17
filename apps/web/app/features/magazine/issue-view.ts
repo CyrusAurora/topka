@@ -6,7 +6,7 @@
 // the project label is what the issue's own items carry.
 import { createElement, useCallback, useEffect, useState, type FC, type ReactElement } from "react";
 import { useT, useUiPrefs } from "../../lib/i18n.ts";
-import { cardMeta, hostOf, ledgerLabel, masthead, type CardRow, type IssueCard } from "./view.ts";
+import { contentLangAttr, hostOf, ledgerLabel, masthead, metaNodes, relTime, sourceLink, type CardRow, type IssueCard } from "./view.ts";
 
 export interface MagazineIssueProps {
   date: string;
@@ -18,6 +18,7 @@ type Phase = "loading" | "signed-out" | "not-found" | "failed" | "ready";
 interface IssueState {
   phase: Phase;
   issue: IssueCard | null;
+  contentLang?: string;
 }
 
 export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
@@ -49,8 +50,8 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
         setState({ phase: "failed", issue: null });
         return;
       }
-      const body = (await res.json()) as { issue?: IssueCard | null };
-      setState({ phase: body.issue ? "ready" : "not-found", issue: body.issue ?? null });
+      const body = (await res.json()) as { issue?: IssueCard | null; contentLang?: string };
+      setState({ phase: body.issue ? "ready" : "not-found", issue: body.issue ?? null, contentLang: body.contentLang });
     } catch {
       setState({ phase: "failed", issue: null });
     }
@@ -176,10 +177,10 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
             },
               createElement("span", { className: "m-num", "aria-hidden": "true" }, row.no),
               createElement("div", { className: "m-body" },
-                createElement("div", { className: "m-t" }, row.title, row.ledger ? createElement("span", { className: "m-ledger", "data-ledger": row.ledger }, ` · ${row.ledger}`) : null),
-                row.core ? createElement("div", { className: "m-why" }, row.core) : null,
+                createElement("div", { className: "m-t" }, createElement("span", { lang: contentLangAttr(state.contentLang, locale) }, row.title), row.ledger ? createElement("span", { className: "m-ledger", "data-ledger": row.ledger }, ` · ${row.ledger}`) : null),
+                row.core ? createElement("div", { className: "m-why", lang: contentLangAttr(state.contentLang, locale) }, row.core) : null,
                 createElement("div", { className: "m-meta" },
-                  createElement("span", { className: "m-src" }, cardMeta(item, multiProjects, new Date(), locale, timeZone)),
+                  createElement("span", { className: "m-src" }, ...metaNodes(item.source || t.magazine.unknownSource, relTime(item.publishedAt ?? item.listedAt, new Date(), locale, timeZone), multiProjects ? item.project.target : null, locale)),
                   createElement("span", { className: "m-tog" }, open ? t.magazine.collapse : t.magazine.expand),
                 ),
               ),
@@ -189,10 +190,10 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
                 createElement("div", { className: "m-more-pad" },
                   createElement("div", { className: "m-lab" }, t.magazine.summaryLabel),
                   row.summary
-                    ? createElement("div", { className: "m-sum" }, row.summary)
+                    ? createElement("div", { className: "m-sum", lang: contentLangAttr(state.contentLang, locale) }, row.summary)
                     : createElement("div", { className: "m-sum muted" }, t.magazine.summaryPending),
                   createElement("div", { className: "m-src-row" },
-                    createElement("span", { className: "m-host" }, row.host),
+                    sourceLink(row.url, row.host, t.magazine.openOriginal(row.host)),
                     createElement("button", {
                       type: "button",
                       className: `m-copy hit ${copiedId === row.id ? "done" : ""}`,

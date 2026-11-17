@@ -81,9 +81,10 @@ const AnswerSchema = z.object({
   }).nullable().optional(),
 });
 
-export const DELETE_WARNING = "删除后，这个项目的设置、关注的信源列表和项目评分会一起删掉，无法恢复。你标过的「看过了」「稍后看」和已采集的原文都会保留；今日卡片里只属于这个项目的内容不再出现。";
+export const DELETE_WARNING = "删除后，这个项目的设置、关注的信源列表和项目评分会一起删掉，无法恢复。你的已读记录和已采集的原文都会保留；今日卡片里只属于这个项目的内容不再出现。";
 
 interface CatalogRow { id: string; name: string; enabled: boolean }
+interface DeletedSnapshot { target: string; purpose?: string; focus?: string; exclusions?: string; sources?: number; createdAt?: string }
 
 /** Sources the assistant may pick: collecting ones, then editorial feeds that exist but are switched off. */
 export async function sourceCatalog(db: Db = sql): Promise<CatalogRow[]> {
@@ -121,6 +122,13 @@ export async function cardOf(row: { id: string; kind: ProposalCard["kind"]; proj
       warning: DELETE_WARNING, createdAt: p.created_at.toISOString(), status: row.status,
     };
   }
+  // The project is gone (the delete went through): the card shows the snapshot taken when it was proposed.
+  const gone = row.kind === "delete" ? (row.payload as { deleted?: DeletedSnapshot }).deleted : undefined;
+  if (gone && typeof gone.target === "string") return {
+    id: row.id, kind: row.kind, projectId: row.project_id,
+    before: { target: gone.target, purpose: gone.purpose ?? "", focus: gone.focus ?? "", exclusions: gone.exclusions ?? "", sources: Number(gone.sources) || 0 },
+    payload: null, sources: { collecting: [], pending: [] }, warning: DELETE_WARNING, createdAt: gone.createdAt ?? null, status: row.status,
+  };
   return {
     id: row.id, kind: row.kind, projectId: row.project_id, before, payload,
     sources: { collecting: named.filter((s) => s.enabled).map(({ id, name }) => ({ id, name })), pending: named.filter((s) => !s.enabled).map(({ id, name }) => ({ id, name })) },
@@ -129,6 +137,14 @@ export async function cardOf(row: { id: string; kind: ProposalCard["kind"]; proj
 }
 
 export async function newProposal(userId: string, kind: ProposalCard["kind"], projectId: string | null, payload: ProposalPayload | null, db: Db = sql) {
+  // A delete card keeps what it deletes: once the project is gone, the card in the chat history still
+  // names it (and says what it was for) instead of going blank.
+  if (kind === "delete" && projectId && !payload) {
+    const [p] = await db<{ target: string; purpose: string; focus: string; exclusions: string; created_at: Date; sources: number }[]>`
+      SELECT target, purpose, focus, exclusions, created_at, (SELECT count(*)::int FROM project_sources WHERE project_id = id) AS sources
+      FROM tracking_projects WHERE id = ${projectId}`;
+    if (p) payload = { deleted: { target: p.target, purpose: p.purpose, focus: p.focus, exclusions: p.exclusions, sources: p.sources, createdAt: p.created_at.toISOString() } } as unknown as ProposalPayload;
+  }
   // A new proposal replaces the user's open ones: only the latest card can be confirmed.
   await db`UPDATE project_proposals SET status = 'superseded', decided_at = now() WHERE user_id = ${userId} AND status = 'proposed'`;
   const [row] = await db<{ id: string; kind: ProposalCard["kind"]; project_id: string | null; payload: ProposalPayload; status: string; created_at: Date }[]>`

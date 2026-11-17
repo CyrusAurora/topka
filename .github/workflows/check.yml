@@ -1,6 +1,7 @@
 # Checks on GitHub-hosted runners: install, typecheck, web build, the web tests, the backend tests on a
-# fresh PostgreSQL with the 85% line-coverage gate, the built site's smoke check, browser E2E, the
-# publication gate, and the exported (public) tree brought up with docker compose as its README says.
+# fresh PostgreSQL with the 85% line-coverage gate, the built site's smoke check, browser E2E, the online
+# demo's static build, the publication gate, and the exported (public) tree brought up with docker
+# compose as its README says.
 # Only GitHub-owned actions, pinned to a full commit SHA.
 name: Check
 
@@ -83,6 +84,18 @@ jobs:
         env:
           CHROME_PATH: /usr/bin/google-chrome
         run: npm run e2e
+      # docs/online-demo.md: the static demo under a Pages-style base path, fed by the demo reader's
+      # exported issues, clicked through in English and Chinese (today, past issues, demo Chat to a
+      # confirmed project, console errors, no Chinese in the English chrome).
+      - name: Online demo (export, scan, static build, browser check)
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          DEMO_PASSWORD=ci-demo-password-1 node scripts/demo.ts --force
+          node scripts/pages-export.ts --out "$RUNNER_TEMP/pages-data" --reader demo@example.com
+          node scripts/pages-check.ts "$RUNNER_TEMP/pages-data"
+          node scripts/build-demo.ts --base /topka/ --data "$RUNNER_TEMP/pages-data"
+          node scripts/check-demo.ts --serve apps/web/build-demo --base /topka/
       - name: Install gitleaks
         uses: ./.github/actions/install-gitleaks
       # The publication gate: export + scan, the exported tree on its own, secret scan, private overlay.

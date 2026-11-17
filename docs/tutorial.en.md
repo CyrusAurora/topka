@@ -98,10 +98,11 @@ curl -s "http://$(docker compose port web 3000)/api/health"
 ```
 
 ```text
-{"ok":true,"db":"ok","ms":1,"release":"dev"}
+{"app":"topka","version":"0.2.0","ok":true,"db":"ok","ms":1,"release":"0.2.0"}
 ```
 
-Right after start the first request can come back empty; wait a few seconds and repeat.
+`"app":"topka"` tells you Topka answered, not some other service on this machine. Right after start the
+first request can come back empty; wait a few seconds and repeat.
 
 ### 3. Read the demo password
 
@@ -130,7 +131,10 @@ docker compose exec api npm run demo:seed     # prints demo: password … (from 
 ```
 
 Or, for this one run without editing `.env`:
-`docker compose exec -e DEMO_PASSWORD=at-least-10-chars api npm run demo:seed`. `demo:seed` also adds
+`docker compose exec -e DEMO_PASSWORD=at-least-10-chars api npm run demo:seed`. That lasts only until
+the next restart if `.env` also has a `DEMO_PASSWORD`: the next `docker compose up -d` runs `setup`, which
+sets the password back to the `.env` value. To keep a new password, put it in `.env` (the three steps
+above). `demo:seed` also adds
 the demo to a stack whose `.env` does not have `DEMO_SEED=true`.
 
 ### 4. Log in and look
@@ -172,21 +176,21 @@ arrive, but no scoring, no summaries and no new cards.
 docker compose exec api npm run sources:only -- --id rss-hugging-face --id rss-github-ai
 ```
 
-Among the output are these two lines:
+The output is this line:
 
 ```text
-.env not found. Continuing without it.
-保持打开 2 个（新打开 2），关闭其余 0 个
+保持打开 2 个（新打开 2），关闭其余 3 个
 ```
 
-The first line is expected: inside the container the settings come from Compose, not from a file, so
-every `npm run` there prints it. The second reads "kept 2 on (2 newly on), switched 0 others off".
-A few `npm notice` lines about a newer npm may follow; they are harmless.
+It reads "kept 2 on (2 newly on), switched 3 others off". The 3 are the demo's own invented sources
+(on with `--demo`; without it the line ends in 0). The demo's Today and Past issues are unaffected; the
+demo project's page now shows its sources as off.
 
 The source list is also in the admin at <http://localhost:3000/admin/sources>; from a shell,
 `docker compose exec api npm run sources:list` prints every id. The setup step loads the topic packs
-and the bundled feed list, so about 400 sources exist in total and every one of them starts switched
-off; `sources:only` turns the named ones on and all the others off.
+and the bundled feed list, a few hundred sources in total (the exact number is on the `sources:` line of
+the `setup` log), and all but the demo's 3 start switched off; `sources:only` turns the named ones on and
+all the others off.
 
 **2. Turn collection on in `.env` and restart:**
 
@@ -196,7 +200,8 @@ docker compose up -d
 ```
 
 The port is in `.env` (`PORT`), so nothing goes in front of the command. This restart runs the demo
-script again, which only refreshes the demo's own rows.
+script again, which only refreshes the demo's own rows and does not switch the demo sources you just
+turned off back on: `sources:list -- --enabled` shows the same 2 before and after.
 
 **3. Watch it work, within a few minutes:**
 
@@ -240,8 +245,10 @@ sources; it does not switch them on for the admin. To get items in, switch them 
 Without a model, a "Demo model" banner sits on top: it asks two fixed questions (which kind of change
 matters most, what to leave out), turns your need into one question for you to confirm, then shows a
 tracking card; Confirm creates the project. "Delete the humanoid robots project" brings a delete card
-that also waits for your confirmation. The demo model is only there to walk the flow; its answers are
-fixed and it analyses no articles.
+that also waits for your confirmation. Halfway through the questions you can still change course:
+"Cancel" ends the interview with nothing created, a new "Track …" sentence starts over on the new topic,
+and "Delete …" goes straight to the delete card. The demo model is only there to walk the flow; its
+answers are fixed and it analyses no articles.
 
 **A real model at no cost (optional).** Two ways; every line is in
 [self-hosting.md → Without a paid key](self-hosting.md#without-a-paid-key):

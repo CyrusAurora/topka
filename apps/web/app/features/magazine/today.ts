@@ -7,8 +7,11 @@ import { issueDayIn } from "../../lib/issue-day.ts";
 import { messages, useT, useUiPrefs, type UiLocale } from "../../lib/i18n.ts";
 import {
   cardRows,
+  contentLangAttr,
   masthead,
+  metaNodes,
   projectLabelOf,
+  sourceLink,
   type CardRow,
   type MagazineIssuePayload,
   type TodayView,
@@ -43,6 +46,8 @@ function viewOf(payload: MagazineIssuePayload, locale: UiLocale = "zh-CN"): Toda
     archive: payload.archive ?? [],
     // The API's notice is fixed Chinese copy: an English page shows its own.
     notice: (locale === "zh-CN" && payload.notice?.trim()) || t.magazine.noticeFallback,
+    contentLang: payload.contentLang,
+    footNote: payload.footNote,
   };
 }
 
@@ -182,10 +187,10 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
           },
             createElement("span", { className: "m-num", "aria-hidden": "true" }, row.no),
             createElement("div", { className: "m-body" },
-              createElement("div", { className: "m-t" }, row.title, row.ledger ? createElement("span", { className: "m-ledger", "data-ledger": row.ledger }, ` · ${row.ledger}`) : null),
-              row.core ? createElement("div", { className: "m-why" }, row.core) : null,
+              createElement("div", { className: "m-t" }, createElement("span", { lang: contentLangAttr(v.contentLang, locale) }, row.title), row.ledger ? createElement("span", { className: "m-ledger", "data-ledger": row.ledger }, ` · ${row.ledger}`) : null),
+              row.core ? createElement("div", { className: "m-why", lang: contentLangAttr(v.contentLang, locale) }, row.core) : null,
               createElement("div", { className: "m-meta" },
-                createElement("span", { className: "m-src" }, metaLine(row, v.projects.length > 1)),
+                createElement("span", { className: "m-src" }, ...metaNodes(row.source, row.when, v.projects.length > 1 && row.project ? row.project : null, locale)),
                 createElement("span", { className: "m-tog" }, open ? t.magazine.collapse : t.magazine.expand),
               ),
             ),
@@ -195,10 +200,10 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
               createElement("div", { className: "m-more-pad" },
                 createElement("div", { className: "m-lab" }, t.magazine.summaryLabel),
                 row.summary
-                  ? createElement("div", { className: "m-sum" }, row.summary)
+                  ? createElement("div", { className: "m-sum", lang: contentLangAttr(v.contentLang, locale) }, row.summary)
                   : createElement("div", { className: "m-sum muted" }, t.magazine.summaryPending),
                 createElement("div", { className: "m-src-row" },
-                  createElement("span", { className: "m-host" }, row.host),
+                  sourceLink(row.url, row.host, t.magazine.openOriginal(row.host)),
                   createElement("button", {
                     type: "button",
                     className: `m-copy hit ${copiedId === row.id ? "done" : ""}`,
@@ -228,7 +233,7 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
         ),
         createElement("div", { className: "mag-issue" },
           createElement("div", { className: "mag-no" }, v.issue?.no ? `No. ${String(v.issue.no).padStart(3, "0")}` : ""),
-          createElement("div", { className: "mag-proj" }, projectLabelOf(v.projects, locale)),
+          createElement("div", { className: "mag-proj", lang: v.projects.length === 1 ? contentLangAttr(v.contentLang, locale) : undefined }, projectLabelOf(v.projects, locale)),
         ),
       ),
       createElement("div", { className: "mag-rule" }),
@@ -239,7 +244,7 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
     body,
     createElement("div", { className: "mag-foot" },
       createElement("div", { className: "f-row" },
-        createElement("span", { className: "f-l" }, t.magazine.updateEveryMorning),
+        createElement("span", { className: "f-l" }, v.footNote || t.magazine.updateEveryMorning),
         createElement("span", { className: "f-r" },
           createElement("a", { className: "f-a hit", href: "/archive" }, t.magazine.archive),
         ),
@@ -248,9 +253,3 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
   );
 };
 
-// The card's meta line goes through one place so the cards never drift from each other.
-function metaLine(row: CardRow, multi: boolean): string {
-  const parts = [`${row.source} · ${row.when}`];
-  if (multi && row.project) parts.push(row.project);
-  return parts.join(" · ");
-}

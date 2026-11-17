@@ -7,6 +7,13 @@ import { failureGroupSql, queueProcessing, requeueFailed } from "../jobs/content
 
 const STALE_HEARTBEAT_MS = 3 * 60_000;
 
+export type ReceiptKind = "paid" | "free" | "demo";
+function sumBy<T extends { n: number }>(rows: T[], key: (r: T) => string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of rows) out[key(r)] = (out[key(r)] ?? 0) + r.n;
+  return out;
+}
+
 export async function runsOverview() {
   // pg-boss creates its schema when the worker first starts; before that (a fresh deploy whose API is
   // up first) the queue panels are empty rather than the whole page failing.
@@ -37,7 +44,11 @@ export async function runsOverview() {
       WHERE enabled AND kind NOT IN ('mp_account', 'external')
         AND (health = 'failing' OR next_fetch_at < now() - interval '30 minutes' OR last_ok_at < now() - make_interval(mins => greatest(interval_minutes * 6, 360)))
       ORDER BY health = 'failing' DESC, next_fetch_at LIMIT 60`,
-    sql<{ status: string; n: number }[]>`SELECT status, count(*)::int AS n FROM receipts WHERE created_at > now() - interval '7 days' GROUP BY 1`,
+    // Paid, free and demo calls are counted apart: the built-in demo model and free models cost nothing,
+    // and an operator must not read them as money spent. A call without a recorded cost counts as paid.
+    sql<{ status: string; kind: ReceiptKind; n: number }[]>`
+      SELECT status, CASE WHEN service = 'demo' THEN 'demo' WHEN cost = 0 THEN 'free' ELSE 'paid' END AS kind, count(*)::int AS n
+      FROM receipts WHERE created_at > now() - interval '7 days' GROUP BY 1, 2`,
     sql`
       SELECT id, service, model, purpose, subject, status, attempts, left(error, 240) AS error, created_at, updated_at FROM receipts
       WHERE status = 'unknown' OR (status = 'failed' AND updated_at > now() - interval '3 days') OR (status = 'pending' AND updated_at < now() - interval '15 minutes')
@@ -71,7 +82,7 @@ export async function runsOverview() {
     queues,
     failedJobs,
     lagging,
-    receipts: { counts: Object.fromEntries(receipts.map((r) => [r.status, r.n])), issues: receiptIssues },
+    receipts: { counts: sumBy(receipts, (r) => r.status), kinds: { paid: 0, free: 0, demo: 0, ...sumBy(receipts, (r) => r.kind) }, issues: receiptIssues },
     deliveries,
     errors,
     retrying: { count: retrying?.n ?? 0, next: retrying?.next ?? null },

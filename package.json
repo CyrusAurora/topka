@@ -23,6 +23,7 @@
   "scripts": {
     "db:migrate": "node --env-file-if-exists=.env scripts/migrate.ts",
     "invite:create": "node --env-file-if-exists=.env scripts/create-invite.ts",
+    "pages:export": "node --env-file-if-exists=.env scripts/pages-export.ts",
     "sources:list": "node --env-file-if-exists=.env scripts/sources.ts list",
     "sources:toggle": "node --env-file-if-exists=.env scripts/sources.ts toggle",
     "sources:only": "node --env-file-if-exists=.env scripts/sources.ts only",

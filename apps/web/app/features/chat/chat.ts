@@ -144,7 +144,8 @@ function cardViewOf(m: ChatMsg, latestCardId: string | null, locale: UiLocale = 
       : t.sourcesNone,
     delPurpose: c.before?.purpose ?? "",
     delSources: c.before ? t.delSources(c.before.sources) : "",
-    warning: c.warning,
+    // The server's warning is fixed Chinese copy: the page says it in its own language.
+    warning: c.warning ? (c.kind === "delete" ? t.deleteWarning : c.warning) : null,
     intake: p.intake ?? null,
     confirmLabel: c.kind === "create" ? t.confirmCreate : c.kind === "update" ? t.confirmUpdate : t.confirmDelete,
     reviseLabel: c.kind === "delete" ? t.cancel : t.revise,

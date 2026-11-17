@@ -1,0 +1,64 @@
+# The online demo on GitHub Pages (docs/online-demo.md): the reader pages built as a static site
+# (apps/web/demo) with the data the operator publishes to the `pages-data` branch
+# (scripts/pages-publish.sh). Runs in the public repository only; a private copy never deploys.
+# Only GitHub-owned actions, pinned to a full commit SHA.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The published data lives on its own branch so that a daily update is not a commit to main. The
+      # first deploy can run before any data exists: the demo then says it has no data yet.
+      - name: Fetch the published data
+        run: |
+          if git ls-remote --exit-code --heads "https://github.com/${GITHUB_REPOSITORY}.git" pages-data > /dev/null; then
+            git clone --quiet --depth 1 --branch pages-data "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/pages-data"
+          fi
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Check the data before publishing it
+        run: node scripts/pages-check.ts "$RUNNER_TEMP/pages-data"
+      - name: Build the demo
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: node scripts/build-demo.ts --base "/${REPO_NAME}/" --data "$RUNNER_TEMP/pages-data"
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: apps/web/build-demo
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

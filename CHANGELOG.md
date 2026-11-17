@@ -19,6 +19,12 @@ Upgrading runs migrations `0061`, `0062` and `0063`.
   that reports what it held back, and retry of an alert or recovery no outlet took.
   `npm run alerts:test` sends a test message. New alert when many sources fail in a row
   (`ALERT_SOURCE_FAILS`). See docs/alerts.md.
+- Online demo on GitHub Pages (docs/online-demo.md): the reader pages as a static site with a real
+  instance's fixed issues (whitelisted export, leak-scanned twice) and the demo model in the browser
+  for Chat; "last updated" and the age of the data shown honestly. `scripts/pages-export.ts`,
+  `scripts/pages-publish.sh`, `scripts/build-demo.ts`, `scripts/check-demo.ts`, `.github/workflows/pages.yml`.
+- `/api/health` names the app and its version (`"app":"topka","version":"0.2.0"`), so a check against a
+  port can tell Topka from another service.
 - Observation ledger (migration `0063`): every report is `created` (new or a new version),
   `existing`, `conflict` (an older version replayed; kept next to the stored one) or `failed`
   (`missing-provenance`, `preservation-failed`); refusals are kept in `observation_rejections`, run
@@ -76,6 +82,21 @@ Upgrading runs migrations `0061`, `0062` and `0063`.
   a background mention ("此前据…报道") does not; links on shared hosts (e.g. sogou) keep their query so
   different articles are not merged; reports from one signal group count as one voice.
 - `/api/health` reports `release` as the package version plus the git commit.
+
+### Fixed
+
+- Demo model: English requests to delete, remove, rename or pause a project go to that project (they
+  started a new interview before); a cancel, a new topic or a delete said in the middle of an interview
+  is taken first; a new project's name is a cleaned phrase cut at a word boundary, not 15 characters
+  and "…".
+- A confirmed delete card still names the deleted project and its focus (it showed `Delete ''` and
+  `Target —`); its warning follows the page language.
+- Admin › Runs counts demo-model and free-model calls apart from paid ones.
+- `scripts/demo.ts` no longer turns the demo sources back on at every restart after
+  `sources:only` turned them off.
+- Settings › Projects: one row per project with a divider; a space after the 「分析」/"Analysis" badge.
+- Docs: tutorial outputs match what the commands print; `-e DEMO_PASSWORD=…` on a one-off is undone
+  by `.env` at the next restart; one source-count wording throughout.
 
 ## [0.2.0] - 2026-11-10
 

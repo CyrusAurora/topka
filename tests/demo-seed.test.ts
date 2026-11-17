@@ -46,3 +46,11 @@ test("--force seeds three complete cards today and two earlier days; a re-run du
   }
   assert.equal((await listPastIssues(id)).length, 2);
 });
+
+test("a re-run keeps the demo sources switched off once the operator turned them off (sources:only)", async () => {
+  // The first run (above) switched them on; the operator then keeps only real sources on.
+  await sql`UPDATE sources SET enabled = false, health = 'paused' WHERE id LIKE 'demo-%'`;
+  await run(process.execPath, [script, "--force"], { env });
+  const on = (await sql<{ id: string }[]>`SELECT id FROM sources WHERE id LIKE 'demo-%' AND enabled`).map((r) => r.id);
+  assert.deepEqual(on, [], "a restart with DEMO_SEED=true must not switch the demo sources back on");
+});
