@@ -51,7 +51,7 @@ test('RSS first backfill, ordinary window, 304, revision and config edits preser
   assert.deepEqual([third.status, third.found, third.created, third.revised], ['ok', 0, 0, 0]);
   assert.equal(requests.at(-1)!.etag, '"v1"');
   const [run] = await sql`SELECT detail FROM fetch_runs WHERE source_id=${id} ORDER BY id DESC LIMIT 1`;
-  assert.deepEqual(run!.detail, { notModified: true, httpStatus: 304 });
+  assert.deepEqual(run!.detail, { notModified: true, httpStatus: 304, ledger: { created: 0, changed: 0, existing: 0, conflict: 0, failed: 0 } }, "a 304 records nothing new in the ledger");
   const [healthy] = await sql`SELECT health,fail_count FROM sources WHERE id=${id}`;
   assert.deepEqual({ ...healthy }, { health: 'ok', fail_count: 0 });
   version = 2;

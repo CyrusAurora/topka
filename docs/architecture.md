@@ -97,6 +97,10 @@ agents in [AGENTS.md](../AGENTS.md)):
 - **Old material never floods "Today".** Items published more than 48 hours before discovery,
   fresh-import backfills, and batch pushes are archived by original publish time: they never
   enter "Today" and never push a notification.
+- **Observations are append-only.** `articles` and `article_revisions` refuse UPDATE/DELETE
+  (`0059`); every write answers `created` / `existing` / `conflict` / `failed`, refusals and
+  withdrawals are their own records, and a project brief is confirmed only through the checkpoint
+  decision table in `packages/contracts/src/brief.ts`. See [ledger.md](ledger.md).
 - **Source traceability.** Every selected item links to the original; full-text display is
   per-source (`site_fulltext`), default off.
 

@@ -26,6 +26,8 @@ export interface IssueCardItem {
   listedAt: string;
   hasCopy: boolean;
   overBudget: boolean;
+  /** The observation as the ledger stands now (absent from older payloads: current). */
+  ledger?: "current" | "corrected" | "retracted-material";
 }
 
 export interface IssueCard {
@@ -149,6 +151,14 @@ export interface CardRow {
   /** Topic tag for 「不想再看到这类」; empty hides the mute link. */
   tag: string;
   read: boolean;
+  /** Ledger chip text: "corrected by the source" or "retracted"; empty for a current observation. */
+  ledger: string;
+}
+
+/** The ledger chip a card carries: corrected by its source, retracted, or nothing for a current observation. */
+export function ledgerLabel(item: Pick<IssueCardItem, "ledger">, locale: UiLocale = "zh-CN"): string {
+  const t = messages(locale).magazine;
+  return item.ledger === "corrected" ? t.ledgerCorrected : item.ledger === "retracted-material" ? t.ledgerRetracted : "";
 }
 
 export function cardRows(view: TodayView, now: Date = new Date(), locale: UiLocale = "zh-CN", timeZone: string = "Asia/Shanghai"): CardRow[] {
@@ -169,6 +179,7 @@ export function cardRows(view: TodayView, now: Date = new Date(), locale: UiLoca
     summary: item.summary,
     tag: item.tag,
     read: view.opened.includes(item.id),
+    ledger: ledgerLabel(item, locale),
   }));
 }
 

@@ -15,6 +15,7 @@ import { mergeStoryInto } from "../events/merge.ts";
 import { latestHotRanking } from "../events/hot-read.ts";
 import { audit } from "./auth.ts";
 import { Conflict, Invalid } from "./sources.ts";
+import { ledgerStates, recordWithdrawal, WITHDRAWAL_BASES, WithdrawalInvalid } from "../content/withdrawals.ts";
 
 /** One row of the content finder: enough to recognise an item and open it. */
 export interface ContentRow {
@@ -80,7 +81,13 @@ export async function contentChain(id: string) {
     sql`SELECT target_key, dedupe_key, status, attempts, response, created_at, sent_at FROM deliveries WHERE subject_id = ${id} ORDER BY created_at DESC`,
     sql`SELECT created_at, actor, action, reason, before, after FROM audit_log WHERE subject = ${`content:${id}`} ORDER BY created_at DESC LIMIT 20`,
   ]);
-  return { article, discoveries, revisions, analyses, publication: publication[0] ?? null, override: override[0] ?? null, ledger, membership, decisions, deliveries, history };
+  // The observation ledger: its presentation state, every withdrawal record and refused conflicting report.
+  const [observation, withdrawals, rejections] = await Promise.all([
+    ledgerStates([id]).then((m) => m.get(id) ?? null),
+    sql`SELECT action, basis, reason, evidence_url, recorded_by, recorded_at FROM article_withdrawals WHERE article_id = ${id} ORDER BY id DESC`,
+    sql`SELECT state, code, title, excerpt, version_marker, stored_revision, stored_marker, via, detail, reported_at FROM observation_rejections WHERE article_id = ${id} ORDER BY id DESC LIMIT 20`,
+  ]);
+  return { article, discoveries, revisions, analyses, publication: publication[0] ?? null, override: override[0] ?? null, ledger, membership, decisions, deliveries, history, observation, withdrawals, rejections };
 }
 
 
@@ -122,6 +129,33 @@ export async function setVisibility(id: string, input: { visibility: "public" | 
   }
   await audit(actor, "content.visibility", `content:${id}`, input.reason, { visibility: before.visibility }, { visibility: input.visibility });
   return published;
+}
+
+/**
+ * Records that the source withdrew the material (or that it is current again): an appended ledger
+ * record, never an edit. The publication follows (out of the pool while withdrawn); audited.
+ */
+export async function recordContentWithdrawal(id: string, input: { action?: unknown; basis?: unknown; reason?: unknown; evidenceUrl?: unknown }, actor: string) {
+  const action = input.action === "reinstate" ? "reinstate" : input.action === "withdraw" ? "withdraw" : null;
+  if (!action) throw new Invalid("action must be withdraw or reinstate");
+  const basis = WITHDRAWAL_BASES.find((b) => b === input.basis);
+  if (!basis) throw new Invalid(`basis must be one of ${WITHDRAWAL_BASES.join(", ")}`);
+  const reason = typeof input.reason === "string" ? input.reason.trim() : "";
+  if (!reason) throw new Invalid("reason is required");
+  const [exists] = await sql`SELECT 1 FROM articles WHERE id = ${id}`;
+  if (!exists) return null;
+  let out;
+  try {
+    out = await recordWithdrawal(id, { action, basis, reason, evidenceUrl: typeof input.evidenceUrl === "string" ? input.evidenceUrl : null, recordedBy: actor });
+  } catch (error) {
+    if (error instanceof WithdrawalInvalid) throw new Invalid(error.message);
+    throw error;
+  }
+  if (!out.recorded) throw new Conflict(action === "withdraw" ? "already withdrawn" : "not withdrawn");
+  const published = await publishArticle(id);
+  if (published?.reduced && (await inHotRanking(id))) await computeHotRanking();
+  await audit(actor, `content.${action}`, `content:${id}`, reason, null, { basis, withdrawn: out.withdrawn });
+  return { withdrawn: out.withdrawn, observation: (await ledgerStates([id])).get(id) ?? null };
 }
 
 /** Marks a detail page for search indexing (sitemap, IndexNow, robots) or removes the mark. */

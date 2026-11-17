@@ -182,7 +182,7 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
           },
             createElement("span", { className: "m-num", "aria-hidden": "true" }, row.no),
             createElement("div", { className: "m-body" },
-              createElement("div", { className: "m-t" }, row.title),
+              createElement("div", { className: "m-t" }, row.title, row.ledger ? createElement("span", { className: "m-ledger", "data-ledger": row.ledger }, ` · ${row.ledger}`) : null),
               row.core ? createElement("div", { className: "m-why" }, row.core) : null,
               createElement("div", { className: "m-meta" },
                 createElement("span", { className: "m-src" }, metaLine(row, v.projects.length > 1)),

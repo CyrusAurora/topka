@@ -7,7 +7,7 @@ import { actorOf } from "@topka/backend/admin/auth";
 import { importSelectBenchRun, listSelectBenchRuns, selectBenchRun } from "@topka/backend/admin/selectbench";
 import { modelsOverview, switchModel } from "@topka/backend/admin/models";
 
-import { contentChain, detachFromFact, mergeStories, overrideFields, rerun, searchContent, setSeoIndexed, setVisibility } from "@topka/backend/admin/content";
+import { contentChain, detachFromFact, mergeStories, overrideFields, recordContentWithdrawal, rerun, searchContent, setSeoIndexed, setVisibility } from "@topka/backend/admin/content";
 import { banSource, eraseFeedback, feedbackScreenshot, listFeedback, unbanSource, updateFeedback } from "@topka/backend/admin/feedback";
 import { listMonitorEvents, listMonitorPosts, relinkPost, resolveMonitorPost, reviewReceipt, setWithdrawn, updateMonitorEvent } from "@topka/backend/admin/monitor";
 import { releaseReceipt, requeueFailedArticles, resolveDelivery, runsOverview } from "@topka/backend/admin/runs";
@@ -57,6 +57,8 @@ export function registerAdmin(app: FastifyInstance) {
   app.get("/api/admin/content/:id", adminHandler(async (req, reply) => orNotFound(req, reply, await contentChain(param(req, "id")))));
   app.post("/api/admin/content/:id/visibility", adminHandler(async (req, _reply, admin) => setVisibility(param(req, "id"), body(req) as never, actorOf(admin))));
   app.post("/api/admin/content/:id/seo", adminHandler(async (req, reply, admin) => orNotFound(req, reply, await setSeoIndexed(param(req, "id"), body(req) as never, actorOf(admin)))));
+  // The source withdrew it (or it is current again): an appended ledger record (article_withdrawals).
+  app.post("/api/admin/content/:id/withdrawal", adminHandler(async (req, reply, admin) => orNotFound(req, reply, await recordContentWithdrawal(param(req, "id"), body(req), actorOf(admin)))));
   app.post("/api/admin/content/:id/override", adminHandler(async (req, _reply, admin) => overrideFields(param(req, "id"), body(req) as never, actorOf(admin))));
   app.post("/api/admin/content/:id/rerun", adminHandler(async (req, reply, admin) => {
     const b = body<{ step: "extract" | "analyze" | "group" }>(req);

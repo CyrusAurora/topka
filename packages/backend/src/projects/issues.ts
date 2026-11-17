@@ -12,6 +12,7 @@ import { SELECTION } from "@topka/industry/selection";
 import { RECENT_IMPORT_HOURS } from "./today.ts";
 import { listUserProjects } from "./user-today.ts";
 import { assessEvidence, type EvidenceVerdict } from "./evidence.ts";
+import { ledgerStates, type LedgerView } from "../content/withdrawals.ts";
 import { capPerSource, isHero, isValidTimeZone, issueCutoffInTz, currentIssueDateInTz, nextIssueAtInTz, DEFAULT_TIMEZONE } from "./issue-rules.ts";
 
 /** The user's IANA zone from the users row, falling back to the default (Shanghai). */
@@ -54,6 +55,9 @@ export interface IssueItem {
   listedAt: string;
   hasCopy: boolean;
   overBudget: boolean;
+  /** The observation as the ledger stands now: current, corrected by its source, or retracted material. */
+  ledger: LedgerView["state"];
+  withdrawal: LedgerView["withdrawal"];
 }
 
 export interface Issue {
@@ -117,6 +121,8 @@ export async function issueCandidates(userId: string, since: Date, until: Date, 
       -- The issue (每日 Top 3) is the site's scope only: an item a project follows outside it (battery,
       -- earnings…) stays in that project's own view.
       WHERE p.visibility = 'public' AND p.in_scope AND p.eligible AND (NOT p.selected OR p.visible_after <= ${until})
+        -- A withdrawn observation is no current evidence: it never enters an issue (fixed issues keep it, marked).
+        AND NOT EXISTS (SELECT 1 FROM article_withdrawal_state w WHERE w.article_id = p.article_id AND w.withdrawn)
         AND (NOT p.backfill OR (a.backfill_reason = 'first-import' AND p.published_at > ${new Date(until.getTime() - RECENT_IMPORT_HOURS * 3_600_000)} AND p.published_at <= ${until}))
     ), scored AS (
       SELECT x.*, sc.score AS project_score, coalesce(sc.score::numeric, x.score) AS effective
@@ -291,6 +297,7 @@ export async function readIssue(userId: string, date: string, db: Db = sql): Pro
     LEFT JOIN issue_card_copy c ON c.project_id = ui.project_id AND c.article_id = ui.article_id
     WHERE ui.user_id = ${userId} AND ui.issue_date = ${date}
     ORDER BY ui.position`;
+  const ledger = await ledgerStates(rows.map((r) => r.article_id), db);
   const items: IssueItem[] = rows.map((r) => ({
     id: r.article_id,
     position: r.position,
@@ -308,6 +315,8 @@ export async function readIssue(userId: string, date: string, db: Db = sql): Pro
     listedAt: iso(r.listed_at)!,
     hasCopy: r.title_a !== null,
     overBudget: r.over_budget === true,
+    ledger: ledger.get(r.article_id)?.state ?? "current",
+    withdrawal: ledger.get(r.article_id)?.withdrawal ?? null,
   }));
   return { date: head.issue_date, no: head.issue_no, fixedAt: head.fixed_at.toISOString(), hero: head.hero, ready: items.every((i) => i.hasCopy), items };
 }

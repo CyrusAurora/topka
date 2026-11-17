@@ -23,6 +23,9 @@ interface Chain {
   decisions: Row[];
   deliveries: Row[];
   history: Row[];
+  observation: { state: "current" | "corrected" | "retracted-material"; revision: number; withdrawal: Row | null } | null;
+  withdrawals: Row[];
+  rejections: Row[];
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
@@ -50,7 +53,7 @@ function Step({ title, meta, children, tone = "accent", last }: { title: ReactNo
   );
 }
 
-type Dialog = null | "visibility" | "seo" | "override" | "analyze" | "extract" | "group" | "detach" | "merge";
+type Dialog = null | "withdrawal" | "visibility" | "seo" | "override" | "analyze" | "extract" | "group" | "detach" | "merge";
 
 export default function ContentItem({ loaderData }: Route.ComponentProps) {
   const c = loaderData;
@@ -61,6 +64,8 @@ export default function ContentItem({ loaderData }: Route.ComponentProps) {
   const [visibility, setVisibility] = useState<string>(p?.visibility ?? "public");
   const [fields, setFields] = useState({ title: "", summary: "", reason: "", category: "", tags: "", selected: "", silent: "" });
   const [mergeInto, setMergeInto] = useState("");
+  const [basis, setBasis] = useState("source-retracted");
+  const [evidence, setEvidence] = useState("");
   const t = useT();
   const locale = useLocale();
   const { timeZone } = useUiPrefs();
@@ -295,6 +300,44 @@ export default function ContentItem({ loaderData }: Route.ComponentProps) {
               ]}
             />
           </Card>
+          <Card title={ci.cardObservation}>
+            {(() => {
+              const obs = c.observation;
+              const withdrawn = obs?.state === "retracted-material";
+              return (
+                <div className="space-y-3 text-[12.5px]">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {obs && <Badge tone={withdrawn ? "warn" : obs.state === "corrected" ? "info" : "ok"}>{ci.observationState[obs.state]}</Badge>}
+                    {obs && <span className="text-ink-4">{ci.observationRevision(obs.revision)}</span>}
+                    <span className="ml-auto"><Button onClick={() => { setBasis(withdrawn ? "editorial" : "source-retracted"); setEvidence(""); setDialog("withdrawal"); }}>{withdrawn ? ci.reinstateBtn : ci.withdrawBtn}</Button></span>
+                  </div>
+                  {(c.withdrawals ?? []).length ? (
+                    <ul className="space-y-2">
+                      {c.withdrawals.map((w, i) => (
+                        <li key={i}>
+                          <div className="text-ink-2"><span className="font-medium">{ci.withdrawalAction[w.action as "withdraw"] ?? w.action}</span> · {ci.basis[w.basis as "editorial"] ?? w.basis} · {w.recorded_by} · {time(w.recorded_at, false)}</div>
+                          <div className="text-ink-3">{w.reason}</div>
+                          {w.evidence_url && <a className="break-all text-accent" href={w.evidence_url} target="_blank" rel="noreferrer">{w.evidence_url}</a>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <Empty>{ci.withdrawalsEmpty}</Empty>
+                  )}
+                  {(c.rejections ?? []).length > 0 && (
+                    <div>
+                      <div className="font-medium text-ink-2">{ci.rejectionsTitle}</div>
+                      <ul className="mt-1 space-y-1">
+                        {c.rejections.map((r, i) => (
+                          <li key={i} className="text-ink-3">{ci.rejectionCode[r.code as "identity-conflict"] ?? r.code} · {time(r.reported_at, false)} · {r.title ?? ""}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </Card>
           <Card title={ci.cardHistory}>
             {c.history.length ? (
               <ul className="space-y-3 text-[12.5px]">
@@ -311,6 +354,30 @@ export default function ContentItem({ loaderData }: Route.ComponentProps) {
           </Card>
         </div>
       </div>
+
+      <ReasonDialog
+        open={dialog === "withdrawal"}
+        title={c.observation?.state === "retracted-material" ? ci.reinstateTitle : ci.withdrawTitle}
+        description={c.observation?.state === "retracted-material" ? ci.reinstateDesc : ci.withdrawDesc}
+        danger={c.observation?.state !== "retracted-material"}
+        confirmLabel={c.observation?.state === "retracted-material" ? ci.reinstateBtn : ci.withdrawBtn}
+        busy={pending === "withdrawal"}
+        onClose={() => setDialog(null)}
+        onSubmit={async (reason) => {
+          const reinstate = c.observation?.state === "retracted-material";
+          const payload = { action: reinstate ? "reinstate" : "withdraw", basis, reason, evidenceUrl: evidence.trim() || null };
+          return (await run("POST", `${base}/withdrawal`, payload, { label: "withdrawal", success: reinstate ? ci.reinstateSuccess : ci.withdrawSuccess })) !== null;
+        }}
+      >
+        <Field label={ci.basisLabel}>
+          <Select value={basis} onChange={(e) => setBasis(e.target.value)}>
+            {(["source-retracted", "source-removed", "editorial"] as const).map((b) => <option key={b} value={b}>{ci.basis[b]}</option>)}
+          </Select>
+        </Field>
+        <Field label={ci.evidenceLabel}>
+          <Input inputMode="url" value={evidence} onChange={(e) => setEvidence(e.target.value)} placeholder="https://" />
+        </Field>
+      </ReasonDialog>
 
       <ReasonDialog
         open={dialog === "seo"}

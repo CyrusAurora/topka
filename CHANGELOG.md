@@ -8,10 +8,23 @@ All notable changes to this project are documented here. Format follows
 The daily issue now leaves out candidates without enough evidence, and the quality of each part of the
 product is measured on its own (docs/quality.md). A fresh install works end to end with no paid key:
 every project pack is there, a labelled demo model answers 对话, and the port is set once in `.env`.
-Upgrading runs migrations `0061` and `0062`.
+The observation ledger is complete: every write has one of four states, withdrawals are append-only
+records, and a project brief is confirmed only through the checkpoint decision table (docs/ledger.md).
+Upgrading runs migrations `0061`, `0062` and `0063`.
 
 ### Added
 
+- Observation ledger (migration `0063`): every report is `created` (new or a new version),
+  `existing`, `conflict` (an older version replayed; kept next to the stored one) or `failed`
+  (`missing-provenance`, `preservation-failed`); refusals are kept in `observation_rejections`, run
+  counts in `fetch_runs.detail.ledger`. Withdrawals (`article_withdrawals`) are append-only records,
+  refused at the database like `0059`; withdrawn items leave new issues and briefs and are marked
+  where they stay. Admin: `POST /api/admin/content/:id/withdrawal`; ingest: `"withdrawn": true`.
+- Project brief checkpoint: each view is a stored snapshot with a top result (`offline-or-auth`,
+  `snapshot-failed`, `partial-coverage`, `abstained-impact`, `updates-available`,
+  `no-important-change`); confirming names the snapshot, `ackSeq`, the cards shown and a `commandId`,
+  returns a receipt, and is guarded in the database. `PUT /api/projects/:projectId/sources/:sourceId`
+  marks a source as required; `GET /api/me/items/:articleId/history` lists earlier versions.
 - Built-in demo model (`DEMO_SEED=true`, or `LLM_DEMO=true`): answers 对话 and writes card copy offline
   with fixed rules, labelled 「演示模型」 / "Demo model" in the UI; it never analyses articles and steps
   aside once a real model is configured. `init-env.ts --demo` turns it on.
@@ -37,6 +50,10 @@ Upgrading runs migrations `0061` and `0062`.
 
 ### Changed
 
+- `POST /api/projects/:projectId/today/ack` takes `{snapshotId, ackSeq, shownIds, commandId}` instead
+  of `{through}`; refusals carry a `code`.
+- `POST /api/ingest/items` no longer skips items without a usable URL silently (they are refused as
+  `failed`) and uses the URL when the title is missing.
 - 对话 replies, quota and error lines follow the reader's language; English readers get English
   questions and cards.
 - Project page: 「关联 N 个信源 · 开着 M 个」 and which time window it shows (last 24 hours, since your last

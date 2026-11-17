@@ -55,8 +55,12 @@ async function published(sourceId: string, title: string, opts: { minutesAgo?: n
   return articleId;
 }
 const today = (token: string, id = project.slug) => app.inject({ method: "GET", url: `/api/projects/${id}/today`, headers: cookie(token) });
-const ack = (token: string, through: string, id = project.slug) =>
-  app.inject({ method: "POST", url: `/api/projects/${id}/today/ack`, headers: { ...cookie(token), "content-type": "application/json" }, payload: JSON.stringify({ through }) });
+/** Confirms the snapshot of a payload the reader saw (all its cards shown, a fresh commandId unless given). */
+const ack = (token: string, view: { snapshot: { id: string | null; ackSeq: number }; items: Array<{ id: string }> }, body: Record<string, unknown> = {}, id = project.slug) =>
+  app.inject({
+    method: "POST", url: `/api/projects/${id}/today/ack`, headers: { ...cookie(token), "content-type": "application/json" },
+    payload: JSON.stringify({ snapshotId: view.snapshot.id, ackSeq: view.snapshot.ackSeq, shownIds: view.items.map((i) => i.id), commandId: `cmd-${++seq}`, ...body }),
+  });
 
 before(async () => {
   await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, enabled, next_fetch_at) VALUES
@@ -121,38 +125,43 @@ test("published items of the active linked sources come by score, with original 
   assert.equal(body.quietDay, false);
 });
 
-test("the checkpoint: reading never moves it; an acknowledgement moves it forward only; new items show again", async () => {
+test("the checkpoint: reading never moves it; a confirmation moves it forward only; new items show again", async () => {
   const seen = (await today(owner.token)).json();
   assert.equal((await today(owner.token)).json().items.length, 3, "reading twice does not consume anything");
-  const done = await ack(owner.token, seen.window.until);
+  assert.equal(seen.checkpoint.ackSeq, 0);
+  assert.match(seen.snapshot.id, /^brief-snapshot-v1:[0-9a-f]{32}$/);
+  assert.equal(seen.snapshot.acknowledgementAllowed, true);
+  const done = await ack(owner.token, seen, { commandId: "first-confirmation" });
   assert.equal(done.statusCode, 200, done.body);
   assert.equal(done.json().checkpoint.advanced, true);
+  assert.equal(done.json().checkpoint.ackSeq, 1);
+  assert.match(done.json().checkpoint.receiptId, /^receipt-[0-9a-f]{8}$/);
   const after = (await today(owner.token)).json();
   assert.equal(after.result, "no-important-change", "everything up to the confirmed instant is read");
   assert.equal(after.window.basis, "checkpoint");
   assert.equal(after.checkpoint.readThrough, seen.window.until);
+  assert.equal(after.checkpoint.ackSeq, 1);
 
-  const older = await ack(owner.token, new Date(Date.parse(seen.window.until) - 3_600_000).toISOString());
-  assert.equal(older.statusCode, 200);
-  assert.equal(older.json().checkpoint.advanced, false);
-  assert.equal(older.json().checkpoint.readThrough, seen.window.until, "an older acknowledgement never moves it back");
-  assert.equal((await ack(owner.token, seen.window.until)).json().checkpoint.advanced, false, "the same acknowledgement is idempotent");
-  assert.equal((await ack(owner.token, new Date(Date.now() + 3_600_000).toISOString())).statusCode, 400, "a checkpoint in the future is refused");
-  assert.equal((await ack(owner.token, "not a time")).statusCode, 400);
+  const again = await ack(owner.token, seen, { commandId: "first-confirmation" });
+  assert.equal(again.statusCode, 200, "the same confirmation again is idempotent");
+  assert.deepEqual([again.json().checkpoint.idempotent, again.json().checkpoint.receiptId], [true, done.json().checkpoint.receiptId]);
+  const stale = await ack(owner.token, seen, { commandId: "another" });
+  assert.equal(stale.statusCode, 200, "the same snapshot is idempotent whatever the command");
+  assert.equal(stale.json().checkpoint.receiptId, done.json().checkpoint.receiptId);
+  assert.equal((await ack(owner.token, { ...seen, snapshot: { id: null, ackSeq: 0 } })).statusCode, 400, "a confirmation names its snapshot");
 
   await published(A, "after the read", { minutesAgo: 0 });
   const next = (await today(owner.token)).json();
   assert.equal(next.result, "updates-available");
   assert.deepEqual(next.items.map((i: { originalTitle: string }) => i.originalTitle.replace(` ${T}`, "")), ["after the read"]);
-
-  // An old checkpoint looks back at most 7 days.
-  await sql`UPDATE project_read_checkpoints SET read_through = now() - interval '30 days' WHERE project_id = ${project.id}`;
-  assert.equal((await today(owner.token)).json().window.basis, "capped");
+  assert.equal(next.snapshot.ackSeq, 1);
+  assert.equal((await ack(owner.token, next, { ackSeq: 0 })).json().code, "ack_seq_mismatch", "a confirmation that names an older sequence cannot move it");
 });
 
 test("only the owner reads or acknowledges; id and slug both address the project, no double encoding needed", async () => {
   assert.equal((await today(stranger.token)).statusCode, 404);
-  assert.equal((await ack(stranger.token, new Date().toISOString())).statusCode, 404);
+  const mine = (await today(owner.token)).json();
+  assert.equal((await ack(stranger.token, mine)).statusCode, 404, "a stranger cannot address the project");
   assert.equal((await app.inject({ method: "GET", url: `/api/projects/${project.slug}/today` })).statusCode, 404, "anonymous reads as not-found");
   assert.equal((await today(owner.token, encodeURIComponent(project.id))).statusCode, 200, "the derived id, encoded once");
   assert.equal((await today(owner.token, project.id)).statusCode, 200, "the derived id as stored, percent escapes and all");
@@ -182,7 +191,7 @@ test("derived ids always fit a route segment; slugs are short, stable and match 
 });
 
 test("the snapshot export writes the owner's payload per slug and never moves a checkpoint", async () => {
-  const before = (await sql`SELECT read_through FROM project_read_checkpoints WHERE project_id = ${project.id}`)[0]!.read_through;
+  const before = (await sql`SELECT read_through, ack_seq FROM project_read_checkpoints WHERE project_id = ${project.id}`)[0]!;
   const out = mkdtempSync(join(tmpdir(), "today-"));
   const { stdout } = await run(process.execPath, ["scripts/export-today.ts", "--project", project.slug, "--out", out]);
   assert.match(stdout, new RegExp(`${project.slug}\\.json`));
@@ -190,8 +199,8 @@ test("the snapshot export writes the owner's payload per slug and never moves a 
   assert.equal(snap.kind, "project-today");
   assert.equal(snap.project.id, project.id);
   assert.ok(["updates-available", "no-important-change"].includes(snap.result));
-  const afterExport = (await sql`SELECT read_through FROM project_read_checkpoints WHERE project_id = ${project.id}`)[0]!.read_through;
-  assert.equal(new Date(afterExport).toISOString(), new Date(before).toISOString());
+  const afterExport = (await sql`SELECT read_through, ack_seq FROM project_read_checkpoints WHERE project_id = ${project.id}`)[0]!;
+  assert.deepEqual({ ...afterExport }, { ...before });
   await assert.rejects(run(process.execPath, ["scripts/export-today.ts", "--project", "pnosuchproject", "--out", out]), (e: { code?: number }) => e.code === 1);
 });
 

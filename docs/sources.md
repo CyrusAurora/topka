@@ -136,8 +136,14 @@ Content-Type: application/json
 - Set `INGEST_TOKEN` in `.env`, at least 16 characters; unset means the endpoint always returns
   401.
 - Up to 50 items per call; at most 10 calls per minute per client.
-- Returns `{"ok": true, "created": <new item count>}`. Items missing title or URL are skipped;
-  duplicate URLs within one request keep only the first.
+- Returns `{"ok": true, "created": <new item count>, "ledger": {...}, "withdrawn": <n>}`; `ledger`
+  counts each item's outcome (`created`, `changed`, `existing`, `conflict`, `failed`, see
+  [ledger.md](ledger.md)). An item without a usable http(s) URL is refused as `failed` and kept in
+  the refusal log; a missing title falls back to the URL. Duplicate URLs within one request keep
+  only the first.
+- An item with `"withdrawn": true` (and an optional `"withdrawnReason"`) records that the source
+  removed it: the stored item gets a withdrawal record and leaves new issues; an unknown item is
+  ignored.
 - An unknown `sourceId` creates an `external` source which never appears on public pages until you
   change its participation mode to `editorial` in the admin UI.
 - An item with `raw._topka.backfill: true` is treated as backfill (never enters "today", never

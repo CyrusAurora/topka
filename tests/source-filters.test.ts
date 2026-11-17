@@ -60,7 +60,11 @@ async function source(id: string, extra: Record<string, unknown>, cursor?: Recor
 }
 const stored = async (id: string) =>
   (await sql<{ title: string }[]>`SELECT title FROM articles WHERE source_id = ${id} ORDER BY title`).map((r) => r.title.replace(` ${T}`, ""));
-const lastDetail = async (id: string) => (await sql`SELECT detail FROM fetch_runs WHERE source_id = ${id} ORDER BY id DESC LIMIT 1`)[0]!.detail;
+// The run's ledger counts are covered by tests/observation-ledger.test.ts; here the filter fields only.
+const lastDetail = async (id: string) => {
+  const { ledger: _ledger, ...rest } = (await sql`SELECT detail FROM fetch_runs WHERE source_id = ${id} ORDER BY id DESC LIMIT 1`)[0]!.detail ?? {};
+  return Object.keys(rest).length ? rest : null;
+};
 
 test("an include rule keeps only matching items; title and text rules must both match", async () => {
   const id = `filters-include-${T}`;

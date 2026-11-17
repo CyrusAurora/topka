@@ -203,7 +203,9 @@ script again, which only refreshes the demo's own rows.
 - **`/admin/sources`** is the place to watch: the two sources move to the top, each showing its last
   successful fetch and its item count for the last 7 days. `/admin/runs` next to it lists the
   scheduled jobs (the sweep, translation, the hot ranking), not the per-source fetches.
-- **`/admin/content`** opens on the newest articles; the search box looks one up by id, URL or title.
+- **`/admin/content`** opens on the newest articles; the search box looks one up by id, URL or title. An article's page has an
+  "Observation ledger" card: its versions, refused reports, and buttons to record a withdrawal or
+  reinstatement ([ledger.md](ledger.md)).
 - **`docker compose logs -f worker`** prints one line per fetch that stored something new (or failed):
 
   ```text

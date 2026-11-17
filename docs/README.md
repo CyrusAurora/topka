@@ -27,6 +27,7 @@ Project:
 Architecture & operation:
 
 - [Architecture](architecture.md) — data flow, process layout, invariants, directory map.
+- [Observation ledger](ledger.md) — write states, withdrawals, the brief checkpoint and its decision table.
 - [Self-hosting](self-hosting.md) — the end-to-end deployment guide (Docker compose, BYOK,
   HTTPS, migrations, upgrades, backups, troubleshooting). Replaces the earlier `self-host.md`
   and `deploy.md`.
