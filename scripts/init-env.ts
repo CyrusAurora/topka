@@ -26,7 +26,8 @@ if (localeAt > 0 && locale !== "en" && locale !== "zh-CN") {
   process.exit(1);
 }
 const zh = locale !== "en";
-const text = readFileSync(".env.example", "utf8")
+const example = readFileSync(".env.example", "utf8");
+const text = example
   .replace(/^ADMIN_PASSWORD=$/m, `ADMIN_PASSWORD=${password}`)
   .replace(/^SESSION_SECRET=$/m, `SESSION_SECRET=${randomBytes(32).toString("hex")}`)
   .replace(/^IMG_PROXY_SIGN_SECRET=$/m, `IMG_PROXY_SIGN_SECRET=${randomBytes(32).toString("hex")}`)
@@ -36,7 +37,8 @@ const text = readFileSync(".env.example", "utf8")
   .replace(/^PORT=.*$/m, (line) => (port ? `PORT=${port}` : line))
   .replace(/^DEMO_SEED=.*$/m, (line) => (demo ? "DEMO_SEED=true" : line))
   .replace(/^# SITE_LOCALE=.*$/m, (line) => (locale ? `SITE_LOCALE=${locale}` : line));
-const portLine = /^PORT=(.*)$/m.exec(text)?.[1];
+// From the flag or the example file, never from `text`: the printed address carries no secret.
+const portLine = port || /^PORT=(.*)$/m.exec(example)?.[1];
 try {
   // "wx": create only, in the same call that writes, so an .env that appears meanwhile is never overwritten.
   writeFileSync(".env", text, { mode: 0o600, flag: "wx" });

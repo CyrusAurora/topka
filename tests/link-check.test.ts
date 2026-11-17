@@ -45,6 +45,7 @@ test("a link to a missing heading is broken; GitHub's slugs (CJK, punctuation, r
   assert.equal(slugOf("Part 2: real articles, still no model key"), "part-2-real-articles-still-no-model-key");
   assert.equal(slugOf("第二部分：接两个真实信源，仍然不用模型 Key"), "第二部分接两个真实信源仍然不用模型-key");
   assert.equal(slugOf("HTTPS (Caddy profile)"), "https-caddy-profile");
+  assert.equal(slugOf("Set <code>PORT</code> once <<b>b>"), "set-port-once");
   assert.deepEqual([...anchorsOf("# A\n## A\n<a id=\"x\"></a>\n```\n# not\n```\n")], ["a", "a-1", "x"]);
   const root = mkdtempSync(path.join(tmpdir(), "link-anchor-"));
   try {

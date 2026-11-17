@@ -77,9 +77,13 @@ export function localTarget(raw: string): string | null {
 
 /** GitHub's heading id: lower case, punctuation dropped (letters, digits, "-", "_" and spaces kept), spaces to "-". */
 export function slugOf(heading: string): string {
-  const plain = heading
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/<[^>]+>/g, "")
+  // Inline HTML adds no text to the id: tags are dropped until none is left (nested fragments too).
+  let text = heading.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1");
+  for (let prev = ""; prev !== text; ) {
+    prev = text;
+    text = text.replace(/<[^<>]*>/g, "");
+  }
+  const plain = text
     .replace(/[`*~]/g, "")
     .trim()
     .toLowerCase();
