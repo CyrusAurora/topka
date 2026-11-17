@@ -14,6 +14,11 @@ Upgrading runs migrations `0061`, `0062` and `0063`.
 
 ### Added
 
+- Operations alerts to a webhook: `ALERT_WEBHOOK_URL` takes a Feishu custom-bot address (or any
+  receiver of that JSON; `ALERT_WEBHOOK_SECRET` signs), with dedupe of the same text, an hourly cap
+  that reports what it held back, and retry of an alert or recovery no outlet took.
+  `npm run alerts:test` sends a test message. New alert when many sources fail in a row
+  (`ALERT_SOURCE_FAILS`). See docs/alerts.md.
 - Observation ledger (migration `0063`): every report is `created` (new or a new version),
   `existing`, `conflict` (an older version replayed; kept next to the stored one) or `failed`
   (`missing-provenance`, `preservation-failed`); refusals are kept in `observation_rejections`, run

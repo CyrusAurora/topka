@@ -27,6 +27,7 @@ Project:
 Architecture & operation:
 
 - [Architecture](architecture.md) — data flow, process layout, invariants, directory map.
+- [Operations alerts](alerts.md) — what is alerted, the Feishu-compatible webhook, dedupe and rate limit, drills.
 - [Observation ledger](ledger.md) — write states, withdrawals, the brief checkpoint and its decision table.
 - [Self-hosting](self-hosting.md) — the end-to-end deployment guide (Docker compose, BYOK,
   HTTPS, migrations, upgrades, backups, troubleshooting). Replaces the earlier `self-host.md`

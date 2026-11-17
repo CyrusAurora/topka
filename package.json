@@ -32,6 +32,7 @@
     "project:brief": "node --env-file-if-exists=.env scripts/project-brief.ts",
     "project:rescore": "node --env-file-if-exists=.env scripts/project-rescore.ts",
     "today:export": "node --env-file-if-exists=.env scripts/export-today.ts",
+    "alerts:test": "node --env-file-if-exists=.env scripts/alert-test.ts",
     "dev:api": "npm run dev -w @topka/api",
     "dev:worker": "npm run dev -w @topka/worker",
     "dev:web": "npm run dev -w @topka/web",
