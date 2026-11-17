@@ -50,6 +50,19 @@ async function overflow(page: Page): Promise<string | null> {
   });
 }
 
+/** Signs a browser context in; waits out the sign-in rate limit (Retry-After) once, as a person would. */
+async function signInTo(api: APIRequestContext, url: string, email: string, password: string): Promise<void> {
+  const post = () => api.post(`${url}api/auth/login`, { data: { email, password }, headers: { origin: new URL(url).origin } });
+  let res = await post();
+  if (res.status() === 429) {
+    const wait = Math.min(Number(res.headers()["retry-after"] ?? 60) || 60, 120);
+    console.log(`sign-in rate limited; waiting ${wait} s`);
+    await new Promise((r) => setTimeout(r, wait * 1000));
+    res = await post();
+  }
+  if (!res.ok()) throw new Error(`sign-in failed: HTTP ${res.status()}`);
+}
+
 async function main() {
   const { values } = parseArgs({
     args: process.argv.slice(2),
@@ -83,14 +96,13 @@ async function main() {
       // The account's language and zone, which the site uses instead of the browser's.
       let want = { locale: values.demo ? locale : "", zone: values.demo ? zone : "" };
       if (signedIn) {
-        const login = await api.post(`${url}api/auth/login`, { data: { email: values.email, password }, headers: { origin: new URL(url).origin } });
-        if (!login.ok()) throw new Error(`sign-in failed: HTTP ${login.status()}`);
+        await signInTo(api, url, values.email!, password!);
         if (!restore) {
           const me = (await (await api.get(`${url}api/auth/me`)).json()) as { user: { locale: string; timezone: string } };
           const before = { locale: me.user.locale, timezone: me.user.timezone };
           restore = async () => {
             const ctx = await browser.newContext();
-            await ctx.request.post(`${url}api/auth/login`, { data: { email: values.email, password }, headers: { origin: new URL(url!).origin } });
+            await signInTo(ctx.request, url!, values.email!, password!);
             await ctx.request.patch(`${url}api/auth/me`, { data: before, headers: { origin: new URL(url!).origin } });
             await ctx.close();
           };
@@ -153,7 +165,7 @@ async function main() {
       const signIn = async (device: (typeof DEVICES)[number]) => {
         const { name: _, ...options } = device;
         const ctx = await browser.newContext({ ...options, locale: "zh-CN", timezoneId: "Asia/Taipei" });
-        await ctx.request.post(`${url}api/auth/login`, { data: { email: values.email, password }, headers: { origin: new URL(url).origin } });
+        await signInTo(ctx.request, url!, values.email!, password!);
         const page = await ctx.newPage();
         await page.goto(url, { waitUntil: "load" });
         await page.waitForSelector("article.mag-item", { timeout: 15_000 }).catch(() => problems.push("no cards on today"));
@@ -164,8 +176,10 @@ async function main() {
       let note = "";
       if (unread < 0) note = "every card was already read; nothing to carry over";
       else {
+        // Listen before the click: the read mark can answer before a listener added afterwards.
+        const marked = phone.page.waitForResponse((r) => r.url().endsWith("/api/me/issues/read"), { timeout: 10_000 }).then(() => true, () => false);
         await phone.page.locator("article.mag-item").nth(unread).locator("[aria-expanded]").first().click();
-        await phone.page.waitForResponse((r) => r.url().endsWith("/api/me/issues/read"), { timeout: 10_000 }).catch(() => problems.push("opening a card on the phone sent no read mark"));
+        if (!(await marked)) problems.push("opening a card on the phone sent no read mark");
         const desk = await signIn(DEVICES[3]);
         const read = await desk.page.locator("article.mag-item").nth(unread).evaluate((a) => a.classList.contains("read")).catch(() => false);
         if (!read) problems.push(`card ${unread + 1} opened on the phone is not shown as read on the desktop`);
