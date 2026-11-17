@@ -24,7 +24,7 @@ fi
 
 files() { if [ -d .git ]; then git ls-files -z; else find . -type f -not -path './.git/*' -print0; fi; }
 
-for p in private ops .coderabbit.yaml; do
+for p in private ops .coderabbit.yaml .github/dependabot.yml; do
   [ -e "$p" ] && { note FAIL "maintainer-only path present: $p"; bad=1; }
 done
 forbidden=$(files | tr '\0' '\n' | grep -E '(^|/)\.env($|\.)|\.pem$|\.key$|\.p12$|\.dump$|\.sqlite3?$|(^|/)\.pm2/|(^|/)logs/|project\.private\.config\.json$|config\.local\.js$' | grep -v '\.env\.example$' || true)

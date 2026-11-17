@@ -6,3 +6,6 @@ ops
 scripts/oss-transform.sh
 # Maintainer-box convenience (publishes PostgreSQL on 127.0.0.1:5432); the public compose publishes no DB port.
 docker-compose.override.yml
+# Dependency updates run here only: the public copy follows by export, and a second Dependabot there
+# would open the same pull requests again.
+.github/dependabot.yml
