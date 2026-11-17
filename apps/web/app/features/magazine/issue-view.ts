@@ -177,8 +177,8 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
             },
               createElement("span", { className: "m-num", "aria-hidden": "true" }, row.no),
               createElement("div", { className: "m-body" },
-                createElement("div", { className: "m-t" }, createElement("span", { lang: contentLangAttr(state.contentLang, locale) }, row.title), row.ledger ? createElement("span", { className: "m-ledger", "data-ledger": row.ledger }, ` · ${row.ledger}`) : null),
-                row.core ? createElement("div", { className: "m-why", lang: contentLangAttr(state.contentLang, locale) }, row.core) : null,
+                createElement("div", { className: "m-t" }, createElement("span", { lang: contentLangAttr(state.contentLang, locale, row.title) }, row.title), row.ledger ? createElement("span", { className: "m-ledger", "data-ledger": row.ledger }, ` · ${row.ledger}`) : null),
+                row.core ? createElement("div", { className: "m-why", lang: contentLangAttr(state.contentLang, locale, row.core) }, row.core) : null,
                 createElement("div", { className: "m-meta" },
                   createElement("span", { className: "m-src" }, ...metaNodes(item.source || t.magazine.unknownSource, relTime(item.publishedAt ?? item.listedAt, new Date(), locale, timeZone), multiProjects ? item.project.target : null, locale)),
                   createElement("span", { className: "m-tog" }, open ? t.magazine.collapse : t.magazine.expand),
@@ -190,7 +190,7 @@ export const MagazineIssue: FC<MagazineIssueProps> = (props) => {
                 createElement("div", { className: "m-more-pad" },
                   createElement("div", { className: "m-lab" }, t.magazine.summaryLabel),
                   row.summary
-                    ? createElement("div", { className: "m-sum", lang: contentLangAttr(state.contentLang, locale) }, row.summary)
+                    ? createElement("div", { className: "m-sum", lang: contentLangAttr(state.contentLang, locale, row.summary) }, row.summary)
                     : createElement("div", { className: "m-sum muted" }, t.magazine.summaryPending),
                   createElement("div", { className: "m-src-row" },
                     sourceLink(row.url, row.host, t.magazine.openOriginal(row.host)),

@@ -184,6 +184,38 @@ export function fromHtml(html: string, base: string, source: SourceRow): Candida
   return out;
 }
 
+/** Link labels that are site chrome, not posts (page_watch). */
+const WATCH_CHROME = /^(advertise|about|contact|privacy|terms|cookies?|sign in|sign up|log in|login|subscribe|newsletter|rss|careers|jobs|pricing|home|menu)\b/i;
+const WATCH_ASSET = /\.(png|jpe?g|svg|css|js|ico|webp|xml)(\?|$)/i;
+
+/**
+ * parseMode "page_watch": a page with no feed and no stable markup, watched for links that appear on it.
+ * Every same-host link whose label reads like a headline (12–140 characters, not site chrome such as
+ * "About" or "Sign in", not an asset), in page order, at most config.watchMaxLinks (40). Which of them are
+ * new is decided in collect.ts against the links seen on earlier runs. The rule is the legacy radar
+ * collector's page watch, so its sources move here without losing what it found.
+ */
+export function fromPageWatch(html: string, base: string, source: SourceRow): Candidate[] {
+  const $ = cheerio.load(html);
+  const host = new URL(base).host;
+  const max = Number(source.config.watchMaxLinks ?? 40);
+  const out: Candidate[] = [];
+  const seen = new Set<string>();
+  for (const node of $("a[href]").toArray()) {
+    if (out.length >= max) break;
+    const el = $(node);
+    const href = el.attr("href")!.trim();
+    const title = collapseWhitespace(el.text());
+    if (title.length < 12 || title.length > 140 || WATCH_CHROME.test(title)) continue;
+    if (href.startsWith("#") || /^(mailto|javascript):/i.test(href)) continue;
+    const url = absolute(href, base);
+    if (!url || new URL(url).host !== host || WATCH_ASSET.test(url) || seen.has(url) || !allowed(url, source)) continue;
+    seen.add(url);
+    out.push({ url, title, publishedAt: null });
+  }
+  return out;
+}
+
 /** A changelog heading that is only a date, bare or after a short label: "时间: 2026-09-10", "时间：2024-05-17". */
 const DATE_HEADING = /^(?:[^\d:：]{1,12}[:：])?\s*(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?$/;
 
@@ -309,6 +341,7 @@ export async function fetchWebList(source: SourceRow): Promise<Candidate[]> {
   if (mode === "mimo_home") out = await fromMimoHome(text, base, source);
   else if (mode === "markdown") out = fromMarkdown(text, base, source);
   else if (mode === "docusaurus_changelog") out = fromDocusaurusChangelog(text, base, source);
+  else if (mode === "page_watch") out = fromPageWatch(text, base, source);
   else out = fromHtml(text, base, source);
   if (out.length === 0) throw new FetchError(`no items matched (${mode})`);
   return out;

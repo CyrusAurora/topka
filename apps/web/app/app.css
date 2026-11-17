@@ -810,7 +810,8 @@ a.m-host:hover {
 .arch-list { display: flex; flex-direction: column; }
 .arch-item {
   display: grid;
-  grid-template-columns: 68px minmax(0, 1fr);
+  /* Wide enough for "周二 · No. 009" / "Tue · No. 009" on one line. */
+  grid-template-columns: 80px minmax(0, 1fr);
   grid-template-areas:
     "date titles"
     "sub  titles";
@@ -831,6 +832,7 @@ a.m-host:hover {
 }
 .arch-sub {
   grid-area: sub;
+  white-space: nowrap;
   font-size: 11px;
   color: var(--mag-ink3);
   line-height: 1.4;
@@ -1038,6 +1040,9 @@ a.m-host:hover {
   padding: 8px 0;
 }
 .settings-row .v { font-size: 12.5px; color: var(--mag-ink3); }
+/* On a narrow phone the label keeps its line ("时区", not 时/区) and the value side gives way. */
+.settings-row > :first-child { flex-shrink: 0; white-space: nowrap; }
+.settings-row > .v { min-width: 0; text-align: right; }
 .settings-row .v.warn { color: var(--mag-acc); }
 /* Settings → Projects: one row per project (name left, "Project Today ›" right), hairlines between. */
 .settings-projs { display: flex; flex-direction: column; }

@@ -187,6 +187,7 @@ language (`users.locale`, `zh-CN` or `en`). Both are set in Settings or with `PA
 | `GITHUB_TOKEN` | empty | No | Read-only token raising the GitHub API quota. |
 | `ARTIFICIAL_ANALYSIS_API_KEY` | empty | No | Artificial Analysis leaderboard key. |
 | `EGRESS_PROXY_URL` | empty | No | Proxy for fetching overseas sources. |
+| `BRIDGE_HOSTS` | `rsshub:1200` | No | Feed bridges you run yourself (RSSHub, we-mp-rss), as `host:port`, comma separated: the only private addresses sources may fetch. See [sources](sources.md#free-bridges-for-x-wechat-and-weibo). |
 
 ## Feishu notifications
 
@@ -242,6 +243,6 @@ language (`users.locale`, `zh-CN` or `en`). Both are set in Settings or with `PA
 | `DEV_AUTH_DISPLAY_NAME` | `Dev Admin` | No | Display name for the development admin. |
 | `ALLOW_PRIVATE_NETWORK_FETCH` | `false` | No | Allow fetches to private network addresses; tests only. |
 | `NODE_ENV` | `development` | No | `production` enables production checks. |
-| `TOPKA_ENVIRONMENT` | `production`/`development` | No | Deployment name used in alerts. |
+| `TOPKA_ENVIRONMENT` | `production`/`development` | No | Deployment name used in alerts; `staging` puts 【staging】 in front of every alert (docs/operations.md). |
 | `TOPKA_CHANGELOG_FILE` | `industry/changelog.json` | No | Changelog JSON used by the about page. |
 | `SHOW` | `12` | No | Rows compared by `scripts/lb-fetch-check.ts`. |

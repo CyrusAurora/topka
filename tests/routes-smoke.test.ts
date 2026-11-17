@@ -93,7 +93,9 @@ test("admin reads answer without a server error behind a password session", asyn
     const r = await get(url, admin);
     assert.ok(r.statusCode < 500, `${url}: ${r.statusCode} ${r.body.slice(0, 200)}`);
   }
-  const list = await get("/api/admin/sources", admin);
+  assert.equal((await get("/api/admin/sources", admin)).statusCode, 200);
+  // The list is paged (100 a page) and the suite's other tests add sources: search for this one.
+  const list = await get(`/api/admin/sources?q=${encodeURIComponent(T)}`, admin);
   assert.equal(list.statusCode, 200);
   assert.match(list.body, new RegExp(SRC));
   const item = await get(`/api/admin/content/${ids[0]}`, admin);

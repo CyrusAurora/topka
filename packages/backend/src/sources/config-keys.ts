@@ -14,6 +14,7 @@ const KEYS: Record<SourceRow["kind"], string[]> = {
   web_list: [
     ...COLLECTED, "url", "baseUrl", "parseMode", "adapter", "cacheToleranceSeconds", "linksStartLine", "preserveUrlFragment",
     "itemSelector", "linkSelector", "titleSelector", "publishedAtSelector", "publishedAtRegex", "publishedAtUtcOffset",
+    "watchMaxLinks", "watchMaxNew",
   ],
   json_list: [
     ...COLLECTED, "url", "mode", "method", "headers", "bodyJson", "jsonKey", "windowVar", "itemsPath", "itemsObjectValues",
@@ -43,7 +44,7 @@ const NESTED: Record<string, string[]> = {
 const VALUES: Record<string, string[]> = {
   adapter: ["mimo_home"],
   scope: ["mixed"],
-  parseMode: ["html", "markdown", "docusaurus_changelog"],
+  parseMode: ["html", "markdown", "docusaurus_changelog", "page_watch"],
 };
 
 const validPattern = (pattern: unknown): boolean => {
@@ -62,7 +63,7 @@ export function unsupportedConfig(kind: SourceRow["kind"], config: Record<string
   const out: string[] = [];
   for (const [key, value] of Object.entries(config ?? {})) {
     if (!allowed.has(key)) out.push(key);
-    else if (key === "dailyCap" && !(Number.isInteger(value) && (value as number) >= 1)) out.push(`dailyCap=${String(value)}`);
+    else if ((key === "dailyCap" || key === "watchMaxLinks" || key === "watchMaxNew") && !(Number.isInteger(value) && (value as number) >= 1)) out.push(`${key}=${String(value)}`);
     else if (key === "includeIfMatches" && (!value || typeof value !== "object" || Array.isArray(value))) out.push("includeIfMatches");
     else if (VALUES[key] && !VALUES[key]!.includes(String(value))) out.push(`${key}=${String(value)}`);
     else if (NESTED[key] && value && typeof value === "object") {

@@ -204,3 +204,13 @@ export function problemMessage(
   if (problem?.code === "rate_limited" || problem?.status === 429) return t.rateLimited(problem?.retryAfter ?? null);
   return (problem?.code && t.byCode[problem.code]) || fallback;
 }
+
+/** Chinese writing: ideographs, CJK punctuation and full-width forms (a title half like "SONIC-K1："). */
+const CJK_TEXT = /[\u3000-\u303f\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]/;
+/**
+ * lang for a piece of data (card copy, a source or project name) on a page in another language:
+ * Chinese text on an English page, so fonts and screen readers treat it as Chinese.
+ */
+export function textLang(text: string | null | undefined, locale: UiLocale): string | undefined {
+  return locale === "en" && text && CJK_TEXT.test(text) ? "zh-CN" : undefined;
+}

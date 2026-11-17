@@ -152,6 +152,15 @@ export async function collectSource(sourceId: string, opts: { force?: boolean } 
     const excluded = beforeInclude - candidates.length;
     if (source.config.sortByPublishedAt) candidates.sort((a, b) => (b.publishedAt?.getTime() ?? 0) - (a.publishedAt?.getTime() ?? 0));
 
+    // A watched page (parseMode "page_watch") has no dates to tell new from old: what is new is a link
+    // not on the page on earlier runs. The first run only records the page (its links are history the
+    // source never announced); later runs take at most watchMaxNew (5) links that were not seen before.
+    if (source.kind === "web_list" && source.config.parseMode === "page_watch") {
+      const watch = pageWatchNew(candidates, source.cursor?.watchSeen, Number(source.config.watchMaxNew ?? 5));
+      nextCursor.watchSeen = watch.seen;
+      candidates = watch.baseline ? [] : watch.fresh;
+    }
+
     // First import of a new source: bounded, and archived by source time (never "today", never pushed).
     const backfillLimit = Number(source.config._topka?.initialBackfillLimit ?? 30);
     const backfillMonths = Number(source.config._topka?.initialBackfillMonths ?? 12);
@@ -255,6 +264,27 @@ export async function collectSource(sourceId: string, opts: { force?: boolean } 
     await sql`UPDATE fetch_runs SET status = 'failed', finished_at = now(), found_count = ${found}, new_count = ${created}, error = ${message} WHERE id = ${run!.id}`;
     return { sourceId, status: "failed", found, created, revised, error: message };
   }
+}
+
+const WATCH_SEEN_MAX = 500;
+
+/**
+ * The links of a watched page that are new since earlier runs, and the seen list to keep: this run's links
+ * first, then earlier ones still within WATCH_SEEN_MAX, so a link that drops off a busy page for a while
+ * is not announced again when it returns. New links over maxNew are left unseen for the next run. No
+ * seen list yet means this run is the baseline.
+ */
+export function pageWatchNew(candidates: Candidate[], seenBefore: unknown, maxNew: number): { baseline: boolean; fresh: Candidate[]; seen: string[] } {
+  const prev = Array.isArray(seenBefore) ? (seenBefore as unknown[]).filter((u): u is string => typeof u === "string") : null;
+  const known = new Set(prev ?? []);
+  const unseen = prev ? candidates.filter((c) => !known.has(c.url)) : [];
+  const fresh = unseen.slice(0, maxNew);
+  // New links over the cap stay unseen, so the next runs take them instead of losing them.
+  const later = new Set(unseen.slice(maxNew).map((c) => c.url));
+  const current = candidates.map((c) => c.url).filter((u) => !later.has(u));
+  const now = new Set(current);
+  const seen = [...current, ...(prev ?? []).filter((u) => !now.has(u))].slice(0, WATCH_SEEN_MAX);
+  return { baseline: prev === null, fresh, seen };
 }
 
 /** X ids begin with their millisecond timestamp (since 2010-11-04): the smallest id of a post made at `ms`. */

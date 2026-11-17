@@ -5,7 +5,7 @@
 // and the promotion lineage. Leads are added on each project page. A plain .ts factory for the node
 // --test component tests; the route file is a thin shell around it.
 import { createElement, useEffect, useState, type FC, type ReactElement } from "react";
-import { useT, useUiPrefs } from "../../lib/i18n.ts";
+import { textLang, useT, useUiPrefs } from "../../lib/i18n.ts";
 import { shortTime } from "../today/today-view.ts";
 import { isPending, promotionRow, signalRow, type PendingView, type PromotionItem } from "./signals.ts";
 
@@ -101,7 +101,7 @@ export const DiscoverPage: FC<DiscoverPageProps> = (props) => {
         v.projects.length
           ? createElement("ul", { className: "mt-2 flex flex-col gap-1" }, v.projects.map((p) =>
             createElement("li", { key: p.id, className: "text-[13.5px]" },
-              createElement("a", { href: `/today/${encodeURIComponent(p.slug || p.id)}#signals`, className: "text-ink-2 underline" }, p.target))))
+              createElement("a", { href: `/today/${encodeURIComponent(p.slug || p.id)}#signals`, className: "text-ink-2 underline", lang: textLang(p.target, locale) }, p.target))))
           : createElement("p", { className: "mt-2 text-[13.5px] text-ink-3" }, t.noProjects),
       ),
     );

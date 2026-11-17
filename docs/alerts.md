@@ -97,3 +97,5 @@ Run a drill whenever the outlet changes, against a staging database, never produ
 5. Heal both (the feed answers 200 and a collection succeeds; the budget is restored) → ✅ 已恢复 for each.
 
 The record of the first drill (2026-11-17), with the scripts used, is kept with the operator's notes.
+The staging copy these drills run on, and the rollback and restore drills, are in
+[operations.md](operations.md).

@@ -6,7 +6,9 @@
 // everything the reader sees was fixed at 08:00 UTC+8.
 
 import { createElement } from "react";
-import { messages, type UiLocale } from "../../lib/i18n.ts";
+import { messages, textLang, type UiLocale } from "../../lib/i18n.ts";
+
+export { textLang };
 
 /** The card shape every issue carries (UserIssuePayload.issue). */
 export interface IssueCardItem {
@@ -63,9 +65,15 @@ export interface MagazineIssuePayload {
   footNote?: string;
 }
 
-/** The `lang` attribute for written content: set only when it differs from the page's language. */
-export function contentLangAttr(contentLang: string | null | undefined, locale: UiLocale): string | undefined {
-  return contentLang && contentLang !== locale ? contentLang : undefined;
+/**
+ * The `lang` attribute for written content: set only when it differs from the page's language. The
+ * payload names the language when it knows (the online demo's export); otherwise the text itself
+ * tells (card copy follows the reader's language when it was written, so an English reader's older
+ * issues can still be in Chinese).
+ */
+export function contentLangAttr(contentLang: string | null | undefined, locale: UiLocale, text?: string): string | undefined {
+  if (contentLang) return contentLang !== locale ? contentLang : undefined;
+  return text === undefined ? undefined : textLang(text, locale);
 }
 
 /** Calendar day in the server's own time zone, the day the masthead shows. */
@@ -216,7 +224,9 @@ export function archiveRows(archive: ArchiveEntryRow[], locale: UiLocale = "zh-C
       date: a.date,
       label: t.common.monthDay(Number(m), Number(d)),
       sub: no ? `${weekday} · ${no}` : weekday,
-      titles: a.titles,
+      // A two-half card title's first half ends where the second begins, at a colon or comma
+      // ("SONIC-K1：", "HuGe：2000h 数据，"); alone in the list it reads without the dangling mark.
+      titles: a.titles.map((t) => t.replace(/\s*[：:，,、；;]\s*$/, "")),
     };
   });
 }
@@ -228,11 +238,6 @@ export function sourceLink(url: string, host: string, label: string): ReturnType
     : createElement("span", { className: "m-host" }, host);
 }
 
-const CJK_TEXT = /[\u3400-\u9fff]/;
-/** lang for a piece of data (a source or project name) on a page in another language: Chinese text on an English page. */
-export function textLang(text: string, locale: UiLocale): string | undefined {
-  return locale === "en" && CJK_TEXT.test(text) ? "zh-CN" : undefined;
-}
 
 /** The card's meta line with its names marked by language: "source · when[ · project]". */
 export function metaNodes(source: string, when: string, project: string | null, locale: UiLocale): Array<ReturnType<typeof createElement> | string> {

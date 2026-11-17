@@ -31,6 +31,8 @@ Architecture & operation:
 
 - [Architecture](architecture.md) — data flow, process layout, invariants, directory map.
 - [Operations alerts](alerts.md) — what is alerted, the Feishu-compatible webhook, dedupe and rate limit, drills.
+- [Operations: staging, drills and recovery](operations.md) — an anonymized staging copy, rollback,
+  restore with RTO/RPO, the alert drill, the device/language/time-zone check, and the latest numbers.
 - [Observation ledger](ledger.md) — write states, withdrawals, the brief checkpoint and its decision table.
 - [Discovery channels](discovery.md) — leads from directory and pack feeds or a reader, URL identity, the promotion gate, the 20-item list.
 - [Self-hosting](self-hosting.md) — the end-to-end deployment guide (Docker compose, BYOK,

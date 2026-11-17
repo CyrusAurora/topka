@@ -84,7 +84,7 @@ export const ArchivePage: FC<MagazineArchiveProps> = (props) => {
         createElement("a", { key: row.date, href: `/issue/${row.date}`, className: "arch-item" },
           createElement("div", { className: "arch-date" }, row.label),
           createElement("div", { className: "arch-sub" }, row.sub),
-          createElement("div", { className: "arch-titles", lang: contentLangAttr(view.contentLang, locale) }, row.titles.slice(0, 3).join(" · ")),
+          createElement("div", { className: "arch-titles", lang: contentLangAttr(view.contentLang, locale, row.titles.slice(0, 3).join(" · ")) }, row.titles.slice(0, 3).join(" · ")),
         ),
       ),
     );

@@ -4,7 +4,7 @@
 // list shows last four characters only, never plaintext. A plain .ts factory for the node --test
 // component tests; the route file is a thin shell.
 import { createElement, useCallback, useEffect, useState, type FC, type ReactElement } from "react";
-import { messages, problemMessage, useLocale, useT, type UiLocale } from "../../lib/i18n.ts";
+import { messages, problemMessage, textLang, useLocale, useT, type UiLocale } from "../../lib/i18n.ts";
 import { zh } from "../../lib/locales/settings.ts";
 
 export interface SettingsAccount {
@@ -322,7 +322,7 @@ export const SettingsPage: FC<SettingsPageProps> = (props) => {
       ? createElement("div", { className: "settings-projs" },
           v.projects.map((p) =>
             createElement("a", { key: p.id, href: `/today/${encodeURIComponent(p.slug)}`, className: "settings-proj-row" },
-              createElement("span", null, p.target),
+              createElement("span", { lang: textLang(p.target, locale) }, p.target),
               createElement("span", { className: "v" }, t.projectsToday),
             ),
           ),

@@ -187,8 +187,8 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
           },
             createElement("span", { className: "m-num", "aria-hidden": "true" }, row.no),
             createElement("div", { className: "m-body" },
-              createElement("div", { className: "m-t" }, createElement("span", { lang: contentLangAttr(v.contentLang, locale) }, row.title), row.ledger ? createElement("span", { className: "m-ledger", "data-ledger": row.ledger }, ` · ${row.ledger}`) : null),
-              row.core ? createElement("div", { className: "m-why", lang: contentLangAttr(v.contentLang, locale) }, row.core) : null,
+              createElement("div", { className: "m-t" }, createElement("span", { lang: contentLangAttr(v.contentLang, locale, row.title) }, row.title), row.ledger ? createElement("span", { className: "m-ledger", "data-ledger": row.ledger }, ` · ${row.ledger}`) : null),
+              row.core ? createElement("div", { className: "m-why", lang: contentLangAttr(v.contentLang, locale, row.core) }, row.core) : null,
               createElement("div", { className: "m-meta" },
                 createElement("span", { className: "m-src" }, ...metaNodes(row.source, row.when, v.projects.length > 1 && row.project ? row.project : null, locale)),
                 createElement("span", { className: "m-tog" }, open ? t.magazine.collapse : t.magazine.expand),
@@ -200,7 +200,7 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
               createElement("div", { className: "m-more-pad" },
                 createElement("div", { className: "m-lab" }, t.magazine.summaryLabel),
                 row.summary
-                  ? createElement("div", { className: "m-sum", lang: contentLangAttr(v.contentLang, locale) }, row.summary)
+                  ? createElement("div", { className: "m-sum", lang: contentLangAttr(v.contentLang, locale, row.summary) }, row.summary)
                   : createElement("div", { className: "m-sum muted" }, t.magazine.summaryPending),
                 createElement("div", { className: "m-src-row" },
                   sourceLink(row.url, row.host, t.magazine.openOriginal(row.host)),
@@ -233,7 +233,7 @@ export const MagazineToday: FC<MagazineTodayProps> = (props) => {
         ),
         createElement("div", { className: "mag-issue" },
           createElement("div", { className: "mag-no" }, v.issue?.no ? `No. ${String(v.issue.no).padStart(3, "0")}` : ""),
-          createElement("div", { className: "mag-proj", lang: v.projects.length === 1 ? contentLangAttr(v.contentLang, locale) : undefined }, projectLabelOf(v.projects, locale)),
+          createElement("div", { className: "mag-proj", lang: v.projects.length === 1 ? contentLangAttr(v.contentLang, locale, v.projects[0]!.target) : undefined }, projectLabelOf(v.projects, locale)),
         ),
       ),
       createElement("div", { className: "mag-rule" }),

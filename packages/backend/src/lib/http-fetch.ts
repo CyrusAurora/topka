@@ -18,6 +18,14 @@ export type EgressRoute = "egress" | "direct";
 
 let proxyAgent: ProxyAgent | null = null;
 let directAgent: Agent | null = null;
+let bridgeAgent: Agent | null = null;
+
+/** A feed bridge the operator configured (BRIDGE_HOSTS), matched on exact host and port. */
+export function isBridge(url: URL): boolean {
+  if (config.bridgeHosts.size === 0) return false;
+  const port = url.port || (url.protocol === "https:" ? "443" : "80");
+  return config.bridgeHosts.has(`${url.hostname.replace(/^\[|\]$/g, "").toLowerCase()}:${port}`);
+}
 
 function proxied(url: URL, route: EgressRoute): boolean {
   if (route !== "egress" || !config.egressProxyUrl) return false;
@@ -76,7 +84,9 @@ export async function guardedFetch(input: string, opts: GuardedFetchOptions = {}
   // nominal 20 s image request to occupy the API for minutes.
   const signal = AbortSignal.timeout(opts.timeoutMs ?? 20_000);
   const route = opts.route ?? "egress";
-  const check = (target: string) => withinDeadline(
+  // A configured feed bridge is dialled directly without the private-address guard; a redirect it
+  // answers is checked like any other hop.
+  const check = (target: string) => isBridge(new URL(target)) ? withinDeadline(assertPublicUrl(target, true), signal) : withinDeadline(
     assertPublicUrl(target, config.allowPrivateNetworkFetch, proxied(new URL(target), route)), signal,
   );
   let url = await check(input);
@@ -88,7 +98,7 @@ export async function guardedFetch(input: string, opts: GuardedFetchOptions = {}
       headers: { "user-agent": DEFAULT_UA, "accept-language": "zh-CN,zh;q=0.9,en;q=0.8", ...(opts.headers ?? {}) },
       body: opts.body,
       redirect: "manual",
-      dispatcher: dispatcherFor(proxied(url, route)),
+      dispatcher: isBridge(url) ? (bridgeAgent ??= new Agent()) : dispatcherFor(proxied(url, route)),
       signal,
     });
     if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {

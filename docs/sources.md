@@ -41,10 +41,26 @@ Optional: `summaryIsBody` (the feed summary is already the whole article),
 ```
 
 - `parseMode`: `html` (default, selectors), `markdown` (rendered by Jina, parsed as Markdown),
-  `docusaurus_changelog`.
+  `docusaurus_changelog`, `page_watch` (below).
 - `detail`: when the list lacks date, title or summary, fetch the detail page
   (`publishedAtSelector`, `titleSelector`, `summarySelector`, …).
 - `allowUrlPrefixes` / `denyUrlPrefixes`: keep only articles under certain paths.
+
+#### Page watch (`parseMode: "page_watch"`)
+
+For a page with no feed and no markup worth writing selectors for: the page is watched for links
+that appear on it.
+
+```json
+{ "url": "https://example.com/blog", "parseMode": "page_watch", "detail": { "maxFetches": 5 } }
+```
+
+- Links kept: same host as the page, label 12–140 characters, not site chrome ("About", "Sign in",
+  "Pricing", …), not an image, script or feed file; in page order, at most `watchMaxLinks` (40).
+- The first run only records the page and stores nothing. Later runs store the links not seen on
+  earlier runs, at most `watchMaxNew` (5) per run; new links over the cap are taken on the next run.
+- The page gives no dates; `detail` reads the date from each new article's page (its metadata or
+  JSON-LD), otherwise the article is dated when it was found.
 
 ### Keyword filter and daily cap (rss, web_list, json_list)
 
@@ -81,6 +97,21 @@ requests.
 
 Each WeChat official account is checked per its fetch interval (paid per list lookup); full text
 of new articles is fetched along with them.
+
+## Free bridges for X, WeChat and Weibo
+
+`x_search` and `mp_account` call paid APIs. The free alternative is a bridge you run yourself that
+turns accounts into feeds, read by ordinary `rss` sources:
+
+| Channel | Bridge | Source `feedUrl` | What it needs |
+| --- | --- | --- | --- |
+| Weibo | the compose `rsshub` service | `http://rsshub:1200/weibo/user/<uid>` | nothing for most accounts |
+| X | the compose `rsshub` service | `http://rsshub:1200/twitter/user/<handle>` | `TWITTER_AUTH_TOKEN` in rsshub's environment: the `auth_token` cookie of an X account you own (X does not serve timelines to anonymous readers) |
+| WeChat official accounts | [we-mp-rss](https://github.com/rachelos/we-mp-rss) (`ghcr.io/rachelos/we-mp-rss`) on port 8001 | `http://we-mp-rss:8001/feed/<MP_WXS id>.xml` | a WeChat Reading (微信读书) login, scanned once with WeChat in the bridge's web page; each account added there |
+
+A bridge's address is private, so name it in `BRIDGE_HOSTS` (`rsshub:1200` is there by default; add
+`we-mp-rss:8001`, or `127.0.0.1:8001` when it runs on the host). Bridges depend on the account they
+log in with: when its session expires the sources fail and their health shows it.
 
 ## Tiers, participation and full text
 

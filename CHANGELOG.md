@@ -66,6 +66,13 @@ Upgrading runs migrations `0061`, `0062` and `0063`.
 - `scripts/eval-candidates.ts` exports candidate cases and the runtime snapshot read-only;
   `scripts/eval-selection.ts --purpose` picks the cases of one purpose from a mixed gold set (default `site`).
 
+- Staging, drills and recovery (docs/operations.md): `scripts/anonymize.ts` scrubs a restored copy of
+  personal data (and refuses a database not named as staging/restore/drill/scratch/test),
+  `scripts/db-fingerprint.ts` compares row counts and checksums of two databases,
+  `scripts/mock-webhook.ts` stands in for the alert outlet, and `scripts/check-devices.ts` checks the
+  site on phone, tablet and desktop screens in both languages and four time zones. The rollback,
+  restore (RTO/RPO) and alert drills are recorded with their numbers.
+
 ### Changed
 
 - The Docker image and the quickstart's one-off container use Node.js 26 (LTS), `node:26-trixie-slim`;
@@ -97,6 +104,10 @@ Upgrading runs migrations `0061`, `0062` and `0063`.
 
 ### Fixed
 
+- An English reader's Chinese content (older card copy written before switching language, project
+  names) is marked `lang="zh-CN"` on every page, not only in the online demo, so fonts and screen
+  readers treat it as Chinese. On a 360 px phone, Settings labels no longer break one character per
+  line, and the archive keeps "周二 · No. 009" on one line and drops a title half's dangling colon.
 - Docs that had drifted from the code, found by running their blocks: the plugin example's
   `ProviderRejectedError` takes a third argument, `retryable` (docs/plugins.md), and the thresholds
   excerpt in docs/selection.md matches `industry/selection.ts` again, and CONTRIBUTING.md no longer

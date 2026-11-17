@@ -22,6 +22,11 @@ test("archiveRows: the label is 月/日 from the ISO day, not from the dotted ma
   assert.equal(rows[0]!.date, "2026-11-04");
 });
 
+test("archiveRows: a title's first half loses its dangling colon or comma", () => {
+  const [row] = archiveRows([{ date: "2026-11-04", no: 10, titles: ["SONIC-K1：", "VLA 新基准:", "HuGe：2000h 数据，", "Ratio 1:2 holds"] }]);
+  assert.deepEqual(row!.titles, ["SONIC-K1", "VLA 新基准", "HuGe：2000h 数据", "Ratio 1:2 holds"]);
+});
+
 test("archiveRows: a day without an issue number shows only the weekday", () => {
   const [row] = archiveRows([{ date: "2026-11-04", no: 0, titles: ["甲"] }]);
   assert.equal(row!.sub, "周三");

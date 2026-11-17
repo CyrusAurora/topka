@@ -8,7 +8,7 @@
 // Web chat is instance-only: the assistant's model call is the user's BYOK key or the instance's
 // free chain.
 import { createElement, useCallback, useEffect, useRef, useState, type FC, type ReactElement } from "react";
-import { messages, problemMessage, useLocale, useT, type UiLocale } from "../../lib/i18n.ts";
+import { messages, problemMessage, textLang, useLocale, useT, type UiLocale } from "../../lib/i18n.ts";
 import { MODEL_DOC_URL } from "../../lib/docs-links.ts";
 import { zh } from "../../lib/locales/chat.ts";
 
@@ -552,8 +552,8 @@ export const ChatPage: FC<ChatPageProps> = (props) => {
         projects.length === 0 ? createElement("p", { className: "chat-empty" }, t.noProjects) : createElement("div", { className: "chat-proj-list" },
           projects.map((p) =>
             createElement("div", { key: p.id, className: "chat-proj-card" },
-              createElement("button", { type: "button", className: "pname", onClick: () => editProject(p.target) }, p.target),
-              p.purpose ? createElement("p", { className: "ppurpose" }, p.purpose) : null,
+              createElement("button", { type: "button", className: "pname", lang: textLang(p.target, locale), onClick: () => editProject(p.target) }, p.target),
+              p.purpose ? createElement("p", { className: "ppurpose", lang: textLang(p.purpose, locale) }, p.purpose) : null,
               createElement("div", { className: "pfoot" },
                 createElement("span", { className: "pmeta" }, ""),
                 createElement("button", { type: "button", className: "pdel", onClick: () => void deleteProject(p.id) }, t.deleteProject),

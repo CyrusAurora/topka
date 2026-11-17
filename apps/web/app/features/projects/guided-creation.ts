@@ -4,7 +4,7 @@
 // is a thin shell around it.
 import { createElement, useEffect, useState, type FC, type ReactElement } from "react";
 import { SOURCE_REGION_TOKENS, sourceMatchesRegionFilter } from "@topka/contracts/regions";
-import { messages, problemMessage, useLocale, useT, type UiLocale } from "../../lib/i18n.ts";
+import { messages, problemMessage, textLang, useLocale, useT, type UiLocale } from "../../lib/i18n.ts";
 import { zh } from "../../lib/locales/projects.ts";
 import { MODEL_DOC_URL, SOURCES_DOC_URL } from "../../lib/docs-links.ts";
 
@@ -228,7 +228,7 @@ export const GuidedCreation: FC<GuidedCreationProps> = (props) => {
   const row = (label: string, value: string) => (
     createElement("div", { key: label, className: "mt-3" },
       createElement("div", { className: "text-[12px] text-ink-3" }, label),
-      createElement("div", { className: "mt-0.5 text-[14.5px] leading-relaxed text-ink" }, value),
+      createElement("div", { className: "mt-0.5 text-[14.5px] leading-relaxed text-ink", lang: textLang(value, locale) }, value),
     )
   );
 

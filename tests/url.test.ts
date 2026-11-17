@@ -4,7 +4,8 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { after, test } from "node:test";
 import { Agent, fetch as undiciFetch } from "undici";
-import { guardedFetch } from "@topka/backend/lib/http-fetch";
+import { guardedFetch, isBridge } from "@topka/backend/lib/http-fetch";
+import { config } from "@topka/backend/config";
 import { assertPublicUrl, guardedLookup, isBlockedAddress, isInternalAddress } from "@topka/backend/lib/url";
 
 const server = http.createServer((_req, res) => res.end("internal"));
@@ -49,5 +50,35 @@ test("through the egress proxy only internal answers refuse a name; literals kee
   assert.deepEqual(unroutable.filter((a) => isInternalAddress(a)), [], "wrongly internal");
   for (const url of ["http://localhost/", "http://[::ffff:127.0.0.1]/", "http://[2001:db8::1]/", "http://10.0.0.1/"]) {
     await assert.rejects(assertPublicUrl(url, false, true), Error, url);
+  }
+});
+
+test("a feed bridge in BRIDGE_HOSTS is reachable on its exact host and port; other private addresses stay refused", async () => {
+  const saved = config.bridgeHosts;
+  try {
+    assert.deepEqual([...saved], ["rsshub:1200"], "default: the compose rsshub service");
+    config.bridgeHosts = new Set([`127.0.0.1:${port}`, "we-mp-rss:8001"]);
+    assert.equal((await guardedFetch(`http://127.0.0.1:${port}/feed`)).text(), "internal");
+    await assert.rejects(guardedFetch(`http://localhost:${port}/`), /Blocked host/, "same port, another name");
+    await assert.rejects(guardedFetch(`http://127.0.0.1:${port + 1}/`), /Blocked private address/, "same host, another port");
+    assert.equal(isBridge(new URL("http://WE-MP-RSS:8001/feed/x.xml")), true);
+    assert.equal(isBridge(new URL("https://we-mp-rss/feed")), false, "port 443 is not 8001");
+    config.bridgeHosts = new Set();
+    await assert.rejects(guardedFetch(`http://127.0.0.1:${port}/`), /Blocked private address/);
+  } finally {
+    config.bridgeHosts = saved;
+  }
+});
+
+test("a bridge's redirect to an internal address is refused", async () => {
+  const hop = http.createServer((_req, res) => { res.writeHead(302, { location: "http://169.254.169.254/latest/meta-data" }); res.end(); });
+  await new Promise<void>((resolve) => hop.listen(0, "127.0.0.1", () => resolve()));
+  const saved = config.bridgeHosts;
+  try {
+    config.bridgeHosts = new Set([`127.0.0.1:${(hop.address() as { port: number }).port}`]);
+    await assert.rejects(guardedFetch(`http://127.0.0.1:${(hop.address() as { port: number }).port}/`), /Blocked private address/);
+  } finally {
+    config.bridgeHosts = saved;
+    hop.close();
   }
 });

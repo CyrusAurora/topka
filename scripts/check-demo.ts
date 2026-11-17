@@ -11,7 +11,6 @@ import { extname, join, normalize, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { chromium, type Page } from "playwright-core";
 
-const { values } = parseArgs({ args: process.argv.slice(2), options: { url: { type: "string" }, serve: { type: "string" }, base: { type: "string" }, shots: { type: "string" } }, strict: true });
 
 const TYPES: Record<string, string> = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml" };
 
@@ -33,10 +32,10 @@ export function pagesServer(dir: string, base: string): Server {
   });
 }
 
-const CJK = /[\u3400-\u9fff\uf900-\ufaff\u3000-\u303f\uff00-\uffef]/;
+export const CJK = /[\u3400-\u9fff\uf900-\ufaff\u3000-\u303f\uff00-\uffef]/;
 
 /** The page's visible text outside elements that declare their own language. */
-async function chromeText(page: Page): Promise<string> {
+export async function chromeText(page: Page): Promise<string> {
   return page.evaluate(() => {
     const out: string[] = [];
     const walk = (n: Node) => {
@@ -53,6 +52,7 @@ async function chromeText(page: Page): Promise<string> {
 }
 
 async function main() {
+  const { values } = parseArgs({ args: process.argv.slice(2), options: { url: { type: "string" }, serve: { type: "string" }, base: { type: "string" }, shots: { type: "string" } }, strict: true });
   let server: Server | undefined;
   let url = values.url;
   if (values.serve) {

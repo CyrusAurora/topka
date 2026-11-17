@@ -94,6 +94,12 @@ export const config = {
   selectedVisibleAfterSeconds: int("SELECTED_VISIBLE_AFTER_SECONDS", 180),
   egressProxyUrl: env.EGRESS_PROXY_URL || null,
   allowPrivateNetworkFetch: bool("ALLOW_PRIVATE_NETWORK_FETCH", false),
+  /**
+   * Feed bridges the operator runs next to the site (RSSHub, a WeChat bridge such as we-mp-rss), as
+   * host:port, comma separated. Only these exact addresses are reachable on a private network; every
+   * other private address stays refused. Default: the compose `rsshub` service.
+   */
+  bridgeHosts: new Set((env.BRIDGE_HOSTS ?? "rsshub:1200").split(",").map((h) => h.trim().toLowerCase()).filter(Boolean)),
   feishuContentPushEnabled: bool("FEISHU_CONTENT_PUSH_ENABLED", false),
   indexNowSubmitEnabled: bool("INDEXNOW_SUBMIT_ENABLED", false),
   /** IndexNow key (32 hex characters); without one nothing is submitted and no key file is served. */

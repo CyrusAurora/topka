@@ -238,3 +238,37 @@ test("Discovery: the /discover page and the project's unconfirmed-signals block 
     await act(async () => { await new Promise((r) => setTimeout(r, 10)); });
   });
 });
+
+// Card copy follows the reader's language when it was written, so an English reader can still have
+// older issues (and their own project names) in Chinese. The live API does not name the copy's
+// language, so the page marks Chinese text by what it is: every CJK run under an English page sits
+// inside an element that says lang="zh-CN" (fonts and screen readers pick the right voice and glyphs).
+function unmarkedChinese(root: HTMLElement): string[] {
+  const out: string[] = [];
+  const walker = root.ownerDocument.createTreeWalker(root, 4 /* NodeFilter.SHOW_TEXT */);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const text = n.textContent ?? "";
+    if (!CJK.test(text)) continue;
+    if (n.parentElement?.closest("[lang]")?.getAttribute("lang") !== "zh-CN") out.push(text.trim());
+  }
+  return out;
+}
+
+test("Chinese copy and project names on an English page are marked lang=zh-CN without a contentLang", async () => {
+  const zhItem = (n: number) => ({ ...item(n), title_a: `机器人公司发布新模型 ${n}`, core_a: "更快更便宜", summary: `摘要 ${n}`, source: "量子位", project: { id: "p1", slug: "robots", target: "人形机器人" } });
+  const zhIssue = { ...ISSUE, projects: [{ id: "p1", slug: "robots", target: "人形机器人" }], issue: { ...ISSUE.issue, items: [zhItem(1), zhItem(2), zhItem(3)] }, archive: [] };
+  const cases: Array<[string, ReactElement]> = [
+    ["today", createElement(MagazineToday, { fetchImpl: stubFetch(() => ({ body: zhIssue })).fetch })],
+    ["archive", createElement(ArchivePage, { fetchImpl: stubFetch(() => ({ body: { issueCount: 1, archive: [{ date: "2026-11-04", no: 10, titles: ["机器人公司发布新模型", "更快更便宜"] }] } })).fetch })],
+    ["projects", createElement(ProjectsOverview, { fetchImpl: stubFetch(() => ({ body: { projects: [{ id: "p1", slug: "robots", target: "人形机器人", purpose: "跟踪人形机器人的量产进展", status: "active", currentRevision: 1 }] } })).fetch })],
+  ];
+  for (const [label, node] of cases) {
+    const page = await renderEn(node);
+    try {
+      assert.ok(CJK.test(page.container.textContent ?? ""), `${label}: the Chinese copy is shown`);
+      assert.deepEqual(unmarkedChinese(page.container), [], `${label}: Chinese text without lang=zh-CN`);
+    } finally {
+      await page.teardown();
+    }
+  }
+});

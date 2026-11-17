@@ -10,7 +10,7 @@
 // component tests, the route file is a thin shell around it.
 import { createElement, useCallback, useEffect, useRef, useState, type FC, type ReactElement } from "react";
 import { acknowledgementAllowed, evaluateBrief, type BriefResult, type CoverageEntry } from "@topka/contracts/brief";
-import { intlLocale, messages, useT, useUiPrefs, type UiLocale } from "../../lib/i18n.ts";
+import { intlLocale, messages, textLang, useT, useUiPrefs, type UiLocale } from "../../lib/i18n.ts";
 import { MODEL_DOC_URL, SOURCES_DOC_URL } from "../../lib/docs-links.ts";
 import { zh } from "../../lib/locales/today.ts";
 import { SignalsAwaitingSection } from "../discover/signals.ts";
@@ -328,8 +328,8 @@ export const TodayPage: FC<TodayPageProps> = (props) => {
 
   return createElement("div", { className: "mx-auto w-full max-w-[560px] px-4 py-6 sm:py-10" },
     createElement("div", { className: "text-[12px] text-ink-4" }, t.today.title),
-    createElement("h1", { className: "text-[18px] font-semibold text-ink" }, v?.project.target ?? t.today.projectFallback),
-    v ? createElement("p", { className: "mt-0.5 text-[13px] text-ink-2" }, v.project.purpose) : null,
+    createElement("h1", { className: "text-[18px] font-semibold text-ink", lang: textLang(v?.project.target, locale) }, v?.project.target ?? t.today.projectFallback),
+    v ? createElement("p", { className: "mt-0.5 text-[13px] text-ink-2", lang: textLang(v.project.purpose, locale) }, v.project.purpose) : null,
     v ? createElement("p", { className: "mt-0.5 text-[12.5px] text-ink-3", "data-sources-line": "" }, t.today.sourcesLine(v.sources.linked, v.sources.active, shortTime(v.window.since, locale, timeZone), v.window.basis)) : null,
     v ? sourcesNotice(v.sources, locale) : null,
     createElement("div", { className: "mt-5" }, body),

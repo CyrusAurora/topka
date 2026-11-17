@@ -3,7 +3,7 @@
 // with the visitor's session; the component is a plain .ts factory for the node --test component
 // tests, and the route file is a thin shell around it.
 import { createElement, useEffect, useState, type FC, type ReactElement } from "react";
-import { useT } from "../../lib/i18n.ts";
+import { textLang, useLocale, useT } from "../../lib/i18n.ts";
 import { zh } from "../../lib/locales/projects.ts";
 
 export interface ProjectListItem {
@@ -26,6 +26,7 @@ export interface ProjectsOverviewProps {
 export const ProjectsOverview: FC<ProjectsOverviewProps> = (props) => {
   const doFetch = props.fetchImpl ?? fetch.bind(globalThis);
   const t = useT().projects.overview;
+  const locale = useLocale();
   const [state, setState] = useState<{ phase: "loading" | "ready" | "signed-out" | "failed"; projects: ProjectListItem[] }>({
     phase: "loading",
     projects: [],
@@ -76,8 +77,8 @@ export const ProjectsOverview: FC<ProjectsOverviewProps> = (props) => {
     body = createElement("ul", { className: "flex flex-col gap-3" },
       state.projects.map((project) =>
         createElement("li", { key: project.id, className: "rounded-2xl border border-line bg-surface px-4 py-3" },
-          createElement("a", { href: `/today/${encodeURIComponent(project.slug ?? project.id)}`, className: "text-[14.5px] font-medium text-ink hover:underline" }, project.target),
-          createElement("div", { className: "mt-0.5 text-[13px] leading-relaxed text-ink-3" }, project.purpose),
+          createElement("a", { href: `/today/${encodeURIComponent(project.slug ?? project.id)}`, className: "text-[14.5px] font-medium text-ink hover:underline", lang: textLang(project.target, locale) }, project.target),
+          createElement("div", { className: "mt-0.5 text-[13px] leading-relaxed text-ink-3", lang: textLang(project.purpose, locale) }, project.purpose),
         ),
       ),
     );
