@@ -35,8 +35,8 @@ export async function anonymize(db: Db, opts: { password: string }): Promise<Scr
   for (const t of ["sessions", "admin_sessions", "email_verifications", "login_throttle", "mp_bind_codes", "user_provider_keys"] as const) {
     count(t, await db`DELETE FROM ${db(t)}`);
   }
-  count("user_issue_feeds", await db`UPDATE user_issue_feeds SET token_hash = encode(gen_random_bytes(32), 'hex')`);
-  count("invitations", await db`UPDATE invitations SET code = 'staging-' || encode(gen_random_bytes(8), 'hex'), note = NULL`);
+  count("user_issue_feeds", await db`UPDATE user_issue_feeds SET token_hash = replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '')`);
+  count("invitations", await db`UPDATE invitations SET code = 'staging-' || left(replace(gen_random_uuid()::text, '-', ''), 16), note = NULL`);
   count("mp_identities", await db`
     UPDATE mp_identities m SET openid = 'staging-openid-' || x.n FROM (SELECT openid, row_number() OVER (ORDER BY bound_at, openid) AS n FROM mp_identities) x
     WHERE m.openid = x.openid`);

@@ -16,7 +16,9 @@ import type { Candidate, SourceRow } from "@topka/backend/sources/types";
 const T = tag();
 const post = (slug: string) => `<a href="/blog/${slug}-${T}">A headline long enough for ${slug}</a>`;
 let links = ["one", "two"];
-const server = http.createServer((_req, res) => {
+let seenHeaders: http.IncomingHttpHeaders = {};
+const server = http.createServer((req, res) => {
+  seenHeaders = req.headers;
   res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
   res.end(`<html><body><nav><a href="/about">About us and our long story</a></nav>${links.map(post).join("")}</body></html>`);
 });
@@ -82,6 +84,9 @@ test("a watched page stores nothing on its first run, then only links that appea
   assert.deepEqual(await stored(), ["five", "four"]);
   assert.equal((await collectSource(ID, { force: true })).status, "ok");
   assert.deepEqual(await stored(), ["five", "four", "three"], "the link over the cap is taken on the next run");
+  assert.match(seenHeaders["user-agent"] ?? "", /^\S+ page watch\/1\.0 \(\+[^ )]+\/about\)$/, "named, no browser disguise, no \"bot\" or URL scheme");
+  assert.doesNotMatch(seenHeaders["user-agent"] ?? "", /bot|https?:/i);
+  assert.equal(seenHeaders["accept-language"], "en");
   const [row] = await sql<{ cursor: { watchSeen: string[] } }[]>`SELECT cursor FROM sources WHERE id = ${ID}`;
   assert.equal(row!.cursor.watchSeen.length, 5);
 });

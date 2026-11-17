@@ -1,6 +1,8 @@
 // Web list pages: HTML with selectors, Markdown through Jina Reader, and Docusaurus changelogs.
 import * as cheerio from "cheerio";
 import { guardedFetch } from "../lib/http-fetch.ts";
+import { config } from "../config.ts";
+import { SITE } from "@topka/industry/site";
 import { collapseWhitespace, stripTags } from "../lib/text.ts";
 import { readable, type ExtractedBody } from "../content/extract.ts";
 import { sanitizeBody } from "../content/sanitize.ts";
@@ -119,7 +121,8 @@ async function fetchListingText(source: SourceRow): Promise<{ text: string; viaJ
     const page = await jinaRead(target, { purpose: "source_listing", subject: `source:${source.id}`, cacheToleranceSeconds: source.config.cacheToleranceSeconds, perRead: true });
     return { text: page.markdown, viaJina: true, base: source.config.baseUrl ?? target };
   }
-  const res = await guardedFetch(url, { headers: { accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8" }, timeoutMs: 25_000 });
+  const watch = source.config.parseMode === "page_watch" ? PAGE_WATCH_HEADERS() : {};
+  const res = await guardedFetch(url, { headers: { accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8", ...watch }, timeoutMs: 25_000 });
   if (res.status !== 200) throw new FetchError(`HTTP ${res.status}`, res.status);
   return { text: res.text(), viaJina: false, base: source.config.baseUrl ?? url };
 }
@@ -183,6 +186,18 @@ export function fromHtml(html: string, base: string, source: SourceRow): Candida
   }
   return out;
 }
+
+/**
+ * How a page watch introduces itself. Sites watched this way are often corporate pages behind bot rules
+ * that refuse any agent naming "bot" or carrying a URL (the legacy collector's plain
+ * "<name>/0.1 (page watch)" got through): the site's own name, no browser disguise, the about address
+ * without its scheme. English, as a client without a language preference gets: a Chinese rendering of an English
+ * site has headlines shorter than the 12 characters the watch keeps.
+ */
+const PAGE_WATCH_HEADERS = () => ({
+  "user-agent": `${SITE.organization.name} page watch/1.0 (+${config.siteUrl.replace(/^https?:\/\//, "")}/about)`,
+  "accept-language": "en",
+});
 
 /** Link labels that are site chrome, not posts (page_watch). */
 const WATCH_CHROME = /^(advertise|about|contact|privacy|terms|cookies?|sign in|sign up|log in|login|subscribe|newsletter|rss|careers|jobs|pricing|home|menu)\b/i;
