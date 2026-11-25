@@ -1,0 +1,84 @@
+{
+ "issue": {
+  "date": "2026-10-28",
+  "no": 6,
+  "fixedAt": "2026-10-28T00:02:28.450Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-10-28-1",
+    "position": 1,
+    "title_a": "HuGe：2000h 数据，",
+    "title_b": "人形通用 VLA 进 HumanoidArena SOTA",
+    "core_a": "三阶段预训练融合伪本体状态，",
+    "core_b": "G1 实机拿取放置成功率提升。",
+    "summary": "HuGe 用超 2000 小时第一人称人类与机器人数据预训练，通过仿真回放构建伪本体状态并三阶段训练。它在 HumanoidArena 仿真基准取得 SOTA，在宇树 G1 实机上配合视觉适应的第一人称数据显著提升拿取放置任务成功率，论文阶段。",
+    "tag": "VLA 人形",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.34186",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-27T04:00:00.000Z",
+    "listedAt": "2026-10-27T06:26:07.045Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-28-2",
+    "position": 2,
+    "title_a": "Zero-HLM：造 4800 条，",
+    "title_b": "仿真训练胜真机",
+    "core_a": "无需真机演示即可全任务 66.7%，",
+    "core_b": "比真机训练 46.7% 高 20 个点。",
+    "summary": "Zero-HLM 把手机拍摄场景和仿真演示转为 4800 条物理验证数据，训练 GR00T N1.7。在三个 Unitree G1 任务上，仿真训练的全任务成功率 66.7%，优于真机训练的 46.7%；泛化配置下从 23% 提到 69%，无需额外真机演示。项目页已公开，属论文与开源代码阶段。",
+    "tag": "sim-to-real",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.35075",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-27T04:00:00.000Z",
+    "listedAt": "2026-10-27T05:05:43.557Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-28-3",
+    "position": 3,
+    "title_a": "EXE：视频预训练 VLA，",
+    "title_b": "夹爪灵巧手都受益",
+    "core_a": "分解隐式动作去掉人类运动学偏差，",
+    "core_b": "RoboTwin 等基准一致涨点。",
+    "summary": "EXE 从人类第一视角视频学分解隐式动作，把共享操作先验与本体特定信号解耦，让机器人策略获得可泛化操作语义。同一预训练可迁移到平行夹爪与灵巧手，在 RoboTwin 2.0、RoboCasa GR1 及真实世界任务上一致优于无预训练基线，论文阶段。",
+    "tag": "VLA 预训练",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.33685",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-27T04:00:00.000Z",
+    "listedAt": "2026-10-27T11:11:01.079Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}

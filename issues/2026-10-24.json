@@ -1,0 +1,60 @@
+{
+ "issue": {
+  "date": "2026-10-24",
+  "no": 2,
+  "fixedAt": "2026-10-24T00:03:11.618Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-10-24-1",
+    "position": 1,
+    "title_a": "NVIDIA：AI 智能体",
+    "title_b": "教 Microduck 仿真行走",
+    "core_a": "教程覆盖资产构建、物理建模至训练评估，",
+    "core_b": "降低具身仿真入门门槛。",
+    "summary": "NVIDIA 发布教程，展示如何用 AI 智能体在仿真中教 Microduck 机器人行走。教程涵盖资产环境创建、物理模拟建模交互、训练评估全流程。智能体需感知环境、保持平衡并避障，完整跑通具身仿真开发链路。",
+    "tag": "sim-to-real",
+    "source": "NVIDIA Blog",
+    "url": "https://developer.nvidia.com/blog/using-ai-agents-to-teach-robots-like-microduck-to-walk-in-simulation/",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-23T14:58:32.000Z",
+    "listedAt": "2026-10-23T15:13:08.021Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-24-2",
+    "position": 2,
+    "title_a": "IEEE Spectrum 视频周：",
+    "title_b": "四足自主解开巨大魔方",
+    "core_a": "ETH 四足解魔方，KAIST 人形推举 35 kg，",
+    "core_b": "展示全身反应控制最新突破。",
+    "summary": "IEEE Spectrum 本期机器人视频周刊收录 ETH Zurich 四足机器人仅用爪子自主解开巨大魔方。另含 KAIST 人形机器人演示全身推举 35 kg 及举升 20 kg 物体，以及 Reflex 框架探索视觉反应全身控制。",
+    "tag": "whole-body control",
+    "source": "IEEE Spectrum",
+    "url": "https://spectrum.ieee.org/video-friday-rubiks-cube-robot",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-23T15:30:02.000Z",
+    "listedAt": "2026-10-23T16:05:10.198Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "corrected",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}

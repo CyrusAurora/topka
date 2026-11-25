@@ -1,0 +1,84 @@
+{
+ "issue": {
+  "date": "2026-11-24",
+  "no": 15,
+  "fixedAt": "2026-11-24T08:47:30.411Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-11-24-1",
+    "position": 1,
+    "title_a": "GlobalFoundries 成为",
+    "title_b": "Atlas 首个非汽车测试客户",
+    "core_a": "Atlas 将进入半导体产线测试，",
+    "core_b": "跳出母公司汽车制造场景。",
+    "summary": "GlobalFoundries 将于 2027 年初测试 Boston Dynamics 的 Atlas 人形机器人，成为其首个汽车制造业外的测试客户。双方已部署 Spot 机器狗，新加坡工厂两台 Spot 累计巡检 900 公里，成功率 99%。Atlas 将执行半导体制造任务，但数量与具体任务未披露。",
+    "tag": "人形机器人测试",
+    "source": "The Robot Report",
+    "url": "https://www.therobotreport.com/boston-dynamics-atlas-humanoid-lands-first-non-automotive-trial/",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-17T14:49:05.000Z",
+    "listedAt": "2026-11-17T16:10:44.681Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-11-24-2",
+    "position": 2,
+    "title_a": "Ego2Sim2Humanoid",
+    "title_b": "用眼镜视频训练 VLA",
+    "core_a": "首视角视频转物理轨迹，",
+    "core_b": "无需真机遥控演示。",
+    "summary": "该论文提出将第一视角眼镜视频转化为机器人物理训练轨迹，无需人工遥控真机演示。方法重建碰撞与视觉资产，预测目标接触带，并生成无碰撞站立姿势。GR00T N1.7 仅在该数据集上微调，即可在 Unitree G1 上自主执行 loco-manipulation 任务。",
+    "tag": "sim-to-real",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.19196",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-17T05:00:00.000Z",
+    "listedAt": "2026-11-17T08:52:31.345Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-11-24-3",
+    "position": 3,
+    "title_a": "QTOP 提升运动跟踪",
+    "title_b": "样本效率高出基线 10%",
+    "core_a": "引入分位数优势估计，",
+    "core_b": "缓解多任务学习干扰。",
+    "summary": "该论文提出 QTOP 方法，引入基于状态和参考动作对的条件分位数优势估计以提升样本效率。在人形机器人运动跟踪任务上，QTOP 相比策略和离策略强化学习基线最高提升 10%。研究发现中等规模 GPU 小时投入下，数据集大小对性能影响甚微。",
+    "tag": "whole-body control",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.20791",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-17T05:00:00.000Z",
+    "listedAt": "2026-11-17T08:55:12.464Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}

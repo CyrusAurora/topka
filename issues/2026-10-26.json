@@ -1,0 +1,84 @@
+{
+ "issue": {
+  "date": "2026-10-26",
+  "no": 4,
+  "fixedAt": "2026-10-26T00:07:04.729Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-10-26-1",
+    "position": 1,
+    "title_a": "PHD-Hand：3D 打印，",
+    "title_b": "免微型部件的连杆灵巧手",
+    "core_a": "弹性驱动杆简化连杆传动，",
+    "core_b": "家用 3D 打印机即可制造。",
+    "summary": "研究者提出连杆驱动灵巧手 PHD-Hand，利用柔性铰链和弹簧钢弹性杆简化传动，无需大量微型运动部件。该设计可用家用 3D 打印机低成本制造，降低灵巧人形手的开发门槛。论文介绍了原型抓握与物体操作评估结果，以及最新的运动学与控制系统研究。",
+    "tag": "灵巧手硬件",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.29030",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-22T04:00:00.000Z",
+    "listedAt": "2026-10-23T03:07:18.956Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-26-2",
+    "position": 2,
+    "title_a": "SMR：语义条件重定向，",
+    "title_b": "因果 Transformer 实时生成",
+    "core_a": "物理专家直接跟踪语义目标，",
+    "core_b": "学生模型仅用过去数据生成运动。",
+    "summary": "SMR 提出流式运动重定向，将人类动作转为人形机器人物理约束轨迹。物理专家在仿真中处理接触与动力学；因果 Transformer 学生模型仅利用历史观测生成参考，供全身控制器使用。",
+    "tag": "motion retargeting",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.29169",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-22T04:00:00.000Z",
+    "listedAt": "2026-10-23T03:21:15.931Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-26-3",
+    "position": 3,
+    "title_a": "偏好聚合层级影响，",
+    "title_b": "人形机器人行为操控性",
+    "core_a": "早期聚合行为响应范围宽，",
+    "core_b": "后期聚合控制精度更高。",
+    "summary": "论文评估人形机器人策略可操控性，提出偏好奖励响应度指标。实验对比了偏好聚合方式，结果显示：早期聚合行为响应范围宽但易变，后期聚合提升控制精度但牺牲灵活性。",
+    "tag": "steerable control",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.28925",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-22T04:00:00.000Z",
+    "listedAt": "2026-10-23T03:26:06.047Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}

@@ -1,0 +1,139 @@
+{
+ "archive": [
+  {
+   "date": "2026-11-24",
+   "no": 15,
+   "titles": [
+    "GlobalFoundries 成为",
+    "Ego2Sim2Humanoid",
+    "QTOP 提升运动跟踪"
+   ]
+  },
+  {
+   "date": "2026-11-17",
+   "no": 14,
+   "titles": [
+    "Kimodo-Policy：",
+    "DASH：",
+    "agentic robotics："
+   ]
+  },
+  {
+   "date": "2026-11-10",
+   "no": 13,
+   "titles": [
+    "NVIDIA 发布 GR00T 2 与",
+    "美团 MR0 模型：",
+    "ForPC 力控框架："
+   ]
+  },
+  {
+   "date": "2026-11-09",
+   "no": 12,
+   "titles": [
+    "VLA 梯度路由：",
+    "LoopQ 量化基准："
+   ]
+  },
+  {
+   "date": "2026-11-05",
+   "no": 11,
+   "titles": [
+    "REPAIR：蒸馏 RL 专家，",
+    "VLALagBench：VLA 延迟，",
+    "LiberAI 发布 Liber-0，"
+   ]
+  },
+  {
+   "date": "2026-11-04",
+   "no": 10,
+   "titles": [
+    "单目视觉人形躲避：",
+    "HuG 全身抓取框架：",
+    "MAPO 人形运动追踪："
+   ]
+  },
+  {
+   "date": "2026-11-03",
+   "no": 9,
+   "titles": [
+    "SONIC-K1：",
+    "METATRON：",
+    "RoboSeed："
+   ]
+  },
+  {
+   "date": "2026-10-30",
+   "no": 8,
+   "titles": [
+    "VicOne 测试：",
+    "Robot Report：",
+    "智元 AgiBot："
+   ]
+  },
+  {
+   "date": "2026-10-29",
+   "no": 7,
+   "titles": [
+    "PDRVLA：",
+    "Torch-Hand：",
+    "FLORE："
+   ]
+  },
+  {
+   "date": "2026-10-28",
+   "no": 6,
+   "titles": [
+    "HuGe：2000h 数据，",
+    "Zero-HLM：造 4800 条，",
+    "EXE：视频预训练 VLA，"
+   ]
+  },
+  {
+   "date": "2026-10-27",
+   "no": 5,
+   "titles": [
+    "人形运动追踪：",
+    "VLA 微调：",
+    "OpenVLA 可解释性："
+   ]
+  },
+  {
+   "date": "2026-10-26",
+   "no": 4,
+   "titles": [
+    "PHD-Hand：3D 打印，",
+    "SMR：语义条件重定向，",
+    "偏好聚合层级影响，"
+   ]
+  },
+  {
+   "date": "2026-10-25",
+   "no": 3,
+   "titles": [
+    "Unitree G1 月球行走测试",
+    "SP-HLM：稀疏位姿驱动",
+    "SimPT：自动化 VLA 后训练"
+   ]
+  },
+  {
+   "date": "2026-10-24",
+   "no": 2,
+   "titles": [
+    "NVIDIA：AI 智能体",
+    "IEEE Spectrum 视频周："
+   ]
+  },
+  {
+   "date": "2026-10-23",
+   "no": 1,
+   "titles": [
+    "预期感知法：",
+    "RISE：测试时引导",
+    "HuMiT：紧凑参考"
+   ]
+  }
+ ],
+ "issueCount": 16,
+ "contentLang": "zh-CN"
+}

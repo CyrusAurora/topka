@@ -1,0 +1,84 @@
+{
+ "issue": {
+  "date": "2026-10-27",
+  "no": 5,
+  "fixedAt": "2026-10-27T00:04:40.111Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-10-27-1",
+    "position": 1,
+    "title_a": "人形运动追踪：",
+    "title_b": "延迟随机化扩大裕度",
+    "core_a": "训练时随机化指令延迟，",
+    "core_b": "追踪器在 40 ms 延迟下更稳。",
+    "summary": "在 24 关节人形机器人上，将指令延迟随机化至 0 - 50 ms，40 ms 固定延迟下平均生存率从 15% 升至 95%，延迟裕度扩至 50 - 70 ms，代价是追踪精度略降。",
+    "tag": "whole-body control",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.32277",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-26T04:00:00.000Z",
+    "listedAt": "2026-10-26T04:30:41.080Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-27-2",
+    "position": 2,
+    "title_a": "VLA 微调：",
+    "title_b": "缺 fp32 主副本擦除更新",
+    "core_a": "bf16 训练无 fp32 主副本，",
+    "core_b": "AdamW 更新被静默舍入。",
+    "summary": "VLA 在 bfloat16 微调且无 fp32 主副本时，AdamW 更新被静默擦除。保留 fp32 副本后，LIBERO 基准中 SmolVLA 成功率从 4.3% 提至 49.3%，仅需修改一行代码。",
+    "tag": "VLA 微调",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.31859",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-26T04:00:00.000Z",
+    "listedAt": "2026-10-26T04:13:40.313Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-27-3",
+    "position": 3,
+    "title_a": "OpenVLA 可解释性：",
+    "title_b": "SAE 预测任务成败",
+    "core_a": "OpenVLA 激活的 SAE 特征，",
+    "core_b": "可预测任务失败及行为模式。",
+    "summary": "基于 OpenVLA 的稀疏自编码器特征可预测任务成败，在机器人陷入不可恢复状态前识别风险。研究通过 VLM 解释流水线，揭示了反复出现的成功与失败行为模式。",
+    "tag": "VLA 可解释性",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.32208",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-26T04:00:00.000Z",
+    "listedAt": "2026-10-26T05:05:57.408Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}

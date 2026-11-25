@@ -1,0 +1,60 @@
+{
+ "issue": {
+  "date": "2026-11-09",
+  "no": 12,
+  "fixedAt": "2026-11-09T06:54:52.382Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-11-09-1",
+    "position": 1,
+    "title_a": "VLA 梯度路由：",
+    "title_b": "隔离非默认最优",
+    "core_a": "有无动作标记监督决定耦合优劣，",
+    "core_b": "挑战 VLA 训练默认做法。",
+    "summary": "论文解耦 VLA 中动作专家梯度隔离与动作标记监督。开环驾驶无监督时，耦合使误差降约 25%；闭环联合训练无监督时，路线进度提升约 40%，有监督时约 17%。结果在 H100 等硬件验证，表明梯度隔离并非通用最优策略。",
+    "tag": "VLA 训练",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.05249",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-04T05:00:00.000Z",
+    "listedAt": "2026-11-05T00:09:24.006Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-11-09-2",
+    "position": 2,
+    "title_a": "LoopQ 量化基准：",
+    "title_b": "简单方法反超",
+    "core_a": "18 万轮闭环实验对比 5 种量化法，",
+    "core_b": "通用低比特量化更优。",
+    "summary": "LoopQ 基准在 LIBERO 与 LIBERO-plus 上测试 RTN、AWQ、GPTQ 等 5 种量化策略。结果发现 VLA 专用 PTQ 方法表现不如简单通用基线，4 比特时 RTN 等匹配或超越专用法。H100 上量化未提速，仅 L4 有 4-14% 收益，标准测试掩盖了扰动下的性能损失。",
+    "tag": "VLA 量化评测",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.05093",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-04T05:00:00.000Z",
+    "listedAt": "2026-11-05T00:09:19.106Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}

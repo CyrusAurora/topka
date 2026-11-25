@@ -1,0 +1,84 @@
+{
+ "issue": {
+  "date": "2026-10-23",
+  "no": 1,
+  "fixedAt": "2026-10-23T09:15:28.261Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-10-23-1",
+    "position": 1,
+    "title_a": "预期感知法：",
+    "title_b": "训练迭代降至 1/3",
+    "core_a": "足印预测替代全图输入，",
+    "core_b": "人形行走训练大幅提速。",
+    "summary": "arXiv 论文提出预期感知方法，用轻量足印预测模型替代全图高程输入。该方法将达到特定地形难度的训练迭代次数降至约三分之一，在稀疏落足点场景表现优于全图策略，并匹配数倍计算成本的注意力机制模型，可零样本迁移至 Unitree G1。",
+    "tag": "whole-body control",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.29612",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-22T04:00:00.000Z",
+    "listedAt": "2026-10-23T03:21:04.510Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-23-2",
+    "position": 2,
+    "title_a": "RISE：测试时引导",
+    "title_b": "人形跌倒恢复方式",
+    "core_a": "推理时由任务目标引导站起，",
+    "core_b": "人形跌倒恢复可控可定制。",
+    "summary": "RISE 提出感知人形机器人测试时运动引导跌倒恢复方法，通过任务代价引导朝向、站起速度或路径。该方法学习由感官反馈连接意图与动作的运动词汇，仿真实验展示多样恢复与地形适应，并在 Unitree G1 上完成真实演示，无需重训练。",
+    "tag": "fall recovery",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.30061",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-22T04:00:00.000Z",
+    "listedAt": "2026-10-23T03:11:49.978Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-10-23-3",
+    "position": 3,
+    "title_a": "HuMiT：紧凑参考",
+    "title_b": "人形全身遥操作",
+    "core_a": "仅用 4 个关键点做参考，",
+    "core_b": "全身遥操作延迟降至 20ms。",
+    "summary": "HuMiT 提出基于紧凑参考跟踪的低延迟全身人形机器人遥操作系统，仅需根节点高度、速度及 4 个稀疏关键点的 SE(3) 位姿。实验在 Unitree G1 上实现约 20ms 通信推理延迟，展示接住抛球等秒级反应能力及协调的机动-操作能力。",
+    "tag": "teleoperation",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2610.29903",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-10-22T04:00:00.000Z",
+    "listedAt": "2026-10-23T03:14:08.016Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}

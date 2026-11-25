@@ -1,0 +1,84 @@
+{
+ "issue": {
+  "date": "2026-11-04",
+  "no": 10,
+  "fixedAt": "2026-11-04T00:01:18.814Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-11-04-1",
+    "position": 1,
+    "title_a": "单目视觉人形躲避：",
+    "title_b": "G1 实测成功率 85%",
+    "core_a": "本体感知与控制解耦，",
+    "core_b": "人形可动态躲避威胁。",
+    "summary": "团队提出敏捷躲避系统，结合本体单目视觉与全身控制。仿真中 5 米 6m/s 投掷躲避成功率 97.8% 至 100%；实测 Unitree G1 单次投掷成功率超 85%，验证感知与控制集成能力。",
+    "tag": "whole-body control",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.01197",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-03T05:00:00.000Z",
+    "listedAt": "2026-11-03T12:10:29.637Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-11-04-2",
+    "position": 2,
+    "title_a": "HuG 全身抓取框架：",
+    "title_b": "零真实演示 87.5% 成功",
+    "core_a": "筛除 73% 失稳样本，",
+    "core_b": "纯仿真训练实现抓取。",
+    "summary": "HuG 框架通过感知-对齐-抓取流水线，将视线作为决策变量。训练中筛掉 73% 会失稳的可行样本。纯仿真训练下，多层货架任务真实成功率 87.5%，且能向未见过更矮高度外推。",
+    "tag": "sim-to-real",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.01659",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-03T05:00:00.000Z",
+    "listedAt": "2026-11-03T11:09:09.686Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-11-04-3",
+    "position": 3,
+    "title_a": "MAPO 人形运动追踪：",
+    "title_b": "182 动作全数追踪",
+    "core_a": "交替优化路由与专家，",
+    "core_b": "MoE 策略更稳定。",
+    "summary": "MAPO 框架通过交替优化路由器与专家，避免混合专家策略梯度中的散度误估。对比 PPO+MoE，MAPO 追踪了 182 个对方失败的动作，且追踪成功率最高，多数指标错误率最低。",
+    "tag": "motion tracking",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.02613",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-03T05:00:00.000Z",
+    "listedAt": "2026-11-03T10:32:12.722Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}

@@ -1,0 +1,84 @@
+{
+ "issue": {
+  "date": "2026-11-10",
+  "no": 13,
+  "fixedAt": "2026-11-10T00:09:59.065Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-11-10-1",
+    "position": 1,
+    "title_a": "NVIDIA 发布 GR00T 2 与",
+    "title_b": "Isaac Lab 3.0",
+    "core_a": "GR00T 2 单次演示成功率 71%，",
+    "core_b": "五次演示升至 95%，降低 VLA 数据门槛。",
+    "summary": "NVIDIA 在 CoRL 发布 GR00T 2 和 Isaac Lab 3.0。GR00T 2 基于 10 万小时数据，50 任务成功率从 1 次演示的 71% 升至 5 次的 95%。Isaac Lab 3.0 集成 Newton 引擎，吞吐量提升 2.5 倍，支持千台并行，加速具身模型训练。",
+    "tag": "VLA 与仿真",
+    "source": "The Robot Report",
+    "url": "https://www.therobotreport.com/nvidia-launches-gr00t-2-isaac-lab-3-0-corl/",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-09T21:52:05.000Z",
+    "listedAt": "2026-11-09T23:16:49.555Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-11-10-2",
+    "position": 2,
+    "title_a": "美团 MR0 模型：",
+    "title_b": "RoboTwin 成功率 93.6%",
+    "core_a": "MR0 在 RoboTwin 2.0 基准中达 93.6%，",
+    "core_b": "实机优于 pi_0.5，上限提高。",
+    "summary": "美团发布 MR0 视觉语言动作模型。该模型结合 1.47 亿样本与 1.5 万小时轨迹，在 RoboTwin 2.0 基准中成功率 93.6%。在以太网插入等实机任务中，MR0 的平均成功率高于 pi_0.5，验证了跨本体迁移能力。",
+    "tag": "VLA 基础模型",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.08577",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-09T05:00:00.000Z",
+    "listedAt": "2026-11-09T09:47:16.159Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-11-10-3",
+    "position": 3,
+    "title_a": "ForPC 力控框架：",
+    "title_b": "推 30 kg 购物车",
+    "core_a": "无传感器实现力感知控制，",
+    "core_b": "G1 实机直接迁移，降低力控部署成本。",
+    "summary": "ForPC 提出力感知全身控制框架。通过两阶段强化学习，在无外部力传感器情况下控制机器人推车。仿真中速度误差较基线降低 68.2%。该策略直接迁移至 Unitree G1 实机，可推动载重 30 kg 的购物车以 0.5 m/s 前进。",
+    "tag": "全身控制",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.08664",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-09T05:00:00.000Z",
+    "listedAt": "2026-11-09T09:43:43.463Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "contentLang": "zh-CN"
+}

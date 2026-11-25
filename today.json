@@ -1,0 +1,235 @@
+{
+ "schemaVersion": 3,
+ "kind": "user-issue",
+ "user": {
+  "id": "demo"
+ },
+ "projects": [
+  {
+   "id": "demo-1",
+   "slug": "demo-1",
+   "target": "具身智能"
+  }
+ ],
+ "generatedAt": "2026-11-25T07:37:09.534Z",
+ "nextAt": null,
+ "issueCount": 16,
+ "issue": {
+  "date": "2026-11-25",
+  "no": 16,
+  "fixedAt": "2026-11-25T00:35:18.939Z",
+  "hero": false,
+  "ready": true,
+  "items": [
+   {
+    "id": "2026-11-25-1",
+    "position": 1,
+    "title_a": "ζ0 框架：",
+    "title_b": "人形机器人双维预判提成功",
+    "core_a": "联合预测视觉与关节轨迹，",
+    "core_b": "人形控制成功率最高提 18.8。",
+    "summary": "提出 ζ0 框架，将 VLA 策略转化为世界动作模型。模型在共享潜空间同时预测视觉特征与关节轨迹，引入双响应迁移训练。HumanoidArena 7 项任务中，基于 GR00T N1.7 成功率 79.5%，高 9.0 点；基于 Ψ0 成功率 63.6%，高 18.8 点。真实世界任务成功率最高 85.0%。",
+    "tag": "World Action Model",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.29277",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-24T05:00:00.000Z",
+    "listedAt": "2026-11-24T08:50:21.295Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-11-25-2",
+    "position": 2,
+    "title_a": "CarlHOI：",
+    "title_b": "免重训适配未见环境约束",
+    "core_a": "反事实想象预测多机未来，",
+    "core_b": "2-10 台人形协作零重训泛化。",
+    "summary": "提出 CarlHOI 框架，基于关系潜空间世界模型实现反事实预测想象。显式表示共享物体、机器人及障碍物，利用离线模拟数据训练。实验显示，仅用 4 台机器人训练，可零重训泛化至 2-10 台团队，并在多种障碍物配置下提升搬运成功率，无需重训底层策略即可适配未见环境约束。",
+    "tag": "multi-humanoid",
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2611.29749",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-24T05:00:00.000Z",
+    "listedAt": "2026-11-24T08:52:36.433Z",
+    "hasCopy": true,
+    "overBudget": true,
+    "ledger": "current",
+    "withdrawal": null
+   },
+   {
+    "id": "2026-11-25-3",
+    "position": 3,
+    "title_a": "RoboDream：",
+    "title_b": "具身世界模型合成演示",
+    "core_a": "解耦轨迹执行与环境生成，",
+    "core_b": "生成数据降真实采集依赖。",
+    "summary": "Toyota Research Institute 提出 RoboDream 组合世界模型。方法锚定渲染机器人动作，基于显式场景与物体先验生成视觉逼真演示，解耦轨迹执行与环境合成。支持轨迹复用与无道具遥操作。真实实验表明，生成数据可提升下游策略性能，并降低实际数据采集需求。",
+    "tag": "data synthesis",
+    "source": "Toyota",
+    "url": "http://www.tri.global/research/robodream-compositional-world-models-scalable-robot-data-synthesis",
+    "score": null,
+    "project": {
+     "id": "demo-1",
+     "slug": "demo-1",
+     "target": "具身智能"
+    },
+    "publishedAt": "2026-11-23T21:34:13.000Z",
+    "listedAt": "2026-11-24T08:54:09.622Z",
+    "hasCopy": true,
+    "overBudget": false,
+    "ledger": "current",
+    "withdrawal": null
+   }
+  ]
+ },
+ "opened": [],
+ "archive": [
+  {
+   "date": "2026-11-24",
+   "no": 15,
+   "titles": [
+    "GlobalFoundries 成为",
+    "Ego2Sim2Humanoid",
+    "QTOP 提升运动跟踪"
+   ]
+  },
+  {
+   "date": "2026-11-17",
+   "no": 14,
+   "titles": [
+    "Kimodo-Policy：",
+    "DASH：",
+    "agentic robotics："
+   ]
+  },
+  {
+   "date": "2026-11-10",
+   "no": 13,
+   "titles": [
+    "NVIDIA 发布 GR00T 2 与",
+    "美团 MR0 模型：",
+    "ForPC 力控框架："
+   ]
+  },
+  {
+   "date": "2026-11-09",
+   "no": 12,
+   "titles": [
+    "VLA 梯度路由：",
+    "LoopQ 量化基准："
+   ]
+  },
+  {
+   "date": "2026-11-05",
+   "no": 11,
+   "titles": [
+    "REPAIR：蒸馏 RL 专家，",
+    "VLALagBench：VLA 延迟，",
+    "LiberAI 发布 Liber-0，"
+   ]
+  },
+  {
+   "date": "2026-11-04",
+   "no": 10,
+   "titles": [
+    "单目视觉人形躲避：",
+    "HuG 全身抓取框架：",
+    "MAPO 人形运动追踪："
+   ]
+  },
+  {
+   "date": "2026-11-03",
+   "no": 9,
+   "titles": [
+    "SONIC-K1：",
+    "METATRON：",
+    "RoboSeed："
+   ]
+  },
+  {
+   "date": "2026-10-30",
+   "no": 8,
+   "titles": [
+    "VicOne 测试：",
+    "Robot Report：",
+    "智元 AgiBot："
+   ]
+  },
+  {
+   "date": "2026-10-29",
+   "no": 7,
+   "titles": [
+    "PDRVLA：",
+    "Torch-Hand：",
+    "FLORE："
+   ]
+  },
+  {
+   "date": "2026-10-28",
+   "no": 6,
+   "titles": [
+    "HuGe：2000h 数据，",
+    "Zero-HLM：造 4800 条，",
+    "EXE：视频预训练 VLA，"
+   ]
+  },
+  {
+   "date": "2026-10-27",
+   "no": 5,
+   "titles": [
+    "人形运动追踪：",
+    "VLA 微调：",
+    "OpenVLA 可解释性："
+   ]
+  },
+  {
+   "date": "2026-10-26",
+   "no": 4,
+   "titles": [
+    "PHD-Hand：3D 打印，",
+    "SMR：语义条件重定向，",
+    "偏好聚合层级影响，"
+   ]
+  },
+  {
+   "date": "2026-10-25",
+   "no": 3,
+   "titles": [
+    "Unitree G1 月球行走测试",
+    "SP-HLM：稀疏位姿驱动",
+    "SimPT：自动化 VLA 后训练"
+   ]
+  },
+  {
+   "date": "2026-10-24",
+   "no": 2,
+   "titles": [
+    "NVIDIA：AI 智能体",
+    "IEEE Spectrum 视频周："
+   ]
+  },
+  {
+   "date": "2026-10-23",
+   "no": 1,
+   "titles": [
+    "预期感知法：",
+    "RISE：测试时引导",
+    "HuMiT：紧凑参考"
+   ]
+  }
+ ],
+ "contentLang": "zh-CN"
+}
