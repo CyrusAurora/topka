@@ -1,0 +1,21 @@
+/* The online demo's line above the page; the pages themselves use app.css. */
+@import "../app/app.css";
+@source "../app";
+@source "./";
+
+/* One quiet line, on the page's measure: 在线体验 · 自己部署 · 源代码. */
+.demo-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: var(--mag-measure);
+  margin-inline: auto;
+  padding: 12px 4px 0;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--ink-3);
+}
+@media (min-width: 961px) { .demo-bar { padding: 24px 0 0; } }
+.demo-badge { color: var(--accent); font-weight: 600; letter-spacing: 0.02em; }
+.demo-bar a { color: var(--ink-2); text-decoration: none; }
+.demo-bar a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }

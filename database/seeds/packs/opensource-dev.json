@@ -1,0 +1,291 @@
+{
+  "id": "opensource-dev",
+  "packId": "opensource-dev",
+  "label": "开源与开发者",
+  "labelEn": "Open source & developers",
+  "note": "Open source and developers pack: releases of widely used tools and runtimes, plus developer blogs. Public feed URLs only.",
+  "sources": [
+    {
+      "id": "github-vscode",
+      "name": "VS Code Releases",
+      "publisher": "Microsoft",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/microsoft/vscode/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "github-react",
+      "name": "React Releases",
+      "publisher": "Meta",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/facebook/react/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "github-nodejs",
+      "name": "Node.js Releases",
+      "publisher": "OpenJS Foundation",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/nodejs/node/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "github-deno",
+      "name": "Deno Releases",
+      "publisher": "Deno",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/denoland/deno/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "github-rust",
+      "name": "Rust Releases",
+      "publisher": "Rust Foundation",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/rust-lang/rust/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "github-kubernetes",
+      "name": "Kubernetes Releases",
+      "publisher": "CNCF",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.com/kubernetes/kubernetes/releases.atom",
+        "summaryIsBody": true
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "github"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "rss-github-changelog",
+      "name": "GitHub Changelog",
+      "publisher": "GitHub",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://github.blog/changelog/feed/"
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "rss-github-ai",
+      "name": "GitHub Blog · AI & ML",
+      "publisher": "GitHub",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://github.blog/ai-and-ml/feed/",
+        "_topka": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "rss-rust-blog",
+      "name": "Rust Blog",
+      "publisher": "Rust Foundation",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://blog.rust-lang.org/feed.xml"
+      },
+      "tier": "T1",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "rss-cloudflare-blog",
+      "name": "The Cloudflare Blog",
+      "publisher": "Cloudflare",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://blog.cloudflare.com/rss/"
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "us"
+      ]
+    },
+    {
+      "id": "rss-simon-willison",
+      "name": "Simon Willison",
+      "publisher": "Simon Willison",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://simonwillison.net/atom/everything/",
+        "_topka": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 120,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "global"
+      ]
+    },
+    {
+      "id": "rss-infoq-cn",
+      "name": "InfoQ China",
+      "publisher": "Geekbang",
+      "kind": "rss",
+      "config": {
+        "_topka": {
+          "initialBackfillLimit": 5
+        },
+        "feedUrl": "https://www.infoq.cn/feed"
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "媒体"
+      ],
+      "site_fulltext": false,
+      "regions": [
+        "cn"
+      ]
+    }
+  ]
+}

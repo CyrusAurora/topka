@@ -1,0 +1,19 @@
+# gitleaks config: the default rules plus two reviewed false positives.
+[extend]
+useDefault = true
+
+# Leaderboard registry entries are identified by slug keys ("key": "frontierswe-v2"), not credentials.
+[[allowlists]]
+description = "leaderboard source slugs"
+condition = "AND"
+paths = ['''packages/backend/src/leaderboard/source-registry\.json''']
+regexTarget = "line"
+regexes = ['''^\s*"key":\s*"[a-z0-9][a-z0-9._-]*",?\s*$''']
+
+# The CI workflow sets throwaway values for a disposable test database; they protect nothing.
+[[allowlists]]
+description = "CI throwaway secrets"
+condition = "AND"
+paths = ['''\.github/workflows/check\.yml''']
+regexTarget = "line"
+regexes = ['''^\s+(SESSION_SECRET|IMG_PROXY_SIGN_SECRET|KEY_ENCRYPTION_SECRET|ADMIN_PASSWORD):\s''']

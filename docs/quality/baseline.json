@@ -1,0 +1,699 @@
+{
+  "generatedAt": "2026-11-10T13:53:17.530Z",
+  "datasets": {
+    "relevance": {
+      "file": "eval/gold/gold-relevance.jsonl",
+      "cases": 200,
+      "sha256": "eb436f347a8f41ea"
+    },
+    "grouping": {
+      "file": "eval/gold/gold-grouping.jsonl",
+      "cases": 109,
+      "sha256": "263243ce49b888fe"
+    },
+    "independence": {
+      "file": "eval/gold/gold-independence.jsonl",
+      "cases": 59,
+      "sha256": "fd78bcb32afdce24"
+    },
+    "abstention": {
+      "file": "eval/gold/gold-abstention.jsonl",
+      "cases": 214,
+      "sha256": "8ba8e8c1b00a3327"
+    },
+    "citation": {
+      "file": "eval/gold/gold-citation.jsonl",
+      "cases": 20,
+      "sha256": "26a82225f339c79d"
+    },
+    "runtime": {
+      "file": "eval/snapshots/runtime.json",
+      "cases": 2247,
+      "sha256": "cfce2a60b221c130"
+    }
+  },
+  "items": {
+    "coverage": {
+      "window": {
+        "since": "2026-10-27T13:42:58.618Z",
+        "until": "2026-11-10T13:42:58.618Z"
+      },
+      "days": 14,
+      "enabledSources": 81,
+      "planCompletion": 0.236,
+      "requiredSources": 18,
+      "requiredGapDays": 109,
+      "requiredGapRate": 0.433,
+      "failingSources": 0,
+      "failingRate": 0,
+      "runs": 6515,
+      "failedRuns": 95
+    },
+    "relevance": {
+      "site": {
+        "cases": 89,
+        "either": 22,
+        "tp": 13,
+        "fp": 14,
+        "fn": 10,
+        "tn": 30,
+        "precision": 0.481,
+        "recall": 0.565,
+        "accuracy": 0.642,
+        "bySplit": {
+          "holdout": {
+            "tp": 7,
+            "fp": 8,
+            "fn": 4,
+            "tn": 8,
+            "precision": 0.467,
+            "recall": 0.636,
+            "accuracy": 0.556
+          },
+          "development": {
+            "tp": 6,
+            "fp": 6,
+            "fn": 6,
+            "tn": 22,
+            "precision": 0.5,
+            "recall": 0.5,
+            "accuracy": 0.7
+          }
+        },
+        "byStratum": {
+          "industry": {
+            "n": 16,
+            "tp": 3,
+            "fp": 2,
+            "fn": 3,
+            "tn": 3,
+            "precision": 0.6,
+            "recall": 0.5,
+            "accuracy": 0.545
+          },
+          "paper": {
+            "n": 16,
+            "tp": 1,
+            "fp": 1,
+            "fn": 0,
+            "tn": 7,
+            "precision": 0.5,
+            "recall": 1,
+            "accuracy": 0.889
+          },
+          "ai-products": {
+            "n": 16,
+            "tp": 1,
+            "fp": 4,
+            "fn": 3,
+            "tn": 4,
+            "precision": 0.2,
+            "recall": 0.25,
+            "accuracy": 0.417
+          },
+          "ai-models": {
+            "n": 16,
+            "tp": 8,
+            "fp": 0,
+            "fn": 4,
+            "tn": 1,
+            "precision": 1,
+            "recall": 0.667,
+            "accuracy": 0.692
+          },
+          "opinion": {
+            "n": 12,
+            "tp": 0,
+            "fp": 3,
+            "fn": 0,
+            "tn": 7,
+            "precision": 0,
+            "recall": null,
+            "accuracy": 0.7
+          },
+          "tip": {
+            "n": 13,
+            "tp": 0,
+            "fp": 4,
+            "fn": 0,
+            "tn": 8,
+            "precision": 0,
+            "recall": null,
+            "accuracy": 0.667
+          }
+        }
+      },
+      "project": {
+        "cases": 111,
+        "either": 20,
+        "tp": 43,
+        "fp": 6,
+        "fn": 11,
+        "tn": 31,
+        "precision": 0.878,
+        "recall": 0.796,
+        "accuracy": 0.813,
+        "bySplit": {
+          "development": {
+            "tp": 32,
+            "fp": 5,
+            "fn": 8,
+            "tn": 26,
+            "precision": 0.865,
+            "recall": 0.8,
+            "accuracy": 0.817
+          },
+          "holdout": {
+            "tp": 11,
+            "fp": 1,
+            "fn": 3,
+            "tn": 5,
+            "precision": 0.917,
+            "recall": 0.786,
+            "accuracy": 0.8
+          }
+        },
+        "byStratum": {
+          "ai-products": {
+            "n": 20,
+            "tp": 7,
+            "fp": 1,
+            "fn": 4,
+            "tn": 3,
+            "precision": 0.875,
+            "recall": 0.636,
+            "accuracy": 0.667
+          },
+          "industry": {
+            "n": 17,
+            "tp": 2,
+            "fp": 2,
+            "fn": 3,
+            "tn": 8,
+            "precision": 0.5,
+            "recall": 0.4,
+            "accuracy": 0.667
+          },
+          "paper": {
+            "n": 38,
+            "tp": 33,
+            "fp": 0,
+            "fn": 1,
+            "tn": 2,
+            "precision": 1,
+            "recall": 0.971,
+            "accuracy": 0.972
+          },
+          "tip": {
+            "n": 17,
+            "tp": 0,
+            "fp": 2,
+            "fn": 0,
+            "tn": 7,
+            "precision": 0,
+            "recall": null,
+            "accuracy": 0.778
+          },
+          "uncategorised": {
+            "n": 15,
+            "tp": 0,
+            "fp": 0,
+            "fn": 3,
+            "tn": 11,
+            "precision": null,
+            "recall": 0,
+            "accuracy": 0.786
+          },
+          "opinion": {
+            "n": 3,
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1,
+            "recall": 1,
+            "accuracy": 1
+          },
+          "ai-models": {
+            "n": 1,
+            "tp": 0,
+            "fp": 1,
+            "fn": 0,
+            "tn": 0,
+            "precision": 0,
+            "recall": null,
+            "accuracy": 0
+          }
+        }
+      }
+    },
+    "grouping": {
+      "cases": 109,
+      "pairs": 130,
+      "pairAccuracy": 0.738,
+      "falseMergeRate": 0.043,
+      "missedMergeRate": 0.158,
+      "falseMerges": 4,
+      "missedMerges": 6,
+      "storyLevel": {
+        "tp": 60,
+        "fp": 14,
+        "fn": 12,
+        "tn": 44,
+        "precision": 0.811,
+        "recall": 0.833,
+        "accuracy": 0.8
+      },
+      "replayFidelity": 0.991,
+      "confusion": {
+        "related": {
+          "same": 3,
+          "distinct": 11,
+          "related": 20
+        },
+        "distinct": {
+          "distinct": 44,
+          "related": 13,
+          "same": 1
+        },
+        "same": {
+          "same": 32,
+          "related": 5,
+          "distinct": 1
+        }
+      },
+      "splitRestored": 0,
+      "splitRestorePaths": [
+        {
+          "path": "revision (grouping again)",
+          "restored": 0
+        },
+        {
+          "path": "explicit regroup",
+          "restored": 0
+        },
+        {
+          "path": "pending regroup",
+          "restored": 0
+        },
+        {
+          "path": "sibling regroup",
+          "restored": 0
+        },
+        {
+          "path": "new report joins the fact",
+          "restored": 0
+        },
+        {
+          "path": "story consolidation",
+          "restored": 0
+        },
+        {
+          "path": "republish",
+          "restored": 0
+        }
+      ]
+    },
+    "citation": {
+      "chain": {
+        "cards": 295,
+        "complete": 295,
+        "completeRate": 1,
+        "problems": {}
+      },
+      "sample": {
+        "cards": 20,
+        "chainComplete": 1,
+        "located": 1,
+        "fullySupported": 0.7,
+        "partlySupported": 6,
+        "unsupported": 0,
+        "unsupportedStatements": [
+          {
+            "caseId": "cit-m8gb6gsurv0y8gfuud9h1yl2q",
+            "statement": "结果在 H100 等硬件验证"
+          },
+          {
+            "caseId": "cit-ca2k41jnw3x350incn5eaes3c",
+            "statement": "属论文与开源代码阶段"
+          },
+          {
+            "caseId": "cit-n640hmdwza0mm2jsul5wi3pzc",
+            "statement": "完整跑通具身仿真开发链路"
+          },
+          {
+            "caseId": "cit-q3mpfzwx0ao4qtftf2cekfsyh",
+            "statement": "从五个维度量化模型可负担性"
+          },
+          {
+            "caseId": "cit-jte6z4i8uw90b2n89mov15kil",
+            "statement": "本体感知与控制解耦"
+          },
+          {
+            "caseId": "cit-m26hx5rlszkk2m54oe3s1s6yj",
+            "statement": "182 动作全数追踪"
+          }
+        ]
+      }
+    },
+    "independence": {
+      "groups": 59,
+      "reports": 200,
+      "exactCount": 1,
+      "meanAbsError": 0,
+      "overCounted": 0,
+      "underCounted": 0,
+      "productExactCount": 0.932,
+      "productDuplicatesKept": 0,
+      "reprintPairs": {
+        "tp": 38,
+        "fp": 0,
+        "fn": 0,
+        "tn": 400,
+        "precision": 1,
+        "recall": 1,
+        "accuracy": 1
+      },
+      "perSourceExactCount": 0.559
+    },
+    "freshness": {
+      "window": {
+        "since": "2026-10-27T13:42:58.618Z",
+        "until": "2026-11-10T13:42:58.618Z"
+      },
+      "n": 1122,
+      "p50Minutes": 407.2,
+      "p90Minutes": 1517.8,
+      "over24h": 0.113,
+      "enough": true,
+      "skipped": 1125,
+      "byKind": {
+        "news": {
+          "n": 970,
+          "p50Minutes": 421.1,
+          "p90Minutes": 1495.1,
+          "over24h": 0.111,
+          "enough": true
+        },
+        "paper": {
+          "n": 128,
+          "p50Minutes": 246.2,
+          "p90Minutes": 1326.6,
+          "over24h": 0.094,
+          "enough": true
+        },
+        "release": {
+          "n": 24,
+          "p50Minutes": 998,
+          "p90Minutes": 2064.7,
+          "over24h": 0.292,
+          "enough": false
+        }
+      }
+    },
+    "abstention": {
+      "bar": 0.9,
+      "barMet": true,
+      "cases": 214,
+      "insufficient": 98,
+      "abstained": 98,
+      "abstainRate": 1,
+      "reasonMatch": 1,
+      "sufficient": 116,
+      "falseAbstained": 2,
+      "falseAbstainRate": 0.017,
+      "byOrigin": {
+        "production": {
+          "insufficient": 29,
+          "abstained": 29,
+          "abstainRate": 1,
+          "reasonMatch": 1,
+          "sufficient": 89,
+          "falseAbstained": 0,
+          "falseAbstainRate": 0
+        },
+        "blind": {
+          "insufficient": 19,
+          "abstained": 19,
+          "abstainRate": 1,
+          "reasonMatch": 1,
+          "sufficient": 27,
+          "falseAbstained": 2,
+          "falseAbstainRate": 0.074
+        },
+        "constructed": {
+          "insufficient": 50,
+          "abstained": 50,
+          "abstainRate": 1,
+          "reasonMatch": 1,
+          "sufficient": 0,
+          "falseAbstained": 0,
+          "falseAbstainRate": null
+        }
+      },
+      "byVariant": {
+        "no-source": {
+          "insufficient": 10,
+          "abstained": 10,
+          "abstainRate": 1,
+          "reasonMatch": 1,
+          "sufficient": 0,
+          "falseAbstained": 0,
+          "falseAbstainRate": null
+        },
+        "title-only": {
+          "insufficient": 10,
+          "abstained": 10,
+          "abstainRate": 1,
+          "reasonMatch": 1,
+          "sufficient": 0,
+          "falseAbstained": 0,
+          "falseAbstainRate": null
+        },
+        "thin": {
+          "insufficient": 10,
+          "abstained": 10,
+          "abstainRate": 1,
+          "reasonMatch": 1,
+          "sufficient": 0,
+          "falseAbstained": 0,
+          "falseAbstainRate": null
+        },
+        "unsourced-claim": {
+          "insufficient": 10,
+          "abstained": 10,
+          "abstainRate": 1,
+          "reasonMatch": 1,
+          "sufficient": 0,
+          "falseAbstained": 0,
+          "falseAbstainRate": null
+        },
+        "source-conflict": {
+          "insufficient": 10,
+          "abstained": 10,
+          "abstainRate": 1,
+          "reasonMatch": 1,
+          "sufficient": 0,
+          "falseAbstained": 0,
+          "falseAbstainRate": null
+        }
+      }
+    },
+    "timeSaved": {
+      "window": {
+        "since": "2026-10-27T13:42:58.618Z",
+        "until": "2026-11-10T13:42:58.618Z"
+      },
+      "issues": 13,
+      "nonEmptyIssues": 13,
+      "items": 37,
+      "medianMaterialsPerIssue": 17,
+      "medianUpdateShare": 0.1765,
+      "readsLogged": 5,
+      "issuesWithReads": 2,
+      "medianReadSpanMinutes": 0.1,
+      "readSpanSamples": 2,
+      "enough": false,
+      "marks": 3
+    }
+  },
+  "checks": [
+    {
+      "item": "coverage",
+      "metric": "planCompletion",
+      "min": 0.23,
+      "why": "snapshot arithmetic: the recorded window's value (refresh the snapshot, then the threshold)",
+      "value": 0.236,
+      "pass": true
+    },
+    {
+      "item": "coverage",
+      "metric": "failingRate",
+      "max": 0.05,
+      "why": "at most 5% of enabled sources failing three runs in a row",
+      "value": 0,
+      "pass": true
+    },
+    {
+      "item": "relevance",
+      "metric": "project.precision",
+      "min": 0.85,
+      "why": "replay of recorded scores; baseline 0.878 minus about one case",
+      "value": 0.878,
+      "pass": true
+    },
+    {
+      "item": "relevance",
+      "metric": "project.recall",
+      "min": 0.77,
+      "why": "replay of recorded scores; baseline 0.796 minus about one case",
+      "value": 0.796,
+      "pass": true
+    },
+    {
+      "item": "relevance",
+      "metric": "site.precision",
+      "min": 0.45,
+      "why": "replay of recorded scores; baseline 0.481 minus about one case",
+      "value": 0.481,
+      "pass": true
+    },
+    {
+      "item": "relevance",
+      "metric": "site.recall",
+      "min": 0.52,
+      "why": "replay of recorded scores; baseline 0.565 minus about one case",
+      "value": 0.565,
+      "pass": true
+    },
+    {
+      "item": "grouping",
+      "metric": "pairAccuracy",
+      "min": 0.72,
+      "why": "replay of recorded relations; baseline 0.738 minus two pairs",
+      "value": 0.738,
+      "pass": true
+    },
+    {
+      "item": "grouping",
+      "metric": "falseMergeRate",
+      "max": 0.06,
+      "why": "误合并 baseline 0.043 (4 of 92); one more is the limit",
+      "value": 0.043,
+      "pass": true
+    },
+    {
+      "item": "grouping",
+      "metric": "missedMergeRate",
+      "max": 0.19,
+      "why": "漏合并 baseline 0.158 (6 of 38); one more is the limit",
+      "value": 0.158,
+      "pass": true
+    },
+    {
+      "item": "grouping",
+      "metric": "replayFidelity",
+      "min": 0.98,
+      "why": "the replay must keep reproducing production's decisions",
+      "value": 0.991,
+      "pass": true
+    },
+    {
+      "item": "grouping",
+      "metric": "splitRestored",
+      "max": 0,
+      "optional": true,
+      "why": "拆分后误还原: never (tests/split-restore.test.ts)",
+      "value": 0,
+      "pass": true
+    },
+    {
+      "item": "citation",
+      "metric": "chain.completeRate",
+      "min": 1,
+      "why": "every shown card traces to link, source, time and analysis",
+      "value": 1,
+      "pass": true
+    },
+    {
+      "item": "citation",
+      "metric": "sample.located",
+      "min": 1,
+      "why": "every sampled card's main statement is in the original",
+      "value": 1,
+      "pass": true
+    },
+    {
+      "item": "independence",
+      "metric": "exactCount",
+      "min": 0.96,
+      "why": "baseline 1.0 on 59 groups; two groups of slack",
+      "value": 1,
+      "pass": true
+    },
+    {
+      "item": "independence",
+      "metric": "reprintPairs.accuracy",
+      "min": 0.98,
+      "why": "转载组识别: pair labels",
+      "value": 1,
+      "pass": true
+    },
+    {
+      "item": "independence",
+      "metric": "productDuplicatesKept",
+      "max": 0.05,
+      "why": "repeats the product still counts as independent",
+      "value": 0,
+      "pass": true
+    },
+    {
+      "item": "freshness",
+      "metric": "byKind.news.p50Minutes",
+      "max": 425,
+      "why": "snapshot arithmetic: the recorded window's value",
+      "value": 421.1,
+      "pass": true
+    },
+    {
+      "item": "freshness",
+      "metric": "byKind.news.p90Minutes",
+      "max": 1500,
+      "why": "snapshot arithmetic: the recorded window's value",
+      "value": 1495.1,
+      "pass": true
+    },
+    {
+      "item": "abstention",
+      "metric": "abstainRate",
+      "min": 0.9,
+      "why": "design bar (证据纪律): abstain on at least 90% of insufficient-evidence samples",
+      "value": 1,
+      "pass": true
+    },
+    {
+      "item": "abstention",
+      "metric": "falseAbstainRate",
+      "max": 0.1,
+      "why": "design bar: at most 10% false abstentions",
+      "value": 0.017,
+      "pass": true
+    },
+    {
+      "item": "abstention",
+      "metric": "byOrigin.blind.falseAbstainRate",
+      "max": 0.1,
+      "why": "the same bar on the blind check alone",
+      "value": 0.074,
+      "pass": true
+    },
+    {
+      "item": "timeSaved",
+      "metric": "medianUpdateShare",
+      "max": 0.2,
+      "why": "snapshot arithmetic: an issue shows at most a fifth of its window's materials",
+      "value": 0.1765,
+      "pass": true
+    }
+  ]
+}

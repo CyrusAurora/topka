@@ -1,0 +1,66 @@
+{
+  "note": "策展包种子数据（master design 3.2 source_packs，交接包 §2.2 四包结构）。包内来源 id 沿用旧产品 {kind}:{小写目标} 约定，仅为占位描述；采集接线在第 4 步导入真实配置后启用。种子可后续由产品负责人替换。",
+  "packs": [
+    {
+      "id": "ai-models",
+      "label": "AI 模型跟踪",
+      "sources": [
+        { "id": "rss:qwen-blog", "name": "通义千问博客", "publisher": "阿里云" },
+        { "id": "rss:deepseek-news", "name": "DeepSeek 动态", "publisher": "深度求索" },
+        { "id": "rss:kimi-blog", "name": "Kimi（月之暗面）更新", "publisher": "月之暗面" },
+        { "id": "rss:doubao-blog", "name": "豆包（字节跳动）发布", "publisher": "字节跳动" },
+        { "id": "changelog:openai", "name": "OpenAI 发布说明", "publisher": "OpenAI" },
+        { "id": "changelog:anthropic-news", "name": "Anthropic 新闻", "publisher": "Anthropic" },
+        { "id": "changelog:google-deepmind", "name": "Google DeepMind 博客", "publisher": "Google" },
+        { "id": "changelog:meta-ai", "name": "Meta AI 博客", "publisher": "Meta" },
+        { "id": "rss:modelscope-updates", "name": "魔搭社区更新", "publisher": "阿里云" },
+        { "id": "github:ollama", "name": "Ollama Releases", "publisher": "Ollama" },
+        { "id": "github:llama-cpp", "name": "llama.cpp Releases", "publisher": "ggml" },
+        { "id": "github:vllm", "name": "vLLM Releases", "publisher": "vLLM 项目" },
+        { "id": "github:sglang", "name": "SGLang Releases", "publisher": "SGLang 项目" },
+        { "id": "rss:huggingface-blog", "name": "Hugging Face 博客", "publisher": "Hugging Face" }
+      ]
+    },
+    {
+      "id": "semiconductor",
+      "label": "半导体与算力",
+      "sources": [
+        { "id": "changelog:nvidia-news", "name": "NVIDIA 新闻", "publisher": "NVIDIA" },
+        { "id": "rss:amd-newsroom", "name": "AMD 新闻室", "publisher": "AMD" },
+        { "id": "rss:intel-newsroom", "name": "Intel 新闻室", "publisher": "Intel" },
+        { "id": "rss:smic-updates", "name": "中芯国际动态", "publisher": "中芯国际" },
+        { "id": "rss:huawei-ascend", "name": "华为昇腾社区", "publisher": "华为" },
+        { "id": "rss:cambricon-news", "name": "寒武纪动态", "publisher": "寒武纪" }
+      ]
+    },
+    {
+      "id": "embodied-ai",
+      "label": "具身智能与机器人",
+      "sources": [
+        { "id": "rss:unitree-news", "name": "宇树科技动态", "publisher": "宇树科技" },
+        { "id": "rss:ubtech-news", "name": "优必选动态", "publisher": "优必选" },
+        { "id": "rss:agibot-blog", "name": "智元机器人（AGIBOT）", "publisher": "智元机器人" },
+        { "id": "rss:galbot-news", "name": "银河通用动态", "publisher": "银河通用" },
+        { "id": "github:lerobot", "name": "LeRobot Releases", "publisher": "Hugging Face" },
+        { "id": "github:isaac-lab", "name": "Isaac Lab Releases", "publisher": "NVIDIA" },
+        { "id": "rss:robot-report", "name": "The Robot Report", "publisher": "The Robot Report" },
+        { "id": "rss:ieee-robotics", "name": "IEEE Spectrum 机器人", "publisher": "IEEE" }
+      ]
+    },
+    {
+      "id": "opensource-dev",
+      "label": "开源与开发者",
+      "sources": [
+        { "id": "github:vscode", "name": "VS Code Releases", "publisher": "Microsoft" },
+        { "id": "github:react", "name": "React Releases", "publisher": "Meta" },
+        { "id": "github:nodejs", "name": "Node.js Releases", "publisher": "OpenJS 基金会" },
+        { "id": "github:deno", "name": "Deno Releases", "publisher": "Deno 公司" },
+        { "id": "github:rust-lang", "name": "Rust Releases", "publisher": "Rust 基金会" },
+        { "id": "github:kubernetes", "name": "Kubernetes Releases", "publisher": "CNCF" },
+        { "id": "changelog:github-blog", "name": "GitHub Changelog", "publisher": "GitHub" },
+        { "id": "rss:cloudflare-blog", "name": "Cloudflare 博客", "publisher": "Cloudflare" },
+        { "id": "rss:infoq-cn", "name": "InfoQ 中文站", "publisher": "极客邦" }
+      ]
+    }
+  ]
+}

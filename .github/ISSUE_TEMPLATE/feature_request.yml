@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest an idea for this project
+labels: [enhancement]
+body:
+  - type: checkboxes
+    id: fit
+    attributes:
+      label: Project fit
+      options:
+        - label: >-
+            This fits the project's goals: a self-hostable, goal-driven news/intelligence
+            workbench. If your idea differs fundamentally, please open a discussion first.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to achieve, and what is missing for that goal?
+      placeholder: "e.g. I want per-project digests pushed to a generic webhook, not just Feishu."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Desired solution
+      description: >
+        What should happen? Where do you think it belongs (worker job, API route, web route,
+        publication layer, industry pack)?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context

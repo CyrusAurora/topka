@@ -1,0 +1,56 @@
+# GitHub code scanning (CodeQL) for the TypeScript/JavaScript code and the workflows themselves.
+# What it reported and why each open alert is dismissed: docs/security/codeql-triage.md. Code scanning is free on public
+# repositories; on a private one it needs GitHub Advanced Security, so there the job only says it skipped.
+# Only GitHub-owned actions, pinned to a full commit SHA.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "27 3 * * 1" # weekly, so new CodeQL queries also reach code nobody touched
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      # Asked of the API rather than read from the event: a scheduled run's event has no repository.
+      - name: Repository visibility
+        id: vis
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          private=$(gh api "repos/$GITHUB_REPOSITORY" --jq .private)
+          echo "private=$private" >> "$GITHUB_OUTPUT"
+          [ "$private" = false ] || echo "::notice::private repository: code scanning needs GitHub Advanced Security here, skipped"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.vis.outputs.private == 'false'
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        if: steps.vis.outputs.private == 'false'
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        if: steps.vis.outputs.private == 'false'
+        with:
+          category: /language:${{ matrix.language }}

@@ -1,0 +1,39 @@
+[
+  {
+    "rule": "js/xss-through-dom",
+    "path": "apps/web/app/routes/feedback.tsx",
+    "reason": "false positive",
+    "comment": "The img src is URL.createObjectURL(file) for a picked PNG/JPEG/WebP: always a blob: URL, set as an attribute by React, never parsed as HTML. A blob: URL in <img> cannot run script. See docs/security/codeql-triage.md."
+  },
+  {
+    "rule": "js/clear-text-logging",
+    "path": "scripts/init-env.ts",
+    "reason": "won't fix",
+    "comment": "Intended: the setup CLI prints the admin password it just generated, once, to the operator's own terminal (it is also in the 0600 .env). Not a server log. See docs/security/codeql-triage.md."
+  },
+  {
+    "rule": "js/clear-text-logging",
+    "path": "scripts/demo.ts",
+    "reason": "won't fix",
+    "comment": "Intended: the local demo seeder prints the demo account's password (generated, or the operator's own DEMO_PASSWORD) once to the terminal that ran it. Not a server log. See docs/security/codeql-triage.md."
+  },
+  {
+    "rule": "js/file-access-to-http",
+    "path": "packages/backend/src/providers/llm.ts",
+    "reason": "won't fix",
+    "comment": "Intended: prompt templates shipped in the repo (industry/prompts/*.md) are the body of the model request. No user file or secret is read on this path. See docs/security/codeql-triage.md."
+  },
+  {
+    "rule": "actions/unpinned-tag",
+    "path": ".github/workflows/release.yml",
+    "message": "slsa-framework/slsa-github-generator/",
+    "reason": "won't fix",
+    "comment": "Required: slsa-github-generator must be called by release tag (@v2.1.0), not a SHA; it verifies its own ref and slsa-verifier checks that tag in the builder id. Only these two jobs; every other action is SHA-pinned. See docs/release.md (Provenance)."
+  },
+  {
+    "rule": "js/http-to-file-access",
+    "path": "scripts/mock-webhook.ts",
+    "reason": "used in tests",
+    "comment": "Intended: the local stand-in for the alert webhook (127.0.0.1 only, drills and tests) exists to record what an alert sends, so it appends each received message to the file the operator named. See docs/security/codeql-triage.md."
+  }
+]

@@ -1,0 +1,107 @@
+import Fastify, { LogController, type FastifyInstance } from "fastify";
+import { randomUUID } from "node:crypto";
+import { resolveRedirect } from "@topka/contracts/http-policy";
+import { sql } from "@topka/backend/db";
+import { appInfo, releaseName } from "@topka/backend/config";
+import { registerSite } from "./routes/site.ts";
+import { registerOg } from "./routes/og.ts";
+import { registerAdminAuth } from "./routes/admin-auth.ts";
+import { registerAdmin } from "./routes/admin.ts";
+import { registerAccounts } from "./routes/accounts.ts";
+import { registerProjects } from "./routes/projects.ts";
+import { registerDiscovery } from "./routes/discovery.ts";
+import { registerAssistant } from "./routes/assistant.ts";
+import { registerUserKeys } from "./routes/user-keys.ts";
+import { registerSourceHealth } from "./routes/source-health.ts";
+import { registerIngest } from "./routes/ingest.ts";
+import { registerMedia } from "./routes/media.ts";
+import { registerStatic } from "./routes/static.ts";
+import { sendProblem } from "./http/respond.ts";
+import { RateLimited, registerRateLimit } from "./http/rate-limit.ts";
+
+export async function buildApp(): Promise<FastifyInstance> {
+  const app = Fastify({
+    logger: { level: process.env.LOG_LEVEL || "info", redact: ["req.headers.authorization", "req.headers.cookie"] },
+    // Access logs never record query strings (tokens, actors). Fastify 5 wants this on a controller.
+    logController: new LogController({ disableRequestLogging: true }),
+    // Only the site's own reverse proxies (the web server, Caddy) on this host or the private network
+    // may name the client; a forwarded-for header from anywhere else is ignored (rate limits key on req.ip).
+    trustProxy: "loopback,uniquelocal",
+    genReqId: () => randomUUID(),
+    bodyLimit: 10 * 1024 * 1024,
+    routerOptions: { ignoreTrailingSlash: false, maxParamLength: 300 },
+  });
+
+  app.addHook("onRequest", async (req) => {
+    req.requestId = req.id;
+  });
+
+  // Before any route: the plugin attaches each route's ceiling as the route is added.
+  await registerRateLimit(app);
+
+  app.addHook("onResponse", async (req, reply) => {
+    const path = (req.raw.url ?? "").split("?")[0] ?? "/";
+    // The reverse proxy logs every request; the process only notes the slow and the failed.
+    const ms = Math.round(reply.elapsedTime);
+    if (reply.statusCode >= 500 || (ms >= 1000 && !path.startsWith("/api/img-proxy"))) {
+      req.log.warn({ method: req.method, path, status: reply.statusCode, ms }, "request");
+    }
+  });
+
+  // Central redirect table (shared with the web server).
+  app.addHook("onRequest", async (req, reply) => {
+    const raw = req.raw.url ?? "/";
+    const qi = raw.indexOf("?");
+    const pathname = qi >= 0 ? raw.slice(0, qi) : raw;
+    const search = qi >= 0 ? raw.slice(qi) : "";
+    const decision = resolveRedirect(pathname, search);
+    if (decision) {
+      for (const [k, v] of Object.entries(decision.headers)) reply.header(k, v);
+      if (decision.location) return reply.code(decision.status).header("Location", decision.location).send();
+      return reply.code(decision.status).type("text/plain; charset=utf-8").send(decision.status === 410 ? "Gone" : "Not found");
+    }
+  });
+
+  app.get("/api/health", async (_req, reply) => {
+    const started = Date.now();
+    await sql`SELECT 1`;
+    return reply.header("Cache-Control", "no-store").send({ app: appInfo().name, version: appInfo().version, ok: true, db: "ok", ms: Date.now() - started, release: releaseName() });
+  });
+
+  registerSite(app);
+  registerOg(app);
+  registerAdminAuth(app);
+  registerAdmin(app);
+  registerAccounts(app);
+  registerProjects(app);
+  registerDiscovery(app);
+  registerAssistant(app);
+  registerUserKeys(app);
+  registerSourceHealth(app);
+
+  registerIngest(app);
+  registerMedia(app);
+
+  registerStatic(app);
+
+  app.setNotFoundHandler((req, reply) => {
+    if ((req.raw.url ?? "").startsWith("/api/")) {
+      return sendProblem(req, reply, { status: 404, code: "not_found", detail: "No such endpoint." });
+    }
+    return reply.code(404).type("text/plain; charset=utf-8").header("Cache-Control", "public, max-age=60").send("Not found");
+  });
+
+  app.setErrorHandler((error, req, reply) => {
+    if (error instanceof RateLimited) {
+      return sendProblem(req, reply, { status: 429, code: "rate_limited", detail: "请求太频繁了，请稍后再试。", retryAfter: error.retryAfter });
+    }
+    req.log.error({ err: error }, "unhandled");
+    const status = (error as { statusCode?: number }).statusCode ?? 500;
+    if (status === 400 || status === 413 || status === 415) {
+      return sendProblem(req, reply, { status: status === 400 ? 400 : status, code: "invalid_request", detail: "The request could not be processed." });
+    }
+    return sendProblem(req, reply, { status: 503, code: "temporarily_unavailable", detail: "Temporarily unavailable.", retryAfter: 30 });
+  });
+
+  return app;
+}

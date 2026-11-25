@@ -1,0 +1,14 @@
+{
+  "name": "@topka/contracts",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@topka/industry": "*"
+  }
+}

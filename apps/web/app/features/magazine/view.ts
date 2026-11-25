@@ -1,0 +1,238 @@
+// The magazine's card chrome (今日 / 往期 / 单期), one place for the view-model of a fixed daily issue:
+// masthead date + weekday + issue no, the up-to-three cards, read/expand state and footer, as on the
+// mobile 今日 page. Plain functions so the node --test harness can check the card text, the
+// "no score on the cards" rule and the honest empty states without a DOM.
+// Backend: GET /api/me/today (UserIssuePayload) and GET /api/me/issues (archive). No model call here —
+// everything the reader sees was fixed at 08:00 UTC+8.
+
+import { createElement } from "react";
+import { messages, textLang, type UiLocale } from "../../lib/i18n.ts";
+import { joinHalves, tidyCopy } from "@topka/contracts/card-text";
+
+export { textLang };
+
+/** The card shape every issue carries (UserIssuePayload.issue). */
+export interface IssueCardItem {
+  id: string;
+  position: number;
+  title_a: string;
+  title_b: string;
+  core_a: string;
+  core_b: string;
+  summary: string;
+  tag: string;
+  source: string;
+  url: string;
+  /** Internal only — never rendered on the user-facing cards. */
+  score: number | null;
+  project: { id: string; slug: string; target: string };
+  publishedAt: string | null;
+  listedAt: string;
+  hasCopy: boolean;
+  overBudget: boolean;
+  /** The observation as the ledger stands now (absent from older payloads: current). */
+  ledger?: "current" | "corrected" | "retracted-material";
+}
+
+export interface IssueCard {
+  date: string;
+  no: number | null;
+  fixedAt: string;
+  hero: boolean;
+  ready: boolean;
+  items: IssueCardItem[];
+}
+
+export interface MagazineProject {
+  id: string;
+  slug: string;
+  target: string;
+}
+
+export interface MagazineIssuePayload {
+  schemaVersion?: number;
+  user?: { id: string };
+  projects: MagazineProject[];
+  generatedAt?: string;
+  nextAt?: string;
+  issueCount?: number;
+  issue: IssueCard | null;
+  opened?: string[];
+  archive?: Array<{ date: string; no: number; titles: string[] }>;
+  /** The language the cards were written in, when the payload says (the online demo's exported issues). */
+  contentLang?: string;
+  /** Replaces the "updates every morning" line, in the page's language (the online demo, which does not update on a clock). */
+  footNote?: string;
+}
+
+/**
+ * The `lang` attribute for written content: set only when it differs from the page's language. The
+ * payload names the language when it knows (the online demo's export); otherwise the text itself
+ * tells (card copy follows the reader's language when it was written, so an English reader's older
+ * issues can still be in Chinese).
+ */
+export function contentLangAttr(contentLang: string | null | undefined, locale: UiLocale, text?: string): string | undefined {
+  if (contentLang) return contentLang !== locale ? contentLang : undefined;
+  return text === undefined ? undefined : textLang(text, locale);
+}
+
+/** Calendar day in the server's own time zone, the day the masthead shows. */
+/** Calendar parts of an instant in a time zone. */
+function partsIn(ms: number, timeZone: string): { y: number; m: number; d: number } {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date(ms));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? "0");
+  return { y: get("year"), m: get("month"), d: get("day") };
+}
+const dayIndex = (ms: number, timeZone: string) => {
+  const { y, m, d } = partsIn(ms, timeZone);
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400e3);
+};
+
+/** "2026.10.27" + "周一", masthead style. */
+export function masthead(date: string, locale: UiLocale = "zh-CN"): { date: string; weekday: string } {
+  const d = new Date(`${date}T00:00:00Z`);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const weekdays = messages(locale).magazine.weekdayShort;
+  return { date: `${pad(d.getUTCMonth() + 1)}.${pad(d.getUTCDate())}`, weekday: weekdays[d.getUTCDay()] ?? weekdays[1]! };
+}
+
+/** "No. 007"; an empty day (no issue_no) gets no number at all. */
+export const issueNo = (no: number | null | undefined): string => (no ? `No. ${String(no).padStart(3, "0")}` : "");
+
+/** The projects the masthead's right column names: one project → its name, several → the count. */
+export function projectLabelOf(projects: MagazineProject[], locale: UiLocale = "zh-CN"): string {
+  if (projects.length === 1) return projects[0]!.target;
+  if (projects.length > 1) return messages(locale).magazine.projectsCount(projects.length);
+  return "";
+}
+
+/** The expand pane's time line: host of the link, and the absolute time when the reader opened it. */
+export function hostOf(url: string): string {
+  const m = /^[a-z][a-z0-9+.-]*:\/\/([^/?#:]+)/i.exec(String(url ?? ""));
+  return m ? m[1].replace(/^www\./i, "").toLowerCase() : "";
+}
+
+/** "今天 / 昨天 / N 天前 / M月D日" (or the English equivalent) relative to now, in the given time zone. */
+export function relTime(iso: string | null, now: Date = new Date(), locale: UiLocale = "zh-CN", timeZone: string = "Asia/Shanghai"): string {
+  if (!iso) return "";
+  const t = messages(locale);
+  const diff = dayIndex(now.getTime(), timeZone) - dayIndex(Date.parse(iso), timeZone);
+  if (diff <= 0) return t.magazine.relToday;
+  if (diff === 1) return t.magazine.relYesterday;
+  if (diff <= 6) return t.magazine.daysAgo(diff);
+  const { m, d } = partsIn(Date.parse(iso), timeZone);
+  return t.common.monthDay(m, d);
+}
+
+export type MagazinePhase = "loading" | "signed-out" | "first" | "preparing" | "zero" | "ready" | "failed";
+
+/** What 今日 shows: the issue, its honest empty states, or the sign-in request. */
+export interface TodayView {
+  phase: MagazinePhase;
+  /** The day the masthead names, even before the issue arrives (the loading skeleton). */
+  day: string;
+  projects: MagazineProject[];
+  issue: IssueCard | null;
+  /** Read marks the server has seen, unioned with this client's own opens. */
+  opened: string[];
+  archive: Array<{ date: string; no: number; titles: string[] }>;
+  contentLang?: string;
+  /** Replaces the "updates every morning" line, in the page's language (the online demo, which does not update on a clock). */
+  footNote?: string;
+}
+
+/** The card the page renders. Scores are deliberately absent from this shape: the rule is enforced
+ *  at the view-model, not by remembering not to print them. */
+export interface CardRow {
+  id: string;
+  no: string;
+  title: string;
+  /** core_a and core_b read as one line; both empty reads as nothing under the title. */
+  core: string;
+  source: string;
+  when: string;
+  project: string;
+  multi: boolean;
+  url: string;
+  host: string;
+  summary: string;
+  /** Topic tag for 「不想再看到这类」; empty hides the mute link. */
+  tag: string;
+  read: boolean;
+  /** Ledger chip text: "corrected by the source" or "retracted"; empty for a current observation. */
+  ledger: string;
+}
+
+/** The ledger chip a card carries: corrected by its source, retracted, or nothing for a current observation. */
+export function ledgerLabel(item: Pick<IssueCardItem, "ledger">, locale: UiLocale = "zh-CN"): string {
+  const t = messages(locale).magazine;
+  return item.ledger === "corrected" ? t.ledgerCorrected : item.ledger === "retracted-material" ? t.ledgerRetracted : "";
+}
+
+export function cardRows(view: TodayView, now: Date = new Date(), locale: UiLocale = "zh-CN", timeZone: string = "Asia/Shanghai"): CardRow[] {
+  if (!view.issue) return [];
+  return issueRows(view.issue, { opened: view.opened, multi: view.projects.length > 1, now, locale, timeZone });
+}
+
+/** An issue's rows; `multi` names each card's project (the reader follows more than one). */
+export function issueRows(issue: IssueCard, opts: { opened?: readonly string[]; multi: boolean; now?: Date; locale?: UiLocale; timeZone?: string }): CardRow[] {
+  const locale = opts.locale ?? "zh-CN";
+  return issue.items.map((item) => ({
+    id: item.id,
+    no: String(item.position).padStart(2, "0"),
+    title: joinHalves(item.title_a, item.title_b),
+    core: joinHalves(item.core_a, item.core_b),
+    source: item.source,
+    when: relTime(item.publishedAt ?? item.listedAt, opts.now ?? new Date(), locale, opts.timeZone ?? "Asia/Shanghai"),
+    project: opts.multi ? item.project.target : "",
+    multi: opts.multi,
+    url: item.url,
+    host: hostOf(item.url),
+    summary: tidyCopy(item.summary),
+    tag: item.tag,
+    read: (opts.opened ?? []).includes(item.id),
+    ledger: ledgerLabel(item, locale),
+  }));
+}
+
+export interface ArchiveEntryRow {
+  date: string;
+  no: number;
+  titles: string[];
+}
+
+/** 往期's rows: one line per past day, with the day's titles as the preview. */
+export function archiveRows(archive: ArchiveEntryRow[], locale: UiLocale = "zh-CN"): Array<{ date: string; label: string; sub: string; titles: string[] }> {
+  const t = messages(locale);
+  return archive.map((a) => {
+    const { weekday } = masthead(a.date, locale);
+    // The label comes from the ISO day itself. (`masthead` returns the dotted "11.04" form, which is a
+    // masthead, not a parseable "month.day" pair: reading it with /^(\d+)\.(\d+)$/ yields one match,
+    // and mapping the match array gives "11.04月11日".)
+    const [, m, d] = a.date.split("-");
+    const no = issueNo(a.no);
+    return {
+      date: a.date,
+      label: t.common.monthDay(Number(m), Number(d)),
+      sub: no ? `${weekday} · ${no}` : weekday,
+      // A two-half card title's first half ends where the second begins, at a colon or comma
+      // ("SONIC-K1：", "HuGe：2000h 数据，"); alone in the list it reads without the dangling mark.
+      titles: a.titles.map((t) => t.replace(/\s*[：:，,、；;]\s*$/, "")),
+    };
+  });
+}
+
+/** The card's source domain, linking the original in a new tab when the address is a web address. */
+export function sourceLink(url: string, host: string, label: string): ReturnType<typeof createElement> {
+  return /^https?:\/\//i.test(url)
+    ? createElement("a", { className: "m-host", href: url, target: "_blank", rel: "noopener noreferrer nofollow", title: label, "aria-label": label, "data-source-link": "" }, `${host} ↗`)
+    : createElement("span", { className: "m-host" }, host);
+}
+
+
+/** The card's meta line with its names marked by language: "source · when[ · project]". */
+export function metaNodes(source: string, when: string, project: string | null, locale: UiLocale): Array<ReturnType<typeof createElement> | string> {
+  const out: Array<ReturnType<typeof createElement> | string> = [createElement("span", { key: "s", lang: textLang(source, locale) }, source), ` · ${when}`];
+  if (project) out.push(" · ", createElement("span", { key: "p", lang: textLang(project, locale) }, project));
+  return out;
+}

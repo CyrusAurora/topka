@@ -1,0 +1,12 @@
+{
+  "name": "@topka/industry",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./pages/*": "./pages/*",
+    "./brand/*": "./brand/*",
+    "./*": "./*.ts"
+  }
+}

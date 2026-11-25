@@ -1,0 +1,192 @@
+# Checks on GitHub-hosted runners: install, typecheck, web build, the web tests, the backend tests on a
+# fresh PostgreSQL with the 85% line-coverage gate, the built site's smoke check, browser E2E, the online
+# demo's static build, the publication gate, the code blocks of the docs (docs/doc-blocks.md), and the
+# exported (public) tree brought up with docker compose as its README says.
+# Only GitHub-owned actions, pinned to a full commit SHA.
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: topka_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      DATABASE_URL: postgres://postgres:ci@127.0.0.1:5432/topka_ci
+      SITE_URL: http://127.0.0.1:3000
+      API_BASE_URL: http://127.0.0.1:3001
+      SESSION_SECRET: ci-session-secret-0123456789abcdef
+      IMG_PROXY_SIGN_SECRET: ci-img-secret-0123456789abcdef
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      # docs/release.md: every relative Markdown link resolves, and the SBOM builds (it fails while any
+      # workspace package lacks a version).
+      - name: Documentation links
+        run: npm run docs:links
+      - name: SBOM builds
+        run: npm sbom --sbom-format=cyclonedx > /dev/null
+      # docs/doc-blocks.md: every shell/TypeScript block in the docs is marked run, skip (with a
+      # reason), excerpt or typecheck; JSON parses; excerpts match their source; named paths exist.
+      - name: Doc code blocks (markers, excerpts, references, TypeScript)
+        run: |
+          node scripts/doc-blocks.ts --check
+          node scripts/doc-blocks.ts --typecheck
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build web
+        run: npm run build -w @topka/web
+      - name: Web tests
+        run: node --test apps/web/tests/*.test.ts
+
+      - name: Migrate
+        run: node scripts/migrate.ts
+      - name: Smoke check of the built site
+        # The site itself runs with collection and model calls off (the tests below use local stubs).
+        env:
+          COLLECT_ENABLED: "false"
+          MODEL_CALLS_ENABLED: "false"
+        run: |
+          node apps/api/src/main.ts > "$RUNNER_TEMP/api.log" 2>&1 &
+          (cd apps/web && NODE_ENV=production exec node server.ts) > "$RUNNER_TEMP/web.log" 2>&1 &
+          for i in $(seq 1 60); do curl -fsS -o /dev/null http://127.0.0.1:3000/api/health 2>/dev/null && break; sleep 1; done
+          node scripts/smoke.ts --base http://127.0.0.1:3000
+      # After the smoke check, which reads an empty database: these write their own rows.
+      - name: Backend tests (85% line coverage of packages/backend/src)
+        run: npm run test:coverage
+      - name: Quality evals (offline, each dimension against eval/thresholds.json)
+        run: npm run eval -- --check
+      - name: Browser E2E (playwright-core, fake model, Chrome on the runner)
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm run e2e
+      # docs/online-demo.md: the static demo under a Pages-style base path, fed by the demo reader's
+      # exported issues, clicked through in English and Chinese (today, past issues, demo Chat to a
+      # confirmed project, console errors, no Chinese in the English chrome).
+      - name: Online demo (export, scan, static build, browser check)
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          DEMO_PASSWORD=ci-demo-password-1 node scripts/demo.ts --force
+          node scripts/pages-export.ts --out "$RUNNER_TEMP/pages-data" --reader demo@example.com
+          node scripts/pages-check.ts "$RUNNER_TEMP/pages-data"
+          node scripts/build-demo.ts --base /topka/ --data "$RUNNER_TEMP/pages-data"
+          node scripts/check-demo.ts --serve apps/web/build-demo --base /topka/
+      - name: Install gitleaks
+        uses: ./.github/actions/install-gitleaks
+      # The publication gate: export + scan, the exported tree on its own, secret scan, private overlay.
+      - name: OSS gate
+        env:
+          OSS_DEST: ${{ runner.temp }}/topka-export
+        run: bash scripts/oss-check.sh
+      # Last: the repo suite rewrites docs/quality/* (npm run eval -- --write) and reinstalls (npm ci).
+      - name: Doc code blocks (repo and scratch suites)
+        run: |
+          node scripts/doc-blocks.ts --run repo
+          node scripts/doc-blocks.ts --run scratch
+      - name: Server logs
+        if: failure()
+        run: tail -n 60 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log" 2>/dev/null || true
+
+  # The public tree, not this repo: export it (fresh history, scanned), then follow its README quickstart.
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install gitleaks
+        uses: ./.github/actions/install-gitleaks
+      - name: Export the public tree
+        run: bash scripts/oss-export.sh "$RUNNER_TEMP/topka"
+      # Exactly the README quickstart a stranger runs: no .env edits, no extra compose files.
+      # init-env leaves COLLECT_ENABLED / MODEL_CALLS_ENABLED false, so CI makes no outside calls.
+      - name: Configure a throwaway site (README quickstart, Node in a container)
+        working-directory: ${{ runner.temp }}/topka
+        run: |
+          test ! -e docker-compose.override.yml   # the maintainer override must not ship
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/app" -w /app node:26-trixie-slim \
+            node scripts/init-env.ts --demo
+          grep -Eq '^KEY_ENCRYPTION_SECRET=[0-9a-f]{64}$' .env
+          grep -qx 'DEMO_SEED=true' .env
+      - name: Build and start with docker compose
+        working-directory: ${{ runner.temp }}/topka
+        run: docker compose up -d --build
+      # Sources after setup, counted by origin so a new import batch does not break an unrelated total:
+      # imported_from IS NULL = 18 sources of industry/sources.json + 3 of the demo project (DEMO_SEED);
+      # 'batch-1' = 336 of migration 0041 less 14 untouched rows whose feed a pack ships under its own id;
+      # 'pack:%' = 43 rows the four packs add (the other 10 pack entries bind rows already there).
+      # Migration 0040's 37 placeholder rows are gone, replaced by the packs' real feeds.
+      - name: Smoke check
+        working-directory: ${{ runner.temp }}/topka
+        run: |
+          # README step 3, verbatim: the address comes from PORT in .env.
+          for i in $(seq 1 90); do curl -fsS -o /dev/null "http://$(docker compose port web 3000)/api/health" 2>/dev/null && break; sleep 2; done
+          docker compose ps
+          # The database stays private: the default compose publishes no port for it.
+          ! docker compose ps db --format '{{.Ports}}' | grep -q -- '->'
+          # The documented smoke command (docs/self-hosting.md → Monitoring), verbatim.
+          docker compose exec -T web node scripts/smoke.ts --base http://localhost:3000
+          # BYOK works straight from init-env: a new reader stores a key and gets back only its last 4.
+          curl -fsS -c jar -H 'content-type: application/json' -d '{"email":"ci@example.com","password":"ci-password-1"}' http://127.0.0.1:3000/api/auth/register >/dev/null
+          curl -fsS -b jar -X PUT -H 'content-type: application/json' \
+            -d '{"baseUrl":"https://api.deepseek.com/v1","model":"deepseek-chat","apiKey":"sk-ci-not-a-real-key-1234"}' \
+            http://127.0.0.1:3000/api/me/keys/llm | grep -q '"1234"'
+          q() { docker compose exec -T db psql -U topka -d topka -Atc "$1"; }
+          q "select count(*) from sources where imported_from is null" | grep -qx 21
+          q "select count(*) from sources where imported_from = 'batch-1'" | grep -qx 322
+          q "select count(*) from sources where imported_from like 'pack:%'" | grep -qx 43
+          # Every pack is in the wizard, and every source it lists exists.
+          q "select count(*) from source_packs" | grep -qx 4
+          q "select count(*) from source_packs p, jsonb_array_elements(p.sources) e where not exists (select 1 from sources s where s.id = e->>'id')" | grep -qx 0
+          # The demo model answers Chat with no key: the demo reader is set up and the instance says so.
+          docker compose logs --no-log-prefix setup | grep -q 'demo: '
+          curl -fsS -c demo-jar -H 'content-type: application/json' -d '{"email":"ci@example.com","password":"ci-password-1"}' "http://$(docker compose port web 3000)/api/auth/login" >/dev/null
+          curl -fsS -b demo-jar "http://$(docker compose port web 3000)/api/me/model-status" | grep -q '"via":"demo"'
+      # docs/doc-blocks.md: the quickstart suite. Each README, tutorial, self-hosting and contributing
+      # page is followed from a fresh clone of the exported tree, block by block, on port 3300 (init-env
+      # --port), so no page may depend on 3000; alerts.md continues on the self-hosted site.
+      - name: Doc code blocks (quickstart suite, port 3300)
+        working-directory: ${{ runner.temp }}/topka
+        run: node scripts/doc-blocks.ts --run quickstart --port 3300
+      - name: Logs
+        if: failure()
+        working-directory: ${{ runner.temp }}/topka
+        run: docker compose logs --tail 80
+      - name: Stop
+        if: always()
+        working-directory: ${{ runner.temp }}/topka
+        run: docker compose down -v

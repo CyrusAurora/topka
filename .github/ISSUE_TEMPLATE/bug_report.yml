@@ -1,0 +1,55 @@
+name: Bug report
+description: File a bug report for the self-hosted web version
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of what you observed vs. what you expected.
+      placeholder: "The daily report was empty although the all-items page has content."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: To reproduce
+      description: >
+        Minimal steps or a small script. Include the relevant configuration surface
+        (COLLECT_ENABLED / MODEL_CALLS_ENABLED state, reverse proxy, site_fulltext, …)
+        without posting any secrets.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: main @ 28Xxxxx
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - docker compose (with HTTPS profile / without)
+        - manual (three processes)
+        - other
+  - type: input
+    id: database
+    attributes:
+      label: Database version
+      placeholder: PostgreSQL 17
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: >
+        Relevant log lines (docker compose logs -f --tail 100 api worker web).
+        Redact anything that looks like a key or token — never post secrets in issues.
+      render: shell
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: >
+        Anything else that helps, e.g. the admin "Runs" / "Sources" page status for
+        scheduling issues.
