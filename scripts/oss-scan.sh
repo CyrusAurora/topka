@@ -49,7 +49,11 @@ scan "emails (non-example)" '[A-Za-z0-9._%+-]+@(?!(example\.(com|org|net)|norepl
 scan "WeChat AppID" '\bwx[0-9a-f]{16}\b'
 scan "private IPv4" '\b(10\.\d{1,3}|192\.168|172\.(1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b' tests/url.test.ts tests/user-keys.test.ts
 # The maintainer's own client app and hosting stay out of the public tree, comments and migrations included.
-scan "maintainer-only words" '(?i)mini-?program|小程序|cloudbase|nrRemind|mp-sync|mp-bridge|\bthe box\b'
+# The READMEs may name the client form (their phone screenshots show Topka as a mini-program), nothing else.
+scan "maintainer-only words" '(?i)mini-?program|小程序|cloudbase|nrRemind|mp-sync|mp-bridge|\bthe box\b' README.md README.en.md
+readme_hits=$(git grep -n -I -P -e '(?i)cloudbase|nrRemind|mp-sync|mp-bridge|\bthe box\b' -- README.md README.en.md 2>&1); rc=$?
+if [ "$rc" -eq 1 ]; then note ok "maintainer-only words (READMEs)"
+else note FAIL "maintainer-only words (READMEs)"; printf '%s\n' "$readme_hits" | cut -c1-160 | sed 's/^/  /' | head -n 20; bad=1; fi
 # The project's retired working name must not reach the public tree (the public name is Topka).
 # Pixels are not scanned: screenshots in docs/assets/ must be regenerated from the current build on
 # demo data, never showing a retired or upstream brand or a real user's data (see CONTRIBUTING.md).

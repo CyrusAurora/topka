@@ -42,6 +42,21 @@ Every issue stays in Archive:
 
 <img src="docs/assets/screenshot-archive.png" alt="Archive: No.002 and No.001" width="100%">
 
+As a WeChat mini-program or a mobile app:
+
+<table>
+<tr>
+<td align="center" width="33%"><img src="docs/assets/mobile-today.png" alt="Mobile Today" width="240"><br><sub>Today's three</sub></td>
+<td align="center" width="33%"><img src="docs/assets/mobile-expanded.png" alt="Mobile card expanded" width="240"><br><sub>Open one for the summary and source link</sub></td>
+<td align="center" width="33%"><img src="docs/assets/mobile-archive.png" alt="Mobile Archive" width="240"><br><sub>Archive</sub></td>
+</tr>
+<tr>
+<td align="center" width="33%"><img src="docs/assets/mobile-chat.png" alt="Mobile chat" width="240"><br><sub>Say what to follow, tap an option</sub></td>
+<td align="center" width="33%"><img src="docs/assets/mobile-card.png" alt="Mobile tracking card" width="240"><br><sub>Confirm the card to create the project</sub></td>
+<td align="center" width="33%"><img src="docs/assets/mobile-projects.png" alt="Mobile projects" width="240"><br><sub>My projects: what to watch, what to skip</sub></td>
+</tr>
+</table>
+
 ---
 
 ## Quick start

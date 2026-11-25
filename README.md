@@ -42,6 +42,21 @@ docker compose up -d --build
 
 <img src="docs/assets/screenshot-archive.png" alt="往期：No.002 与 No.001" width="100%">
 
+做成微信小程序或手机 App，是这样：
+
+<table>
+<tr>
+<td align="center" width="33%"><img src="docs/assets/mobile-today.png" alt="手机端今日" width="240"><br><sub>今日三条</sub></td>
+<td align="center" width="33%"><img src="docs/assets/mobile-expanded.png" alt="手机端展开一条" width="240"><br><sub>点开看摘要，复制原文链接</sub></td>
+<td align="center" width="33%"><img src="docs/assets/mobile-archive.png" alt="手机端往期" width="240"><br><sub>往期</sub></td>
+</tr>
+<tr>
+<td align="center" width="33%"><img src="docs/assets/mobile-chat.png" alt="手机端对话" width="240"><br><sub>说想盯什么，点选项回答</sub></td>
+<td align="center" width="33%"><img src="docs/assets/mobile-card.png" alt="手机端跟踪卡片" width="240"><br><sub>确认卡片，项目就建好了</sub></td>
+<td align="center" width="33%"><img src="docs/assets/mobile-projects.png" alt="手机端我的项目" width="240"><br><sub>我的项目：关注什么、排除什么</sub></td>
+</tr>
+</table>
+
 ---
 
 ## 先跑起来

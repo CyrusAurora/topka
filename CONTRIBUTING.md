@@ -106,7 +106,7 @@ From `AGENTS.md`, in brief:
   abstractions currently in use. Verify behaviour you touched; no tests for cosmetic changes.
 - Never commit `.env`, secrets, or `.data/`.
 - Screenshots in `docs/assets/` come from the current build on demo data (an `@example.com` user,
-  invented headlines).
+  invented headlines). The `mobile-*.png` phone screens come from a phone client built on Topka.
 - How we work (independent judgement, simplest full design, proof by running it, outcome-first
   reports) is in `AGENTS.md` → How to work; it applies to people and coding agents alike.
 
